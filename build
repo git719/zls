@@ -1,0 +1,28 @@
+#!/bin/bash
+# Make
+set -euo pipefail  # Deliberately fail if any errors, as with other languages
+PRG=zls
+case "$OSTYPE" in
+    "linux-gnu"* )
+        echo "Linux build ..."
+        go build -ldflags "-s -w" -o $GOPATH/bin/$PRG
+        ls -l $GOPATH/bin/$PRG
+        ;;
+    "darwin"* )
+        echo "macOS build ..."
+        go build -ldflags "-s -w" -o $GOPATH/bin/$PRG
+        ls -l $GOPATH/bin/$PRG
+        ;;
+    "msys"* )
+        echo "Windows build ..."
+        go build -ldflags "-s -w" -o $GOPATH/bin/${PRG}.exe
+        ls -l $GOPATH/bin/$PRG
+        ;;
+    * )
+        echo "OSTYPE=$OSTYPE, which is an unknown OS!"
+        echo ""
+        echo "Options are: darwin*, linux-gnu*, and msys* (GitBash on Win)" 
+        echo ""
+        exit 1 ;;
+esac
+exit 0
