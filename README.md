@@ -5,7 +5,7 @@ This utility is more a proof-of-concept in using the [MSAL library for Go](https
 
 This is the GoLang version. The Python version is called `azls` and sits within the https://github.com/lencap/azsnippets repo. This version is a little snappier, and the single binary executable is easier to use without having to setup a Python environment. 
 
-Why `zls`? Because three-letter names are much easier to type on the CLI 🙂
+Why `zls`? Because three-letter names are easier to type.
 
 ## Requirements
 You must register a client app in your tenant and grant it the required Read permissions for all API object types this utility tries to list. Please find other sources for how to do the app reg.
@@ -28,27 +28,28 @@ From a `bash` shell type `./build` to build the binary.
 This utility has been successfully tested in macOS, Linux, and Windows. To build from a regular Windows Command Prompt, just run the corresponding line in the `build` file (`go build ...`).
 
 ## Known Issues
-Every program has at least one little program that's dying to get out 🙂
+Unknown.
 
 ## Usage
 ```
-zls Azure RBAC and principal listing utility v1.2
-     -Xc               List total number of X objects in tenant
-     -Xj               List all X objects in JSON format
-     -X                List all X objects tersely (UUID and most essential attributes)
-     -X "string"       List all X objects whose name has "string" in it
-     -Xj UUID          List specific X object in JSON format
-     -X UUID           List specific X object in YAML-like human-readable format
-     -X <specfile>     Compare X object specfile to what's in Azure
-     -Xx               Delete cached X object local file
+zls Azure RBAC and MS Graph listing utility v160
+    -Xc                List total number of X objects in tenant
+    -Xj                List all X objects in JSON format
+    -X                 List all X objects tersely (UUID and most essential attributes)
+    -X "string"        List all X objects whose name has "string" in it
+    -Xj UUID|"string"  List specific X or matching objects in JSON format
+    -X UUID            List specific X object in YAML-like human-readable format
+    -X <specfile>      Compare X object specfile to what's in Azure
+    -Xx                Delete cached X object local file
 
-     Substitute 'X' for any of these 7 object types:
-       'd'  = Role Definitions   'a' = Role Assignments   's'  = Azure Subscriptions
-       'u'  = Azure AD Users     'g' = Groups             'sp' = Service Principals
-       'ap' = Applications
+    Where 'X' can be any of these object types:
+      'd'  = Role Definitions   'a'  = Role Assignments   's'  = Azure Subscriptions
+      'm'  = Management Groups  'u'  = Azure AD Users     'g'  = Groups
+      'sp' = Service Principals 'ap' = Applications
 
-     -ar               List all role assignments with resolved names
-     -pags             List all Azure AD Priviledge Access Groups
-     -tx               Delete cached accessTokens file
-     -v                Print this usage page
+    -ar                List all role assignments with resolved names
+    -mt                List Management Group and subcriptions tree
+    -pags              List all Azure AD Priviledge Access Groups
+    -tx                Delete cached accessTokens file
+    -v                 Print this usage page
 ```
