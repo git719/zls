@@ -8,21 +8,56 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-func SetupCredentials() {
-	// Set up tenant credentials
+func DumpCredentials() {
+	// Dump credentials file
 	f := filepath.Join(confdir, "credentials.json")
-	if _, err := os.Stat(f); os.IsNotExist(err) {
-		fmt.Printf("Missing credentials file: \"" + f + "\"\n")
-		content := fmt.Sprintf("{\n  \"tenant_id\" : \"UUID\",\n  \"client_id\" : \"UUID\",\n  \"client_secret\" : \"SECRET\"\n}\n")
-		if err = ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
+	if FileExist(f) {
+		creds := LoadFileJSON(f).(map[string]interface{}) // Assert as JSON object
+		//PrintYAML(creds)
+		PrintJSON(creds)
+		os.Exit(1)
+	}
+}
+
+func SetupCredentialsInterativeLogin(tenant_id, client_id string) {
+	// Set up credentials file for interactive login
+	f := filepath.Join(confdir, "credentials.json")
+	if ValidUUID(tenant_id) && ValidUUID(client_id) {
+		content := fmt.Sprintf("{\n  \"tenant_id\" : \"" + tenant_id + "\",\n  \"client_id\" : \"" + client_id + "\",\n  \"interactive\" : \"true\"\n}\n")
+		if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
 			panic(err.Error())
 		}
-		fmt.Println("Created new skeleton one: Please edit it, fill-in required values, then re-run program.")
-		os.Exit(1)
 	} else {
+		fmt.Println("Error. TENANT_ID and/or CLIENT_ID are invalid UUIDs.")
+		os.Exit(1)
+	}
+	fmt.Println("Updated credentials file:", f)
+}
+
+func SetupCredentialsSecretLogin(tenant_id, client_id, secret string) {
+	// Set up credentials file for client_id + secret login
+	f := filepath.Join(confdir, "credentials.json")
+	if ValidUUID(tenant_id) && ValidUUID(client_id) {
+		content := fmt.Sprintf("{\n  \"tenant_id\" : \"" + tenant_id + "\",\n  \"client_id\" : \"" + client_id + "\",\n  \"client_secret\" : \"" + secret + "\"\n}\n")
+		if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
+			panic(err.Error())
+		}
+	} else {
+		fmt.Println("Error. TENANT_ID and/or CLIENT_ID are invalid UUIDs.")
+		os.Exit(1)
+	}
+	fmt.Println("Updated credentials file:", f)
+}
+
+func ReadCredentials() {
+	// Read credentials from file
+	f := filepath.Join(confdir, "credentials.json")
+	if FileExist(f) {
 		creds := LoadFileJSON(f).(map[string]interface{}) // Assert as JSON object
+		// Read credentials file and update global variables accordingly
 		if creds == nil {
 			log.Printf("Unable to load/parse file \"%s\"\n", f)
 			os.Exit(1)
@@ -37,11 +72,18 @@ func SetupCredentials() {
 			log.Printf("client_id \"%s\" in \"%s\" is not a valid UUID\n", client_id, f)
 			os.Exit(1)
 		}
-		client_secret = StrVal(creds["client_secret"])
-		if client_secret == "" {
-			log.Printf("client_secret in \"%s\" is blank\n", f)
-			os.Exit(1)
+		interactive = strings.ToLower(StrVal(creds["interactive"]))
+		if interactive != "true" {
+			client_secret = StrVal(creds["client_secret"])
+			if client_secret == "" {
+				log.Printf("client_secret in \"%s\" is blank\n", f)
+				os.Exit(1)
+			}
 		}
+	} else {
+		fmt.Printf("Missing credentials file: \"" + f + "\"\n")
+		fmt.Println("Please rerun program using '-cr' or '-cri' option to specify credentials.")
+		os.Exit(1)
 	}
 }
 

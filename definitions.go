@@ -93,8 +93,8 @@ func GetRoleDefinitions() (oList []interface{}) {
     //   Tenant Root Group  /providers/Microsoft.Management/managementGroups/{myTenantId}
     //   Management Group   /providers/Microsoft.Management/managementGroups/{groupId1}
     //   Subscription       /subscriptions/{subscriptionId1}
-    // 	Resource Group     /subscriptions/{subscriptionId1}/resourceGroups/{myResourceGroup1}
-    // 	Resource           /subscriptions/{subscriptionId1}/resourceGroups/{myResourceGroup1}/providers/Microsoft.Web/sites/mySite1
+    // 	 Resource Group     /subscriptions/{subscriptionId1}/resourceGroups/{myResourceGroup1}
+    // 	 Resource           /subscriptions/{subscriptionId1}/resourceGroups/{myResourceGroup1}/providers/Microsoft.Web/sites/mySite1
     
     // Note that because Microsoft Azure BUILT-IN roles are defined universally, at scope "/", they are all
     // gathered on the initial Tenant Root Group search. That means these comments are predominantly about CUSTOM
@@ -113,8 +113,7 @@ func GetRoleDefinitions() (oList []interface{}) {
     // so if there are role definitions hidden within Resource Groups or individual resoures it will MISS them.
 
 	// Step 1: Get all role definitions at the root tenant, including all Microsoft Azure Built-In-Roles
-    oList = [] 
-	oList = nil
+    oList = nil
 	var uuids []string // Keep track of each unique role definition to whittle out repeats that come up in lower scopes
 	url := az_url + "/providers/Microsoft.Management/managementGroups/" + tenant_id
 	url += "/providers/Microsoft.Authorization/roleDefinitions"
