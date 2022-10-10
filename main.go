@@ -12,7 +12,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "161"
+	prgver  = "162"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -44,7 +44,6 @@ var (
 
 func PrintUsage() {
 	fmt.Printf(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
-		"    -Xc                List total number of X objects in tenant\n" +
 		"    -Xj                List all X objects in JSON format\n" +
 		"    -X                 List all X objects tersely (UUID and most essential attributes)\n" +
 		"    -X \"string\"        List all X objects whose name has \"string\" in it\n" +
@@ -64,6 +63,7 @@ func PrintUsage() {
 		"    -cr                              Dump values in credentials file\n" +
 		"    -cr  TENANT_ID CLIENT_ID SECRET  Set up secret login\n" +
 		"    -cri TENANT_ID CLIENT_ID         Set up interactive login (NOT WORKING)\n" +
+		"    -st                              List local cache count and Azure count of all X objects in tenant\n" +
 		"    -tx                              Delete accessTokens cache file\n" +
 		"    -xx                              Delete ALL cache local file\n" +
 		"    -v                               Print this usage page\n")
@@ -113,9 +113,8 @@ func main() {
 
 		// Handle the three(3) primary single-argument list functions for all object types
 		switch arg1 {
-		case "-dc", "-ac", "-sc", "-mc", "-uc", "-gc", "-spc", "-apc": // Handle count of all objects
-			t := arg1[1 : len(arg1)-1]  // Single out the object type
-			fmt.Println(ObjectCount(t)) // Get its count and print it
+		case "-st":
+			PrintCountStatus()
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj": // Handle JSON-printing of all objects
 			t := arg1[1 : len(arg1)-1] // Single out the object type
 			PrintAllJSON(t)

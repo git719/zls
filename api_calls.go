@@ -7,12 +7,38 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func ObjectCount(t string) int64 {
+func PrintCountStatus() {
+	fmt.Printf("%-28s    %-18s    %s\n", "OBJECTS", "LOCAL CACHE COUNT","AZURE COUNT")
+    fmt.Printf("%-28s    %-18d    %d\n", "RBAC Role Definitions", ObjectCountLocal("d"), ObjectCountAzure("d"))
+	fmt.Printf("%-28s    %-18d    %d\n", "RBAC Role Assignments", ObjectCountLocal("a"), ObjectCountAzure("a"))
+	fmt.Printf("%-28s    %-18d    %d\n", "Subscriptions", ObjectCountLocal("s"), ObjectCountAzure("s"))
+	fmt.Printf("%-28s    %-18d    %d\n", "Management Groups", ObjectCountLocal("m"), ObjectCountAzure("m"))
+	fmt.Printf("%-28s    %-18d    %d\n", "Users", ObjectCountLocal("u"), ObjectCountAzure("u"))
+	fmt.Printf("%-28s    %-18d    %d\n", "Groups", ObjectCountLocal("g"), ObjectCountAzure("g"))
+	fmt.Printf("%-28s    %-18d    %d\n", "Applications", ObjectCountLocal("ap"), ObjectCountAzure("ap"))
+	fmt.Printf("%-28s    %-18d    %d\n", "Service Principals", ObjectCountLocal("sp"), ObjectCountAzure("sp"))
+}
+
+func ObjectCountLocal(t string) int64 {
+	var oList []interface{} = nil // Start with an empty list
+	localData := filepath.Join(confdir, tenant_id+"_"+oMap[t]+".json") // Define local data store file
+    if FileUsable(localData) {
+		l := LoadFileJSON(localData) // Load cache file
+		if l != nil {
+			oList = l.([]interface{})
+			return int64(len(oList))
+		}
+	}
+	return 0
+}
+
+func ObjectCountAzure(t string) int64 {
 	// Returns count of given object type (ARM or MG)
 	switch t {
 	case "d", "a", "s", "m":

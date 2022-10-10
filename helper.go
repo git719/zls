@@ -37,7 +37,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 	// local data store cached and in sync.
 
 	oList = nil                         // Start with an empty list
-	cachePeriod := int64(3660 * 24 * 7) // One week. TODO: Make it a .config file option
+	cachePeriod := int64(3660 * 24 * 7) // One week. TODO: Make it a $HOME/.$PROGMAN/config file option
 
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap[t]+".json") // Define local data store file
 	cacheFileAge := int64(0)
@@ -97,7 +97,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 			}
 		}
 
-		azureCount := ObjectCount(t) // Get number of objects in Azure right at this moment
+		azureCount := ObjectCountAzure(t) // Get number of objects in Azure right at this moment
 		if fullQuery {
 			log.Printf("%d objects to get\n", azureCount)
 		}
