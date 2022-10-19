@@ -29,7 +29,7 @@ func PrintRoleAssignmentReport() {
 		switch Type {
 		case "User":
 			pName = userMap[Pid]
-		case "SP":
+		case "ServicePrincipal":
 			pName = spMap[Pid]
 		case "Group":
 			pName = groupMap[Pid]
