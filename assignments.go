@@ -19,13 +19,10 @@ func PrintRoleAssignmentReport() {
 	for _, i := range GetAllObjects("a") { // Iterate through all objects
 		x := i.(map[string]interface{}) // Assert JSON object type
 		xProp := x["properties"].(map[string]interface{})
-
 		Rid := LastElem(StrVal(xProp["roleDefinitionId"]), "/")
-
 		Pid := StrVal(xProp["principalId"])
-
 		Type := StrVal(xProp["principalType"])
-		pName := ""
+		pName := "ID-Not-Found"
 		switch Type {
 		case "User":
 			pName = userMap[Pid]
