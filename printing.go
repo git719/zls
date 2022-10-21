@@ -133,7 +133,7 @@ func CompareSpecfile(t, f string) {
 			return
 		}
 		x := jsonFile.(map[string]interface{}) // Assert as single JSON object
-		fmt.Println("==== SPECFILE ===========================")
+		fmt.Println("==== SPECFILE ==========================================")
 		PrintJSON(x)
 
 		xProps := x["properties"].(map[string]interface{})
@@ -150,11 +150,10 @@ func CompareSpecfile(t, f string) {
 				z := y[0].(map[string]interface{})
 				if z["id"] != nil {
 					notFound = false
-					fmt.Println("==== AZURE (CLEANER YAML-LIKE) ==========")
+					fmt.Println("==== SPECFILE ==========================================")
+					fmt.Println("==== AZURE (in YAML-like format for easier reading) ====")
 					PrintObject("d", z)
-					fmt.Println("==== AZURE (JSON) =======================")
-					PrintJSON(z)
-					break // Break loop on FIRST match, since any other subsequent match will be exactly the same.
+					break // Break, since any other subsequent match will be exactly the same
 				}
 			}
 		}
