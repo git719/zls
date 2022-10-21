@@ -158,7 +158,7 @@ func CompareSpecfile(t, f string) {
 		}
 		if notFound {
 			fmt.Println("==== What's in AZURE =============================================")
-			fmt.Printf("Role definition defined in specfile does NOT exist in Azure.\n", Name)
+			fmt.Println("Role definition as defined in this specfile does NOT exist in Azure.")
 		}
 	case "a":
 		// Load specfile
