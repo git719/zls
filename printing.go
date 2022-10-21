@@ -133,7 +133,7 @@ func CompareSpecfile(t, f string) {
 			return
 		}
 		x := jsonFile.(map[string]interface{}) // Assert as single JSON object
-		fmt.Println("==== SPECFILE ==========================================")
+		fmt.Println("==== This SPECFILE ===============================================")
 		PrintJSON(x)
 
 		xProps := x["properties"].(map[string]interface{})
@@ -150,16 +150,15 @@ func CompareSpecfile(t, f string) {
 				z := y[0].(map[string]interface{})
 				if z["id"] != nil {
 					notFound = false
-					fmt.Println("==== SPECFILE ==========================================")
-					fmt.Println("==== AZURE (in YAML-like format for easier reading) ====")
+					fmt.Println("==== What's in AZURE (in YAML-like format for easier reading) ====")
 					PrintObject("d", z)
 					break // Break, since any other subsequent match will be exactly the same
 				}
 			}
 		}
 		if notFound {
-			fmt.Println("==== AZURE ==============================")
-			fmt.Printf("Role definition '%s' does not exist as defined in specfile\n", Name)
+			fmt.Println("==== What's in AZURE =============================================")
+			fmt.Printf("Role definition defined in specfile does NOT exist in Azure.\n", Name)
 		}
 	case "a":
 		// Load specfile
