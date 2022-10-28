@@ -46,20 +46,8 @@ func PrintGroup(x map[string]interface{}) {
 				Type, Name := "-", "-"
 				Type = LastElem(StrVal(m["@odata.type"]), ".")
 				switch Type {
-				case "group":
+				case "group", "servicePrincipal":
 					Name = StrVal(m["displayName"])
-				case "servicePrincipal":
-					spType := StrVal(m["servicePrincipalType"])
-					switch spType {
-					case "ManagedIdentity":
-						Type = "MI"
-						Name = StrVal(m["displayName"])
-					case "Application":
-						Type = "APP"
-						Name = StrVal(m["displayName"])
-					default:
-						Name = "???"
-					}
 				default:
 					Name = StrVal(m["userPrincipalName"])
 				}
