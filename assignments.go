@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"strings"
 )
@@ -41,7 +40,7 @@ func PrintRoleAssignmentReport() {
 		}
 		Scope = strings.TrimSpace(Scope)
 
-		fmt.Printf("\"%s\",\"%s\",\"%s\",\"%s\"\n", roleMap[Rid], pName, Type, Scope)
+		print("\"%s\",\"%s\",\"%s\",\"%s\"\n", roleMap[Rid], pName, Type, Scope)
 	}
 }
 
@@ -51,14 +50,14 @@ func PrintRoleAssignment(x map[string]interface{}) {
 		return
 	}
 
-	fmt.Printf("id: %s\n", StrVal(x["name"]))
+	print("id: %s\n", StrVal(x["name"]))
 
 	xProp := x["properties"].(map[string]interface{})
-	fmt.Printf("properties:\n")
+	print("properties:\n")
 
 	roleMap := GetIdNameMap("d")
 	RoleId := LastElem(StrVal(xProp["roleDefinitionId"]), "/")
-	fmt.Printf("  %-17s %s  # roleName = \"%s\"\n", "roleDefinitionId:", RoleId, roleMap[RoleId])
+	print("  %-17s %s  # roleName = \"%s\"\n", "roleDefinitionId:", RoleId, roleMap[RoleId])
 
 	var nameMap map[string]string
 	pType := StrVal(xProp["principalType"])
@@ -72,16 +71,16 @@ func PrintRoleAssignment(x map[string]interface{}) {
 	}
 	pId := StrVal(xProp["principalId"])
 	pName := nameMap[StrVal(xProp["principalId"])]
-	fmt.Printf("  %-17s %s  # %s displayName = \"%s\"\n", "principalId:", pId, pType, pName)
+	print("  %-17s %s  # %s displayName = \"%s\"\n", "principalId:", pId, pType, pName)
 
 	subMap := GetIdNameMap("s")
 	scope := StrVal(xProp["scope"])
 	if strings.HasPrefix(scope, "/subscriptions") {
 		split := strings.Split(scope, "/")
 		subName := subMap[split[2]]
-		fmt.Printf("  %-17s %s  # Sub = %s\n", "scope:", scope, subName)
+		print("  %-17s %s  # Sub = %s\n", "scope:", scope, subName)
 	} else {
-		fmt.Printf("  %-17s %s\n", "scope:", scope)
+		print("  %-17s %s\n", "scope:", scope)
 	}
 }
 
@@ -116,7 +115,7 @@ func GetRoleAssignments() (oList []interface{}) {
 		r = APIGet(url, az_headers, nil, false)
 		if r["value"] != nil {
 			assignments := r["value"].([]interface{})
-			fmt.Printf("\r(API calls = %d) %d assignments in sub '%s'", apiCalls, len(assignments), subMap[i])
+			print("\r(API calls = %d) %d assignments in sub '%s'", apiCalls, len(assignments), subMap[i])
 			PadSpaces(20)
 			for _, j := range assignments {
 				x := j.(map[string]interface{}) // Assert as JSON object type
@@ -130,6 +129,6 @@ func GetRoleAssignments() (oList []interface{}) {
 		}
 		apiCalls++
 	}
-	fmt.Printf("\n")
+	print("\n")
 	return oList
 }

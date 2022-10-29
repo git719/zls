@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -25,11 +24,23 @@ func LoadFileYAML(filePath string) (yamlObject map[interface{}]interface{}) {
 	return yamlObject
 }
 
+func SaveFileYAML(yamlObject interface{}, filePath string) {
+	// Save given YAML object to given filePath
+	yamlData, err := yaml.Marshal(&yamlObject)
+	if err != nil {
+		panic(err.Error())
+	}
+	err = ioutil.WriteFile(filePath, yamlData, 0600)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
 func PrintYAML(yamlObject interface{}) {
 	pretty, err := yaml.Marshal(&yamlObject)
 	if err != nil {
 		log.Println(err)
 	} else {
-		fmt.Printf(string(pretty))
+		print(string(pretty))
 	}
 }

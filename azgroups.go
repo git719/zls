@@ -1,10 +1,6 @@
-// groups.go
+// azgroups.go
 
 package main
-
-import (
-	"fmt"
-)
 
 func PrintGroup(x map[string]interface{}) {
 	// Print group object in YAML-like style format
@@ -16,7 +12,7 @@ func PrintGroup(x map[string]interface{}) {
 	// Print the most important attributes
 	list := []string{"displayName", "description", "id", "isAssignableToRole", "mailEnabled", "mailNickname"}
 	for _, i := range list {
-		fmt.Printf("%-28s %s\n", i+":", StrVal(x[i]))
+		print("%-28s %s\n", i+":", StrVal(x[i]))
 	}
 
 	// OPTIONAL: Print other attributes here
@@ -25,13 +21,13 @@ func PrintGroup(x map[string]interface{}) {
 	if r["value"] != nil {
 		owners := r["value"].([]interface{}) // Assert as JSON array type
 		if len(owners) > 0 {
-			fmt.Printf("owners:\n")
+			print("owners:\n")
 			for _, i := range owners {
 				o := i.(map[string]interface{}) // Assert as JSON object type
-				fmt.Printf("  %-50s %s\n", StrVal(o["userPrincipalName"]), StrVal(o["id"]))
+				print("  %-50s %s\n", StrVal(o["userPrincipalName"]), StrVal(o["id"]))
 			}
 		} else {
-			fmt.Printf("%-28s %s\n", "owners:", "None")
+			print("%-28s %s\n", "owners:", "None")
 		}
 	}
 
@@ -39,7 +35,7 @@ func PrintGroup(x map[string]interface{}) {
 	if r["value"] != nil {
 		members := r["value"].([]interface{}) // Assert as JSON array type
 		if len(members) > 0 {
-			fmt.Printf("members:\n")
+			print("members:\n")
 			// PrintJSON(members) // DEBUG
 			for _, i := range members {
 				m := i.(map[string]interface{}) // Assert as JSON object type
@@ -51,10 +47,10 @@ func PrintGroup(x map[string]interface{}) {
 				default:
 					Name = StrVal(m["userPrincipalName"])
 				}
-				fmt.Printf("  %-50s %s (%s)\n", Name, StrVal(m["id"]), Type)
+				print("  %-50s %s (%s)\n", Name, StrVal(m["id"]), Type)
 			}
 		} else {
-			fmt.Printf("%-28s %s\n", "members:", "None")
+			print("%-28s %s\n", "members:", "None")
 		}
 	}
 

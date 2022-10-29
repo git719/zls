@@ -2,27 +2,25 @@
 
 package main
 
-import (
-	"fmt"
-	"log"
-)
-
-func print(format string, args ...interface{}) {
-	// My print function
-	fmt.Printf(format, args...)
-}
+import "log"
 
 func DumpVariables() {
-	fmt.Printf("tenant_id:       " + tenant_id + "\n" +
-		"client_id:       " + client_id + "\n" +
-		"client_secret:   " + client_secret + "\n" +
-		"authority_url:   " + authority_url + "\n" +
-		"mg_url:          " + mg_url + "\n" +
-		"az_url:          " + az_url + "\n")
-	fmt.Println("mg_headers:")
-	PrintJSON(mg_headers)
-	fmt.Println("az_headers:")
-	PrintJSON(az_headers)
+	// Pretty print all special variables
+	print("%-16s %s\n%-16s %s\n%-16s %s\n%-16s %s\n%-16s %s\n%-16s %s\n",
+	    "tenant_id:", tenant_id,
+		"client_id:", client_id,
+	    "client_secret:", client_secret,
+		"authority_url:", authority_url,
+		"mg_url:", mg_url,
+		"az_url:", az_url)
+	print("mg_headers:\n")
+	for k, v := range mg_headers {
+		print("  %-14s %s\n", StrVal(k) + ":", StrVal(v))
+	}
+	print("az_headers:\n")
+	for k, v := range az_headers {
+		print("  %-14s %s\n", StrVal(k) + ":", StrVal(v))
+	}
 }
 
 func PrintAllTersely(t string) {
@@ -41,7 +39,7 @@ func PrintTersely(t string, x map[string]interface{}) {
 		Props := x["properties"].(map[string]interface{})
 		Type := StrVal(Props["type"])
 		Name := StrVal(Props["roleName"])
-		fmt.Printf("%s  %-60s  %s\n", Id, Name, Type)
+		print("%s  %-60s  %s\n", Id, Name, Type)
 	case "a":
 		Id := StrVal(x["name"]) // This is the role assignment's UUID
 		Props := x["properties"].(map[string]interface{})
@@ -49,18 +47,18 @@ func PrintTersely(t string, x map[string]interface{}) {
 		PrincipalId := StrVal(Props["principalId"])
 		PrinType := StrVal(Props["principalType"])
 		Scope := StrVal(Props["scope"])
-		fmt.Printf("%s  %s  %s %-20s %s\n", Id, RoleId, PrincipalId, "("+PrinType+")", Scope)
+		print("%s  %s  %s %-20s %s\n", Id, RoleId, PrincipalId, "("+PrinType+")", Scope)
 	case "s":
 		Id := StrVal(x["subscriptionId"])
 		State := StrVal(x["state"])
 		Name := StrVal(x["displayName"])
-		fmt.Printf("%s  %-10s  %s\n", Id, State, Name)
+		print("%s  %-10s  %s\n", Id, State, Name)
 	case "m":
 		Id := StrVal(x["name"])
 		Props := x["properties"].(map[string]interface{})
 		Name := StrVal(Props["displayName"])
 		Type := MGType(StrVal(x["type"]))
-		fmt.Printf("%-38s  %-20s  %s\n", Id, Name, Type)
+		print("%-38s  %-20s  %s\n", Id, Name, Type)
 	case "u", "g", "sp", "ap":
 		Id := StrVal(x["id"])
 		Name := StrVal(x["displayName"])
@@ -70,13 +68,13 @@ func PrintTersely(t string, x map[string]interface{}) {
 		case "u":
 			Upn := StrVal(x["userPrincipalName"])
 			onPremisesSamAccountName := StrVal(x["onPremisesSamAccountName"])
-			fmt.Printf("%s  %-50s %-18s %s\n", Id, Upn, onPremisesSamAccountName, Name)
+			print("%s  %-50s %-18s %s\n", Id, Upn, onPremisesSamAccountName, Name)
 		case "g":
-			fmt.Printf("%s  %s\n", Id, Name)
+			print("%s  %s\n", Id, Name)
 		case "sp":
-			fmt.Printf("%s  %-60s %-22s %s\n", Id, Name, Type, AppId)
+			print("%s  %-60s %-22s %s\n", Id, Name, Type, AppId)
 		case "ap":
-			fmt.Printf("%s  %-60s %s\n", Id, Name, AppId)
+			print("%s  %-60s %s\n", Id, Name, AppId)
 		}
 	}
 }
@@ -109,16 +107,16 @@ func PrintMemberOfs(t string, memberOf []interface{}) {
 	// Print all memberof entries
 	// Object type t is for future use
 	if len(memberOf) > 0 {
-		fmt.Printf("memberof:\n")
+		print("memberof:\n")
 		for _, i := range memberOf {
 			o := i.(map[string]interface{}) // Assert as JSON object type
 			Name := StrVal(o["displayName"])
 			Type := LastElem(StrVal(o["@odata.type"]), ".")
 			Id := StrVal(o["id"])
-			fmt.Printf("  %-50s %s (%s)\n", Name, Id, Type)
+			print("  %-50s %s (%s)\n", Name, Id, Type)
 		}
 	} else {
-		fmt.Printf("%-21s %s\n", "memberof:", "None")
+		print("%-21s %s\n", "memberof:", "None")
 	}
 }
 
@@ -133,7 +131,7 @@ func CompareSpecfile(t, f string) {
 			return
 		}
 		x := jsonFile.(map[string]interface{}) // Assert as single JSON object
-		fmt.Println("==== This SPECFILE ===============================================")
+		print("==== This SPECFILE ===============================================\n")
 		PrintJSON(x)
 
 		xProps := x["properties"].(map[string]interface{})
@@ -150,24 +148,24 @@ func CompareSpecfile(t, f string) {
 				z := y[0].(map[string]interface{})
 				if z["id"] != nil {
 					notFound = false
-					fmt.Println("==== What's in AZURE (in YAML-like format for easier reading) ====")
+					print("==== What's in AZURE (in YAML-like format for easier reading) ====\n")
 					PrintObject("d", z)
 					break // Break, since any other subsequent match will be exactly the same
 				}
 			}
 		}
 		if notFound {
-			fmt.Println("==== What's in AZURE =============================================")
-			fmt.Println("Role definition as defined in this specfile does NOT exist in Azure.")
+			print("==== What's in AZURE =============================================\n")
+			print("Role definition as defined in this specfile does NOT exist in Azure.\n")
 		}
 	case "a":
 		// Load specfile
 		x := LoadFileYAML(f)
 		if x == nil {
-			log.Printf("Invalid YAML specfile '%s'\n", f)
+			print("Invalid YAML specfile '%s'\n", f)
 			return
 		}
-		fmt.Println("==== SPECFILE ===========================")
+		print("==== SPECFILE ===========================\n")
 		PrintYAML(x)
 
 		xProps := x["properties"].(map[string]interface{})
@@ -189,16 +187,16 @@ func CompareSpecfile(t, f string) {
 				azPrincipalId := StrVal(yProps["principalId"])
 				azScope := StrVal(yProps["scope"])
 				if azRoleId == roleId && azPrincipalId == principalId && azScope == scope {
-					fmt.Println("==== AZURE ==============================")
+					print("==== AZURE ==============================\n")
 					PrintObject("a", y)
 					break // Break loop as soon as we find match
 				}
 			}
 		} else {
-			fmt.Println("==== AZURE ==============================")
-			fmt.Println("Role assignment does not exist as defined in specfile")
+			print("==== AZURE ==============================\n")
+			print("Role assignment does not exist as defined in specfile\n")
 		}
 	default:
-		fmt.Println("This option is not yet available.")
+		print("This option is not yet available.\n")
 	}
 }

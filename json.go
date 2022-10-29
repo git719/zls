@@ -4,7 +4,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -33,7 +32,6 @@ func LoadFileJSON(filePath string) (jsonObject interface{}) {
 
 func SaveFileJSON(jsonObject interface{}, filePath string) {
 	// Save given JSON object to given filePath
-	// The generic interface{} allows writing any type
 	jsonData, err := json.Marshal(jsonObject)
 	if err != nil {
 		panic(err.Error())
@@ -47,9 +45,9 @@ func SaveFileJSON(jsonObject interface{}, filePath string) {
 func PrintJSON(jsonObject interface{}) {
 	pretty, err := Prettify(jsonObject)
 	if err != nil {
-		fmt.Println("Prettify() error")
+		print("Prettify() error\n")
 	} else {
-		fmt.Println(pretty)
+		print(pretty)
 	}
 }
 

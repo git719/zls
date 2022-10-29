@@ -2,11 +2,6 @@
 
 package main
 
-import (
-	"fmt"
-	"os"
-)
-
 func PrintApp(obj map[string]interface{}) {
 	// Print application object in YAML-like style format
 	if obj["id"] == nil {
@@ -17,7 +12,7 @@ func PrintApp(obj map[string]interface{}) {
 	// Print the most important attributes first
 	list := []string{"displayName", "appId", "id"}
 	for _, i := range list {
-		fmt.Printf("%-21s %s\n", i+":", StrVal(obj[i]))
+		print("%-21s %s\n", i+":", StrVal(obj[i]))
 	}
 
 	// Print owners
@@ -25,7 +20,7 @@ func PrintApp(obj map[string]interface{}) {
 	if r["value"] != nil {
 		owners := r["value"].([]interface{}) // Assert as JSON array type
 		if len(owners) > 0 {
-			fmt.Printf("owners:\n")
+			print("owners:\n")
 			// PrintJSON(groups) // DEBUG
 			for _, i := range owners {
 				o := i.(map[string]interface{}) // Assert as JSON object type
@@ -41,10 +36,10 @@ func PrintApp(obj map[string]interface{}) {
 				default:
 					Name = "???"
 				}
-				fmt.Printf("  %-50s %s (%s)\n", Name, StrVal(o["id"]), Type)
+				print("  %-50s %s (%s)\n", Name, StrVal(o["id"]), Type)
 			}
 		} else {
-			fmt.Printf("%-21s %s\n", "owners:", "None")
+			print("%-21s %s\n", "owners:", "None")
 		}
 	}
 
@@ -56,7 +51,7 @@ func PrintApp(obj map[string]interface{}) {
 	// Just look under this app 'x' object attribute 'requiredResourceAccess'
 
 	if obj["requiredResourceAccess"] != nil && len(obj["requiredResourceAccess"].([]interface{})) > 0 {
-		fmt.Println("api_permissions:")
+		print("api_permissions:\n")
 		APIs := obj["requiredResourceAccess"].([]interface{}) // Assert to JSON array
 		for _, a := range APIs {
 			api := a.(map[string]interface{}) // Assert as JSON object type
@@ -66,7 +61,7 @@ func PrintApp(obj map[string]interface{}) {
 
 			// Let's drill down into the permissions for this API
 			if api["resourceAppId"] == nil {
-				fmt.Printf("  %-50s %s\n", "Unknown API", "Missing resourceAppId")
+				print("  %-50s %s\n", "Unknown API", "Missing resourceAppId")
 				continue // Skip this API, move on to next one
 			}
 
@@ -78,15 +73,15 @@ func PrintApp(obj map[string]interface{}) {
 			// Unclear why result is a list instead of a single entry
 
 			if r["value"] == nil {
-				fmt.Printf("  %-50s %s\n", resAppId, "Unable to get Resource App object. Skipping this API.")
+				print("  %-50s %s\n", resAppId, "Unable to get Resource App object. Skipping this API.")
 				continue
 			}
 
 			SPs := r["value"].([]interface{})
 
 			if len(SPs) > 1 {
-				fmt.Printf("  %-50s %s\n", resAppId, "Error. Multiple SPs for this AppId. Aborting.")
-				os.Exit(1)
+				print("  %-50s %s\n", resAppId, "Error. Multiple SPs for this AppId. Aborting.")
+				exit(1)
 			}
 
 			sp := SPs[0].(map[string]interface{}) // The only expected entry, asserted as JSON object type
@@ -112,7 +107,7 @@ func PrintApp(obj map[string]interface{}) {
 				}
 			}
 			if roleMap == nil {
-				fmt.Printf("  %-50s %s\n", resAppId, "Error getting list of appRoles.")
+				print("  %-50s %s\n", resAppId, "Error getting list of appRoles.")
 				continue
 			}
 
@@ -123,10 +118,10 @@ func PrintApp(obj map[string]interface{}) {
 				for _, i := range Perms {            // Iterate through perms
 					perm := i.(map[string]interface{})
 					pid := StrVal(perm["id"]) // JSON string
-					fmt.Printf("  %-50s %s\n", apiName, roleMap[pid])
+					print("  %-50s %s\n", apiName, roleMap[pid])
 				}
 			} else {
-				fmt.Printf("  %-50s %s\n", resAppId, "Error getting list of appRoles.")
+				print("  %-50s %s\n", resAppId, "Error getting list of appRoles.")
 			}
 		}
 	}

@@ -2,10 +2,6 @@
 
 package main
 
-import (
-	"fmt"
-)
-
 func PrintSP(obj map[string]interface{}) {
 	// Print service principal object in YAML-like style format
 	if obj["id"] == nil {
@@ -16,7 +12,7 @@ func PrintSP(obj map[string]interface{}) {
 	// Print the most important attributes
 	list := []string{"displayName", "id", "appId", "accountEnabled", "servicePrincipalType"}
 	for _, i := range list {
-		fmt.Printf("%-21s %s\n", i+":", StrVal(obj[i]))
+		print("%-21s %s\n", i+":", StrVal(obj[i]))
 	}
 
 	// Print owners
@@ -24,7 +20,7 @@ func PrintSP(obj map[string]interface{}) {
 	if r["value"] != nil {
 		owners := r["value"].([]interface{}) // JSON array
 		if len(owners) > 0 {
-			fmt.Printf("owners:\n")
+			print("owners:\n")
 			for _, i := range owners {
 				o := i.(map[string]interface{}) // JSON object
 				Type, Name := "???", "???"
@@ -39,10 +35,10 @@ func PrintSP(obj map[string]interface{}) {
 				default:
 					Name = "???"
 				}
-				fmt.Printf("  %-50s %s (%s)\n", Name, StrVal(o["id"]), Type)
+				print("  %-50s %s (%s)\n", Name, StrVal(o["id"]), Type)
 			}
 		} else {
-			fmt.Printf("%-28s %s\n", "owners:", "None")
+			print("%-28s %s\n", "owners:", "None")
 		}
 	}
 
@@ -51,7 +47,7 @@ func PrintSP(obj map[string]interface{}) {
 	if r["value"] != nil {
 		members := r["value"].([]interface{}) // JSON array
 		if len(members) > 0 {
-			fmt.Printf("members:\n")
+			print("members:\n")
 
 			// Build roleMap
 			roleMap := make(map[string]string)
@@ -73,10 +69,10 @@ func PrintSP(obj map[string]interface{}) {
 				roleName := roleMap[StrVal(rm["appRoleId"])] // Reference role name
 				principalId := StrVal(rm["principalId"])
 				principalType := StrVal(rm["principalType"])
-				fmt.Printf("  %-50s %-20s %s (%s)\n", principalName, roleName, principalId, principalType)
+				print("  %-50s %-20s %s (%s)\n", principalName, roleName, principalId, principalType)
 			}
 		} else {
-			fmt.Printf("%-28s %s\n", "members:", "None")
+			print("%-28s %s\n", "members:", "None")
 		}
 	}
 
@@ -87,7 +83,7 @@ func PrintSP(obj map[string]interface{}) {
 	// Print API permissions
 	r = APIGet(mg_url+"/beta/servicePrincipals/"+id+"/appRoleAssignments", mg_headers, nil, false)
 	if r["value"] != nil && len(r["value"].([]interface{})) > 0 {
-		fmt.Println("api_permissions:")
+		print("api_permissions:\n")
 		apiPerms := r["value"].([]interface{}) // Assert as JSON array
 
 		// Getting API app role permission name, such as Directory.Read.All, is a 2-step process:
@@ -129,9 +125,9 @@ func PrintSP(obj map[string]interface{}) {
 
 			if resId != "" {
 				pid := StrVal(api["appRoleId"]) // App role ID
-				fmt.Printf("  %-50s %s\n", apiName, apiRoles[pid])
+				print("  %-50s %s\n", apiName, apiRoles[pid])
 			} else {
-				fmt.Printf("  %-50s %s\n", apiName, "(Missing resourceId)")
+				print("  %-50s %s\n", apiName, "(Missing resourceId)")
 			}
 		}
 	}

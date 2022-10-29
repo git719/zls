@@ -74,5 +74,5 @@ func RemoveCacheFile(t string) {
 			RemoveFile(filePath)
 		}
 	}
-	os.Exit(0)
+	exit(0)
 }

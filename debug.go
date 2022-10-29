@@ -2,10 +2,6 @@
 
 package main
 
-import (
-	"os"
-)
-
 func TestFunction() {
 	// url := "/providers/Microsoft.Management/getEntities"
 	// url := "/providers/Microsoft.Management/managementGroups"
@@ -23,16 +19,16 @@ func TestFunction() {
 	// f := filepath.Join("/Users/user1/obj.json")
 	// l := LoadFileJSON(f)
 	// if l == nil {
-	// 	fmt.Println("Error loading file")
-	// 	os.Exit(0)
+	// 	print("Error loading file\n")
+	// 	exit(0)
 	// }
 	// obj := l.(map[string]interface{})
 
 	// f = filepath.Join("/Users/user1/obj2.json")
 	// l = LoadFileJSON(f)
 	// if l == nil {
-	// 	fmt.Println("Error loading file")
-	// 	os.Exit(0)
+	// 	print("Error loading file\n")
+	// 	exit(0)
 	// }
 	// obj2 := l.(map[string]interface{})
 
@@ -41,5 +37,5 @@ func TestFunction() {
 	// x := MergeObjects(obj, obj2)
 	// PrintJSON(x)
 
-	os.Exit(0)
+	exit(0)
 }

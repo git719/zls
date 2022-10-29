@@ -1,8 +1,6 @@
-// mgmtgroups.go
+// mggroups.go
 
 package main
-
-import "fmt"
 
 func MGType(typeIn string) string {
 	switch typeIn {
@@ -24,9 +22,9 @@ func PrintManagementGroup(x map[string]interface{}) {
 	xProp := x["properties"].(map[string]interface{})
 	Name := StrVal(xProp["displayName"])
 	Type := MGType(StrVal(x["type"]))
-	fmt.Printf("%-20s %s\n", "displayName:", Name)
-	fmt.Printf("%-20s %s\n", "id:", id)
-	fmt.Printf("%-20s %s\n", "type:", Type)
+	print("%-20s %s\n", "displayName:", Name)
+	print("%-20s %s\n", "id:", id)
+	print("%-20s %s\n", "type:", Type)
 }
 
 func GetManagementGroups() (oList []interface{}) {

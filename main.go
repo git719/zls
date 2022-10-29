@@ -3,8 +3,8 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"fmt"
 	"path/filepath"
 	"strings"
 )
@@ -12,7 +12,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "166"
+	prgver  = "167"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -43,7 +43,7 @@ var (
 )
 
 func PrintUsage() {
-	fmt.Printf(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
+	print(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
 		"    -Xj                List all X objects in JSON format\n" +
 		"    -X                 List all X objects tersely (UUID and most essential attributes)\n" +
 		"    -X \"string\"        List all X objects whose name has \"string\" in it\n" +
@@ -67,7 +67,19 @@ func PrintUsage() {
 		"    -tx                              Delete accessTokens cache file\n" +
 		"    -xx                              Delete ALL cache local file\n" +
 		"    -v                               Print this usage page\n")
-	os.Exit(0)
+	exit(0)
+}
+
+func exit(code int) {
+	os.Exit(code) // Syntactic sugar. Python is right, darn it. exit is much more beautiful to type and read than os.Exit :-)
+}
+
+func print(format string, args ...interface{}) (n int, err error) {
+	return fmt.Printf(format, args...) // More syntactic sugar
+}
+
+func sprint(format string, args ...interface{}) string {
+	return fmt.Sprintf(format, args...)	// More syntactic sugar
 }
 
 func main() {
@@ -130,7 +142,7 @@ func main() {
 		case "-z":
 			DumpVariables()
 		default:
-			fmt.Println("No such option.")
+			print("No such option.\n")
 		}
 
 	case 2:
@@ -175,7 +187,7 @@ func main() {
 				}
 			}
 		default:
-			fmt.Println("No such option.")
+			print("No such option.\n")
 		}
 
 	case 3:
@@ -187,7 +199,7 @@ func main() {
 		case "-cri":
 			SetupCredentialsInterativeLogin(arg2, arg3)
 		default:
-			fmt.Println("No such option.")
+			print("No such option.\n")
 		}
 
 	case 4:
@@ -200,7 +212,7 @@ func main() {
 		case "-cr":
 			SetupCredentialsSecretLogin(arg2, arg3, arg4)
 		default:
-			fmt.Println("No such option.")
+			print("No such option.\n")
 		}
 	}
 	os.Exit(0)

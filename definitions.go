@@ -2,10 +2,7 @@
 
 package main
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
 func PrintRoleDefinition(x map[string]interface{}) {
 	// Print role definition object in YAML-like style format
@@ -13,67 +10,67 @@ func PrintRoleDefinition(x map[string]interface{}) {
 		return
 	}
 
-	fmt.Printf("id: %s\n", StrVal(x["name"]))
+	print("id: %s\n", StrVal(x["name"]))
 	xProp := x["properties"].(map[string]interface{})
-	fmt.Printf("properties:\n")
+	print("properties:\n")
 	list := []string{"roleName", "description"}
 	for _, i := range list {
-		fmt.Printf("  %s %s\n", i+":", StrVal(xProp[i]))
+		print("  %s %s\n", i+":", StrVal(xProp[i]))
 	}
 
 	scopes := xProp["assignableScopes"].([]interface{})
 	if len(scopes) > 0 {
-		fmt.Printf("  %-18s \n", "assignableScopes:")
+		print("  %-18s \n", "assignableScopes:")
 		subNames := GetIdNameMap("s") // Get all subscription id/names pairs
 		for _, i := range scopes {
 			if strings.HasPrefix(i.(string), "/subscriptions") {
 				// If scope is a subscription also print its name as a comment at end of line
 				subId := LastElem(i.(string), "/")
-				fmt.Printf("    - %s # %s\n", StrVal(i), subNames[subId])
+				print("    - %s # %s\n", StrVal(i), subNames[subId])
 			} else {
-				fmt.Printf("    - %s\n", StrVal(i))
+				print("    - %s\n", StrVal(i))
 			}
 		}
 	} else {
-		fmt.Printf("  %-18s %s\n", "assignableScopes:", "[]")
+		print("  %-18s %s\n", "assignableScopes:", "[]")
 	}
 
 	permsSet := xProp["permissions"].([]interface{})
 	if len(permsSet) == 1 {
-		fmt.Printf("  %-18s \n", "permissions:")
+		print("  %-18s \n", "permissions:")
 		perms := permsSet[0].(map[string]interface{})
 		permsA := perms["actions"].([]interface{})
 		if len(permsA) > 0 {
-			fmt.Printf("    %-16s \n", "actions:")
+			print("    %-16s \n", "actions:")
 			for _, i := range permsA {
-				fmt.Printf("      - %s\n", StrVal(i))
+				print("      - %s\n", StrVal(i))
 			}
 		}
 		permsDA := perms["dataActions"].([]interface{})
 		if len(permsDA) > 0 {
-			fmt.Printf("    %-16s \n", "dataActions:")
+			print("    %-16s \n", "dataActions:")
 			for _, i := range permsDA {
-				fmt.Printf("      - %s\n", StrVal(i))
+				print("      - %s\n", StrVal(i))
 			}
 		}
 		permsNA := perms["notActions"].([]interface{})
 		if len(permsNA) > 0 {
-			fmt.Printf("    %-16s \n", "notActions:")
+			print("    %-16s \n", "notActions:")
 			for _, i := range permsNA {
-				fmt.Printf("      - %s\n", StrVal(i))
+				print("      - %s\n", StrVal(i))
 			}
 		}
 		permsNDA := perms["notDataActions"].([]interface{})
 		if len(permsNDA) > 0 {
-			fmt.Printf("    %-16s \n", "notDataActions:")
+			print("    %-16s \n", "notDataActions:")
 			for _, i := range permsNDA {
-				fmt.Printf("      - %s\n", StrVal(i))
+				print("      - %s\n", StrVal(i))
 			}
 		}
 	} else if len(permsSet) > 1 {
-		fmt.Printf("%-20s %s\n", "permissions:", "ERROR. More than one set??")
+		print("%-20s %s\n", "permissions:", "ERROR. More than one set??")
 	} else {
-		fmt.Printf("%-20s %s\n", "permissions:", "[]")
+		print("%-20s %s\n", "permissions:", "[]")
 	}
 }
 
@@ -136,7 +133,7 @@ func GetRoleDefinitions() (oList []interface{}) {
 		r = APIGet(az_url+"/subscriptions/"+i+"/providers/Microsoft.Authorization/roleDefinitions?$filter=type+eq+'CustomRole'", az_headers, nil, false)
 		if r["value"] != nil {
 			definitions := r["value"].([]interface{})
-			fmt.Printf("\r(API calls = %d) %d definitions in sub '%s'", apiCalls, len(definitions), subMap[i])
+			print("\r(API calls = %d) %d definitions in sub '%s'", apiCalls, len(definitions), subMap[i])
 			PadSpaces(20)
 			for _, j := range r["value"].([]interface{}) {
 				x := j.(map[string]interface{})
@@ -149,6 +146,6 @@ func GetRoleDefinitions() (oList []interface{}) {
 		}
 		apiCalls++
 	}
-	fmt.Printf("\n")
+	print("\n")
 	return oList
 }

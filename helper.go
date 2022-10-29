@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"path/filepath"
 	"time"
@@ -18,13 +17,13 @@ func ValidUUID(s string) bool {
 
 func SameType(a, b interface{}) bool {
 	// Check if two variables are of the same type
-	a_type := fmt.Sprintf("%T", a)
-	b_type := fmt.Sprintf("%T", b)
+	a_type := sprint("%T", a)
+	b_type := sprint("%T", b)
 	return a_type == b_type
 }
 
 func VarType(v interface{}) string {
-	return fmt.Sprintf("%T", v)
+	return sprint("%T", v)
 }
 
 func GetAllObjects(t string) (oList []interface{}) {
@@ -118,7 +117,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 			}
 
 			if fullQuery {
-				fmt.Printf("\r%d (API calls = %d)", len(deltaSet), apiCalls) // Progress count indicator
+				print("\r%d (API calls = %d)", len(deltaSet), apiCalls) // Progress count indicator
 			}
 
 			if r["@odata.deltaLink"] != nil {
@@ -126,14 +125,14 @@ func GetAllObjects(t string) (oList []interface{}) {
 				deltaLinkMap = map[string]interface{}{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
 				SaveFileJSON(deltaLinkMap, deltaLinkFile) // Save new deltaLink for next call
 
-				// fmt.Printf("\nLocal count = %d (before merge/cleanup)\n", len(oList))
-				// fmt.Printf("Delta count = %d\n", len(deltaSet))
+				// print("\nLocal count = %d (before merge/cleanup)\n", len(oList))
+				// print("Delta count = %d\n", len(deltaSet))
 
 				// New objects returned, let's run our merge logic
 				oList = NormalizeCache(oList, deltaSet)
 
-				// fmt.Printf("Local count = %d (after merge/cleanup)\n", len(oList))
-				// fmt.Printf("Azure count = %d\n", azureCount)
+				// print("Local count = %d (after merge/cleanup)\n", len(oList))
+				// print("Azure count = %d\n", azureCount)
 
 				SaveFileJSON(oList, localData) // Cache it to local file
 				break                          // from infinite for-loop
@@ -142,7 +141,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 			apiCalls++
 		}
 		if fullQuery {
-			fmt.Printf("\n")
+			print("\n")
 			log.Printf("%d objects fetched\n", len(oList))
 		}
 	}

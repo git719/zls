@@ -2,8 +2,6 @@
 
 package main
 
-import "fmt"
-
 func GetSubIds() (subIds []string) {
 	subIds = nil
 	// Get all subscription IDs
@@ -26,7 +24,7 @@ func PrintSubscription(x map[string]interface{}) {
 
 	list := []string{"displayName", "subscriptionId", "state", "tenantId"}
 	for _, i := range list {
-		fmt.Printf("%-20s %s\n", i+":", StrVal(x[i]))
+		print("%-20s %s\n", i+":", StrVal(x[i]))
 	}
 }
 

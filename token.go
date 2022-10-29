@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/public"
@@ -15,7 +14,7 @@ func GetToken(scopes []string) (token string, err error) {
 	// Initializing the client credential
 	cred, err := confidential.NewCredFromSecret(client_secret)
 	if err != nil {
-		fmt.Println("Could not create a cred from client_secret.")
+		print("Could not create a cred from client_secret.\n")
 	}
 
 	// Set up token cache storage file and accessor

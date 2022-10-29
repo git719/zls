@@ -4,7 +4,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -14,15 +13,15 @@ import (
 )
 
 func PrintCountStatus() {
-	fmt.Printf("%-28s    %-18s    %s\n", "OBJECTS", "LOCAL CACHE COUNT","AZURE COUNT")
-    fmt.Printf("%-28s    %-18d    %d\n", "RBAC Role Definitions", ObjectCountLocal("d"), ObjectCountAzure("d"))
-	fmt.Printf("%-28s    %-18d    %d\n", "RBAC Role Assignments", ObjectCountLocal("a"), ObjectCountAzure("a"))
-	fmt.Printf("%-28s    %-18d    %d\n", "Subscriptions", ObjectCountLocal("s"), ObjectCountAzure("s"))
-	fmt.Printf("%-28s    %-18d    %d\n", "Management Groups", ObjectCountLocal("m"), ObjectCountAzure("m"))
-	fmt.Printf("%-28s    %-18d    %d\n", "Users", ObjectCountLocal("u"), ObjectCountAzure("u"))
-	fmt.Printf("%-28s    %-18d    %d\n", "Groups", ObjectCountLocal("g"), ObjectCountAzure("g"))
-	fmt.Printf("%-28s    %-18d    %d\n", "Applications", ObjectCountLocal("ap"), ObjectCountAzure("ap"))
-	fmt.Printf("%-28s    %-18d    %d\n", "Service Principals", ObjectCountLocal("sp"), ObjectCountAzure("sp"))
+	print("%-28s    %-18s    %s\n", "OBJECTS", "LOCAL CACHE COUNT","AZURE COUNT")
+    print("%-28s    %-18d    %d\n", "RBAC Role Definitions", ObjectCountLocal("d"), ObjectCountAzure("d"))
+	print("%-28s    %-18d    %d\n", "RBAC Role Assignments", ObjectCountLocal("a"), ObjectCountAzure("a"))
+	print("%-28s    %-18d    %d\n", "Subscriptions", ObjectCountLocal("s"), ObjectCountAzure("s"))
+	print("%-28s    %-18d    %d\n", "Management Groups", ObjectCountLocal("m"), ObjectCountAzure("m"))
+	print("%-28s    %-18d    %d\n", "Users", ObjectCountLocal("u"), ObjectCountAzure("u"))
+	print("%-28s    %-18d    %d\n", "Groups", ObjectCountLocal("g"), ObjectCountAzure("g"))
+	print("%-28s    %-18d    %d\n", "Applications", ObjectCountLocal("ap"), ObjectCountAzure("ap"))
+	print("%-28s    %-18d    %d\n", "Service Principals", ObjectCountLocal("sp"), ObjectCountAzure("sp"))
 }
 
 func ObjectCountLocal(t string) int64 {
@@ -163,16 +162,16 @@ func APIGet(url string, headers, params map[string]string, verbose bool) (result
 	// This interpretation needs confirmation, and then better handling.
 
 	if verbose {
-		fmt.Printf("\nGET %s => %d %s => %s\n\n", url, r.StatusCode, http.StatusText(r.StatusCode), string(body))
+		print("\nGET %s => %d %s => %s\n\n", url, r.StatusCode, http.StatusText(r.StatusCode), string(body))
 		// p, _ := Prettify(params)
 		// h, _ := Prettify(headers)
-		// fmt.Println("REQUEST_PARAMS:", p)
-		// fmt.Println("REQUEST_HEADERS:", h)
+		// print("REQUEST_PARAMS: %s\n", p)
+		// print("REQUEST_HEADERS: %s\n", h)
 		// r_headers, err := httputil.DumpResponse(r, false)
 		// if err != nil {
 		// 	panic(err.Error())
 		// }
-		// fmt.Printf("RESPONSE_HEADERS:\n%s\n", string(r_headers))
+		// print("RESPONSE_HEADERS:\n%s\n", string(r_headers))
 	}
 
 	if count, err := strconv.ParseInt(string(body), 10, 64); err == nil {
