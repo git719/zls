@@ -74,7 +74,7 @@ func PrintRoleDefinition(x map[string]interface{}) {
 	}
 }
 
-func GetRoleDefinitions() (oList []interface{}) {
+func GetRoleDefinitions(mode string) (oList []interface{}) {
 	// Get all role definitions that are available to use in current tenant 
 
 	// IMPORTANT: Presently (October 2022), the RBAC API $filter=AtScopeAndBelow() does NOT work as
@@ -133,8 +133,10 @@ func GetRoleDefinitions() (oList []interface{}) {
 		r = APIGet(az_url+"/subscriptions/"+i+"/providers/Microsoft.Authorization/roleDefinitions?$filter=type+eq+'CustomRole'", az_headers, nil, false)
 		if r["value"] != nil {
 			definitions := r["value"].([]interface{})
-			print("\r(API calls = %d) %d definitions in sub '%s'", apiCalls, len(definitions), subMap[i])
-			PadSpaces(20)
+			if mode == "verbose" {
+				print("\r(API calls = %d) %d definitions in sub '%s'", apiCalls, len(definitions), subMap[i])
+				PadSpaces(20)
+			}
 			for _, j := range r["value"].([]interface{}) {
 				x := j.(map[string]interface{})
 				uuid := StrVal(x["name"])
@@ -146,6 +148,8 @@ func GetRoleDefinitions() (oList []interface{}) {
 		}
 		apiCalls++
 	}
-	print("\n")
+	if mode == "verbose" {
+		print("\n")
+	}
 	return oList
 }

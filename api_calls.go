@@ -13,16 +13,63 @@ import (
 )
 
 func PrintCountStatus() {
-	print("%-28s    %-18s    %s\n", "OBJECTS", "LOCAL CACHE COUNT","AZURE COUNT")
-    print("%-28s    %-18d    %d\n", "RBAC Role Definitions", ObjectCountLocal("d"), ObjectCountAzure("d"))
-	print("%-28s    %-18d    %d\n", "RBAC Role Assignments", ObjectCountLocal("a"), ObjectCountAzure("a"))
-	print("%-28s    %-18d    %d\n", "Subscriptions", ObjectCountLocal("s"), ObjectCountAzure("s"))
-	print("%-28s    %-18d    %d\n", "Management Groups", ObjectCountLocal("m"), ObjectCountAzure("m"))
-	print("%-28s    %-18d    %d\n", "Users", ObjectCountLocal("u"), ObjectCountAzure("u"))
-	print("%-28s    %-18d    %d\n", "Groups", ObjectCountLocal("g"), ObjectCountAzure("g"))
-	print("%-28s    %-18d    %d\n", "Applications", ObjectCountLocal("ap"), ObjectCountAzure("ap"))
-	print("%-28s    %-18d    %d\n", "Service Principals", ObjectCountLocal("sp"), ObjectCountAzure("sp"))
+	print("%-32s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
+	builtinLocal, customLocal := RoleDefinitionCountLocal()
+	builtinAzure, customAzure := RoleDefinitionCountAzure()
+    print("%-32s %-20d %d\n", "RBAC Role Definitions BuiltIn", builtinLocal, builtinAzure)
+    print("%-32s %-20d %d\n", "RBAC Role Definitions Custom", customLocal, customAzure)
+	print("%-32s %-20d %d\n", "RBAC Role Assignments", ObjectCountLocal("a"), ObjectCountAzure("a"))
+	print("%-32s %-20d %d\n", "Subscriptions", ObjectCountLocal("s"), ObjectCountAzure("s"))
+	print("%-32s %-20d %d\n", "Management Groups", ObjectCountLocal("m"), ObjectCountAzure("m"))
+	print("%-32s %-20d %d\n", "Users", ObjectCountLocal("u"), ObjectCountAzure("u"))
+	print("%-32s %-20d %d\n", "Groups", ObjectCountLocal("g"), ObjectCountAzure("g"))
+	print("%-32s %-20d %d\n", "Applications", ObjectCountLocal("ap"), ObjectCountAzure("ap"))
+	print("%-32s %-20d %d\n", "Service Principals", ObjectCountLocal("sp"), ObjectCountAzure("sp"))
 }
+
+func RoleDefinitionCountLocal() (builtin, custom int64) {
+	// Dedicated Custom role definition local counter
+	var customList []interface{} = nil
+	var builtinList []interface{} = nil
+	localData := filepath.Join(confdir, tenant_id+"_"+oMap["d"]+".json")
+    if FileUsable(localData) {
+		l := LoadFileJSON(localData) // Load cache file
+		if l != nil {
+			definitions := l.([]interface{}) // Assert as JSON array type
+			for _, i := range definitions {
+				x := i.(map[string]interface{}) // Assert as JSON object type
+				xProp := x["properties"].(map[string]interface{})
+				Type := StrVal(xProp["type"])
+				if Type == "CustomRole" {
+					customList = append(customList, x)
+				} else {
+					builtinList = append(builtinList, x)
+				}
+			}			
+			return int64(len(builtinList)), int64(len(customList))
+		}
+	}
+	return 0, 0
+}
+
+func RoleDefinitionCountAzure() (builtin, custom int64) {
+	// Dedicated Custom role definition Azure counter
+	var customList []interface{} = nil
+	var builtinList []interface{} = nil
+	definitions := GetRoleDefinitions("silent")
+	for _, i := range definitions {
+		x := i.(map[string]interface{}) // Assert as JSON object type
+		xProp := x["properties"].(map[string]interface{})
+		Type := StrVal(xProp["type"])
+		if Type == "CustomRole" {
+			customList = append(customList, x)
+		} else {
+			builtinList = append(builtinList, x)
+		}
+	}			
+	return int64(len(builtinList)), int64(len(customList))
+}
+
 
 func ObjectCountLocal(t string) int64 {
 	var oList []interface{} = nil // Start with an empty list

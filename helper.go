@@ -27,16 +27,20 @@ func VarType(v interface{}) string {
 }
 
 func GetAllObjects(t string) (oList []interface{}) {
-	// We are dealing with two (2) classes of objects:
+	// This function determines whether to retrieve all the objects from Azure or from the local
+	// cache based on the age of the local cache.
+	//
+	// Also, note that we are dealing with two (2) classes of objects:
 	// 1) AZ types = Azure RBAC definitions and assignments, subscriptions, and mgmt group objects.
 	// 2) MG types = MS Graph users, groups, service principals, and applications objects.
-	// The set of all AZ types per tenant can be relatively small and fast to retrieve, so
-	// we'll use a crude cachePeriod for local cache. On the other hand, the set of
-	// MG types can be very large so we will rely on MG delta query methods to keep the
-	// local data store cached and in sync.
+	// The set of all AZ types per tenant can be relatively small and fast to retrieve from Azure, so
+	// we'll use a crude cachePeriod for local cache. On the other hand, the set of MG types can
+	// can be very large, so we will rely on MG delta query methods to keep the local data store
+	// cached and in sync.
 
 	oList = nil                         // Start with an empty list
-	cachePeriod := int64(3660 * 24 * 7) // One week. TODO: Make it a $HOME/.$PROGMAN/config file option
+	cachePeriod := int64(3660 * 24 * 7) // One week cache period
+	// TODO: Make above variable a $HOME/.$PROGMAN/config file option
 
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap[t]+".json") // Define local data store file
 	cacheFileAge := int64(0)
@@ -58,7 +62,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 	// Get all objects of type t
 	switch t {
 	case "d":
-		oList = GetRoleDefinitions()   // Get all role definitions from Azure
+		oList = GetRoleDefinitions("verbose")   // Get all role definitions from Azure
 		SaveFileJSON(oList, localData) // Cache it to local file
 	case "a":
 		oList = GetRoleAssignments()   // Get all role assignments from Azure
