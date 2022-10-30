@@ -94,7 +94,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 			case "g":
 				url = url + "displayName,mailNickname,description,isAssignableToRole,mailEnabled"
 			case "sp":
-				url = url + "displayName,appId,accountEnabled,servicePrincipalType"
+				url = url + "displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId"
 			case "ap":
 				url = url + "displayName,appId,requiredResourceAccess"
 			}

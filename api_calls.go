@@ -13,22 +13,69 @@ import (
 )
 
 func PrintCountStatus() {
-	print("%-32s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
+	print("Counting Azure role definitions may take some time.\n")
+	print("%-38s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
+	print("%-38s %-20d %d\n", "Groups", ObjectCountLocal("g"), ObjectCountAzure("g"))
+	print("%-38s %-20d %d\n", "Users", ObjectCountLocal("u"), ObjectCountAzure("u"))
+	print("%-38s %-20d %d\n", "App Registrations", ObjectCountLocal("ap"), ObjectCountAzure("ap"))
+	microsoftSpsLocal, nativeSpsLocal := SpsCountLocal()
+	microsoftSpsAzure, nativeSpsAzure := SpsCountAzure()
+	print("%-38s %-20d %d\n", "Service Principals Microsoft Default", microsoftSpsLocal, microsoftSpsAzure)
+	print("%-38s %-20d %d\n", "Service Principals This Tenant", nativeSpsLocal, nativeSpsAzure)
+	print("%-38s %-20d %d\n", "Management Groups", ObjectCountLocal("m"), ObjectCountAzure("m"))
+	print("%-38s %-20d %d\n", "Subscriptions", ObjectCountLocal("s"), ObjectCountAzure("s"))
 	builtinLocal, customLocal := RoleDefinitionCountLocal()
 	builtinAzure, customAzure := RoleDefinitionCountAzure()
-    print("%-32s %-20d %d\n", "RBAC Role Definitions BuiltIn", builtinLocal, builtinAzure)
-    print("%-32s %-20d %d\n", "RBAC Role Definitions Custom", customLocal, customAzure)
-	print("%-32s %-20d %d\n", "RBAC Role Assignments", ObjectCountLocal("a"), ObjectCountAzure("a"))
-	print("%-32s %-20d %d\n", "Subscriptions", ObjectCountLocal("s"), ObjectCountAzure("s"))
-	print("%-32s %-20d %d\n", "Management Groups", ObjectCountLocal("m"), ObjectCountAzure("m"))
-	print("%-32s %-20d %d\n", "Users", ObjectCountLocal("u"), ObjectCountAzure("u"))
-	print("%-32s %-20d %d\n", "Groups", ObjectCountLocal("g"), ObjectCountAzure("g"))
-	print("%-32s %-20d %d\n", "Applications", ObjectCountLocal("ap"), ObjectCountAzure("ap"))
-	print("%-32s %-20d %d\n", "Service Principals", ObjectCountLocal("sp"), ObjectCountAzure("sp"))
+    print("%-38s %-20d %d\n", "RBAC Role Definitions BuiltIn", builtinLocal, builtinAzure)
+    print("%-38s %-20d %d\n", "RBAC Role Definitions Custom", customLocal, customAzure)
+	print("%-38s %-20d %d\n", "RBAC Role Assignments", ObjectCountLocal("a"), ObjectCountAzure("a"))
+}
+
+func SpsCountLocal() (microsoft, native int64) {
+	// Dedicated SPs local cache counter able to discern if SP is owned by native tenant or it's a Microsoft default SP 
+	var microsoftList []interface{} = nil
+	var nativeList []interface{} = nil
+	localData := filepath.Join(confdir, tenant_id+"_"+oMap["sp"]+".json")
+    if FileUsable(localData) {
+		l := LoadFileJSON(localData) // Load cache file
+		if l != nil {
+			sps := l.([]interface{}) // Assert as JSON array type
+			for _, i := range sps {
+				x := i.(map[string]interface{}) // Assert as JSON object type
+				owner := StrVal(x["appOwnerOrganizationId"])
+				if owner == tenant_id {  // If owned by current tenant ...
+					nativeList = append(nativeList, x)
+				} else {
+					microsoftList = append(microsoftList, x)
+				}
+			}
+			return int64(len(microsoftList)), int64(len(nativeList))
+		}
+	}
+	return 0, 0
+}
+
+func SpsCountAzure() (microsoft, native int64) {
+	// Dedicated SPs Azure counter able to discern if SP is owned by native tenant or it's a Microsoft default SP 
+	var microsoftList []interface{} = nil
+	var nativeList []interface{} = nil
+	sps := GetAllObjects("sp")
+	if sps != nil {
+		for _, i := range sps {
+			x := i.(map[string]interface{}) // Assert as JSON object type
+			owner := StrVal(x["appOwnerOrganizationId"])
+			if owner == tenant_id {  // If owned by current tenant ...
+				nativeList = append(nativeList, x)
+			} else {
+				microsoftList = append(microsoftList, x)
+			}
+		}
+	}
+	return int64(len(microsoftList)), int64(len(nativeList))
 }
 
 func RoleDefinitionCountLocal() (builtin, custom int64) {
-	// Dedicated Custom role definition local counter
+	// Dedicated role definition local cache counter able to discern if role is custom to native tenant or it's an Azure BuilIn role
 	var customList []interface{} = nil
 	var builtinList []interface{} = nil
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap["d"]+".json")
@@ -53,7 +100,7 @@ func RoleDefinitionCountLocal() (builtin, custom int64) {
 }
 
 func RoleDefinitionCountAzure() (builtin, custom int64) {
-	// Dedicated Custom role definition Azure counter
+	// Dedicated role definition Azure counter able to discern if role is custom to native tenant or it's an Azure BuilIn role
 	var customList []interface{} = nil
 	var builtinList []interface{} = nil
 	definitions := GetRoleDefinitions("silent")

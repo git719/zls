@@ -12,7 +12,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "168"
+	prgver  = "169"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -63,7 +63,7 @@ func PrintUsage() {
 		"    -cr                              Dump values in credentials file\n" +
 		"    -cr  TENANT_ID CLIENT_ID SECRET  Set up secret login\n" +
 		"    -cri TENANT_ID CLIENT_ID         Set up interactive login (NOT WORKING)\n" +
-		"    -st                              List local cache count and Azure count of all X objects in tenant\n" +
+		"    -st                              List local cache count and Azure count of all objects\n" +
 		"    -tx                              Delete accessTokens cache file\n" +
 		"    -xx                              Delete ALL cache local file\n" +
 		"    -v                               Print this usage page\n")
