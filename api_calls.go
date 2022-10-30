@@ -56,7 +56,9 @@ func SpsCountLocal() (microsoft, native int64) {
 }
 
 func SpsCountAzure() (microsoft, native int64) {
-	// Dedicated SPs Azure counter able to discern if SP is owned by native tenant or it's a Microsoft default SP 
+	// Dedicated SPs Azure counter able to discern if SP is owned by native tenant or it's a Microsoft default SP
+	// NOTE: Not entirely accurate yet because function GetAllObjects still checks local cache. Need to refactor
+	// that function into 2 diff versions GetAllObjectsLocal and GetAllObjectsAzure and have this function the latter.
 	var microsoftList []interface{} = nil
 	var nativeList []interface{} = nil
 	sps := GetAllObjects("sp")
