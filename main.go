@@ -58,7 +58,7 @@ func PrintUsage() {
 		"      'sp' = Service Principals 'ap' = Applications\n" +
 		"\n" +
 		"    -ar                              List all role assignments with resolved names\n" +
-		"    -mt                              List Management Group and subcriptions tree\n" +
+		"    -mt                              List Management Group and subscriptions tree\n" +
 		"    -pags                            List all Azure AD Priviledge Access Groups\n" +
 		"    -cr                              Dump values in credentials file\n" +
 		"    -cr  TENANT_ID CLIENT_ID SECRET  Set up secret login\n" +

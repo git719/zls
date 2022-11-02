@@ -48,7 +48,7 @@ zls Azure RBAC and MS Graph listing utility v160
       'sp' = Service Principals 'ap' = Applications
 
     -ar                List all role assignments with resolved names
-    -mt                List Management Group and subcriptions tree
+    -mt                List Management Group and subscriptions tree
     -pags              List all Azure AD Priviledge Access Groups
     -tx                Delete cached accessTokens file
     -v                 Print this usage page
