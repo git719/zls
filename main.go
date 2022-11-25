@@ -59,7 +59,7 @@ func PrintUsage() {
 		"\n" +
 		"    -ar                              List all role assignments with resolved names\n" +
 		"    -mt                              List Management Group and subscriptions tree\n" +
-		"    -pags                            List all Azure AD Priviledge Access Groups\n" +
+		"    -pags                            List all Azure AD Privileged Access Groups\n" +
 		"    -cr                              Dump values in credentials file\n" +
 		"    -cr  TENANT_ID CLIENT_ID SECRET  Set up secret login\n" +
 		"    -cri TENANT_ID CLIENT_ID         Set up interactive login (NOT WORKING)\n" +
@@ -71,7 +71,7 @@ func PrintUsage() {
 }
 
 func exit(code int) {
-	os.Exit(code) // Syntactic sugar. Python is right, darn it. exit is much more beautiful to type and read than os.Exit :-)
+	os.Exit(code) // Syntactic sugar. 'exit' is much more beautiful to type and read than 'os.Exit' :-)
 }
 
 func print(format string, args ...interface{}) (n int, err error) {
