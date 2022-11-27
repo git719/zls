@@ -51,7 +51,7 @@ func PrintUsage() {
 		"    -X \"string\"        List all X objects whose name has \"string\" in it\n" +
 		"    -Xj UUID|\"string\"  List specific X or matching objects in JSON format\n" +
 		"    -X UUID            List specific X object in YAML-like human-readable format\n" +
-		"    -X <specfile>      Compare X object specfile to what's in Azure\n" +
+		"    -X <specfile>      Compare X object specification file to what's in Azure\n" +
 		"    -Xx                Delete X object cache local file\n" +
 		"\n" +
 		"    Where 'X' can be any of these object types:\n" +
@@ -60,7 +60,7 @@ func PrintUsage() {
 		"      sp = Service Principals      ap = Applications            ra = Azure AD Roles Active\n" +
 		"      rd = Azure AD Roles Defs\n" +
 		"\n" +
-		"    -ar                              List all role assignments with resolved names\n" +
+		"    -ar                              List all RBAC role assignments with resolved names\n" +
 		"    -mt                              List Management Group and subscriptions tree\n" +
 		"    -pags                            List all Azure AD Privileged Access Groups\n" +
 		"    -cr                              Dump values in credentials file\n" +
