@@ -61,7 +61,7 @@ func RemoveCacheFile(t string) {
 	case "t": // Token file is a little special: It doesn't use tenant ID
 		filePath = filepath.Join(confdir, "accessTokens.json")
 		RemoveFile(filePath)
-	case "d", "a", "s", "u", "g", "sp", "ap":
+	case "d", "a", "s", "u", "g", "sp", "ap", "ra", "rd":
 		filePath = filepath.Join(confdir, tenant_id+"_"+oMap[t]+".json")
 		RemoveFile(filePath)
 		filePath = filepath.Join(confdir, tenant_id+"_"+oMap[t]+"_deltaLink.json")

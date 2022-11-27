@@ -10,15 +10,13 @@ Why `zls`? Because three-letter names are easier to type.
 ## Requirements
 You must register a client app in your tenant and grant it the required Read permissions for all API object types this utility tries to list. Please find other sources for how to do the app reg.
 
-The utility sets up and uses a configuration directory at `$HOME/.<utility_name>` to retrieve and store the required credential parameters, and also to store local cache files. The `credentials.json` file must be formated as follows:
+The utility sets up and uses a configuration directory at `$HOME/.<utility_name>` to retrieve and store the required credential parameters, and also to store local cache files. The `credentials.yaml` file must be formatted as follows:
 ```
-{
-    "tenant_id" : "UUID",
-    "client_id" : "UUID",
-    "client_secret" : "SECRET"
-}
+tenant_id:     UUID-FOR-YOUR-TENANT
+client_id:     UUID-FOR-YOUR-READER-REGISTERED-APP
+client_secret: SECRET
 ```
-If `credentials.json` file doesn't exist, an empty skeleton one will be created that can be filled out accordingly.
+If `credentials.yaml` file doesn't exist, an empty skeleton one will be created that can be filled out accordingly.
 
 ## Getting started
 To compile, you obviously need to have GoLang installed and properly setup in your system, with `$GOPATH` set up correctly (typically at `$HOME/go`). Also setup `$GOPATH/bin/` in your `$PATH`, since that's where the executable binary will be placed.

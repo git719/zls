@@ -13,7 +13,7 @@ import (
 )
 
 func PrintCountStatus() {
-	print("Note: Counting the Azure objects may take some time.\n")
+	print("Note: Counting objects residing in Azure can take some time.\n")
 	print("%-38s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
 	print("%-38s ", "Groups")
 	print("%-20d %d\n", ObjectCountLocal("g"), ObjectCountAzure("g"))
@@ -27,6 +27,10 @@ func PrintCountStatus() {
 	print("%-20d %d\n", microsoftSpsLocal, microsoftSpsAzure)
 	print("%-38s ", "Service Principals This Tenant")
 	print("%-20d %d\n", nativeSpsLocal, nativeSpsAzure)
+	print("%-38s ", "Azure AD Roles Definitions")
+	print("%-20d %d\n", ObjectCountLocal("rd"), ObjectCountAzure("rd"))
+	print("%-38s ", "Azure AD Roles Activated")
+	print("%-20d %d\n", ObjectCountLocal("ra"), ObjectCountAzure("ra"))
 	print("%-38s ", "Management Groups")
 	print("%-20d %d\n", ObjectCountLocal("m"), ObjectCountAzure("m"))
 	print("%-38s ", "Subscriptions")
@@ -151,13 +155,20 @@ func ObjectCountAzure(t string) int64 {
 		// so we're forced to retrieve all objects then count them. For simplicity, it is
 		// best to have a dedicate function that handles all that.
 		return int64(len(GetAllObjects(t)))
-	case "u", "g", "sp", "ap":
+	case "u", "g", "sp", "ap", "ra":
 		// MS Graph API makes counting much easier with its dedicated '$count' filter
 		mg_headers["ConsistencyLevel"] = "eventual"
 		r := APIGet(mg_url+"/v1.0/"+oMap[t]+"/$count", mg_headers, nil, false)
 		if r["value"] != nil {
 			// Expect result to be a single int64 value for the count
 			return r["value"].(int64) // Assert as int64
+		}
+	case "rd":
+		// There is no $count filter option for AD role definitions so we have to get them all do length count
+		r := APIGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions", mg_headers, nil, false)
+		if r["value"] != nil {
+			rds := r["value"].([]interface{}) // Assert as JSON array type
+			return int64(len(rds))
 		}
 	}
 	return 0
@@ -204,8 +215,11 @@ func GetObjectById(t, id string) (x map[string]interface{}) {
 		x = APIGet(az_url+"/"+oMap[t]+"/"+id, az_headers, nil, false)
 	case "m":
 		x = APIGet(az_url+"/providers/Microsoft.Management/managementGroups/"+id, az_headers, nil, false)
-	case "u", "g", "sp", "ap":
-		x = APIGet(mg_url+"/beta/"+oMap[t]+"/"+id, mg_headers, nil, false)
+	case "u", "g", "sp", "ap", "ra":
+		x = APIGet(mg_url+"/v1.0/"+oMap[t]+"/"+id, mg_headers, nil, false)
+	case "rd":
+		// Again, AD role definitions are under a different area, until they are activated
+		x = APIGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions/"+id, mg_headers, nil, false)
 	}
 	return x
 }

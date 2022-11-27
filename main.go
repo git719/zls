@@ -12,7 +12,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "170"
+	prgver  = "171"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -39,6 +39,8 @@ var (
 		"g":  "groups",
 		"sp": "servicePrincipals",
 		"ap": "applications",
+		"ra": "directoryRoles",
+		"rd": "adRoleDef",          // Treated differently in each function. Yeah, this is ugly :-(
 	}
 )
 
@@ -53,9 +55,10 @@ func PrintUsage() {
 		"    -Xx                Delete X object cache local file\n" +
 		"\n" +
 		"    Where 'X' can be any of these object types:\n" +
-		"      'd'  = Role Definitions   'a'  = Role Assignments   's'  = Azure Subscriptions\n" +
-		"      'm'  = Management Groups  'u'  = Azure AD Users     'g'  = Groups             \n" +
-		"      'sp' = Service Principals 'ap' = Applications\n" +
+		"      d  = RBAC Role Definitions   a  = RBAC Role Assignments   s  = Azure Subscriptions  \n" +
+		"      m  = Management Groups       u  = Azure AD Users          g  = Azure AD Groups      \n" +
+		"      sp = Service Principals      ap = Applications            ra = Azure AD Roles Active\n" +
+		"      rd = Azure AD Roles Defs\n" +
 		"\n" +
 		"    -ar                              List all role assignments with resolved names\n" +
 		"    -mt                              List Management Group and subscriptions tree\n" +
@@ -110,7 +113,7 @@ func main() {
 		switch arg1 {
 		case "-v":
 			PrintUsage()
-		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx":
+		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-rax", "-rdx":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
 			RemoveCacheFile(t)         // Chop off the 1st 2 characters, to leverage oMap
 		case "-xx":
@@ -127,10 +130,10 @@ func main() {
 		switch arg1 {
 		case "-st":
 			PrintCountStatus()
-		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj": // Handle JSON-printing of all objects
+		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj": // Handle JSON-printing of all objects
 			t := arg1[1 : len(arg1)-1] // Single out the object type
 			PrintAllJSON(t)
-		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap": // Handle tersely printing for all objects
+		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd": // Handle tersely printing for all objects
 			t := arg1[1:] // Single out the object type
 			PrintAllTersely(t)
 		case "-ar":
@@ -153,7 +156,7 @@ func main() {
 		SetupTokens() // Remaining requests need API tokens
 
 		switch arg1 {
-		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj":
+		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
 			t := arg1[1 : len(arg1)-1] // Single out our object type letter (see oMap)
 			if ValidUUID(arg2) {
 				x := GetObjectById(t, arg2) // Get single object by ID and print in JSON format
@@ -167,7 +170,7 @@ func main() {
 					PrintJSON(x)
 				}
 			}
-		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap":
+		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd":
 			t := arg1[1:] // Single out the object type
 			if ValidUUID(arg2) {
 				x := GetObjectById(t, arg2) // Get single object by ID

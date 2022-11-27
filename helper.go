@@ -73,7 +73,16 @@ func GetAllObjects(t string) (oList []interface{}) {
 	case "m":
 		oList = GetManagementGroups()  // Get all Management Groups from Azure
 		SaveFileJSON(oList, localData) // Cache it to local file
-	case "u", "g", "sp", "ap":
+	case "rd":
+		// Azure AD Role Definitions are under 'roleManagement/directory' so we're forced to process them
+		// differently than other MS Graph objects. Microsoft, this is not pretty :-(
+		url := mg_url + "/v1.0/roleManagement/directory/roleDefinitions"
+		r := APIGet(url, nil, nil, false)
+		if r["value"] != nil {
+			oList := r["value"].([]interface{}) // Treat as JSON array type
+			SaveFileJSON(oList, localData) // Cache it to local file
+		}
+	case "u", "g", "sp", "ap", "ra":
 		// Use this file to keep track of the delta link for doing delta queries
 		// See https://docs.microsoft.com/en-us/graph/delta-query-overview
 		deltaLinkFile := filepath.Join(confdir, tenant_id+"_"+oMap[t]+"_deltaLink.json")
@@ -97,6 +106,8 @@ func GetAllObjects(t string) (oList []interface{}) {
 				url = url + "displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId"
 			case "ap":
 				url = url + "displayName,appId,requiredResourceAccess"
+			case "ra":
+				url = url + "displayName,description,roleTemplateId"
 			}
 		}
 
@@ -173,7 +184,7 @@ func GetIdNameMap(t string) (idNameMap map[string]string) {
 				// Assert them as JSON string type and add them to map
 				idNameMap[StrVal(x["subscriptionId"])] = StrVal(x["displayName"])
 			}
-		case "u", "g", "sp", "ap":
+		case "u", "g", "sp", "ap", "ra", "rd":
 			// MS Graph objects all use same Id and displayName attributes
 			if x["id"] != nil && x["displayName"] != nil {
 				// Assert them as JSON string type and add them to map
@@ -233,7 +244,7 @@ func GetMatching(t, name string) (oList []interface{}) {
 				}
 			}
 		}
-	case "s", "g", "sp", "ap":
+	case "s", "g", "sp", "ap", "ra", "rd":
 		for _, i := range GetAllObjects(t) {
 			x := i.(map[string]interface{}) // Assert JSON object type
 			if x != nil && x["displayName"] != nil {

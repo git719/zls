@@ -10,7 +10,7 @@ import (
 
 func DumpCredentials() {
 	// Dump credentials file
-	f := filepath.Join(confdir, "credentials.json")
+	f := filepath.Join(confdir, "credentials.yaml")
 	if FileExist(f) {
 		creds := LoadFileYAML(f)
 		tenant_id := StrVal(creds["tenant_id"])
@@ -25,7 +25,7 @@ func DumpCredentials() {
 
 func SetupCredentialsInterativeLogin(tenant_id, client_id string) {
 	// Set up credentials file for interactive login
-	f := filepath.Join(confdir, "credentials.json")
+	f := filepath.Join(confdir, "credentials.yaml")
 	if ValidUUID(tenant_id) && ValidUUID(client_id) {
 		content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "client_id:", client_id, "interactive:", "true")
 		if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
@@ -40,7 +40,7 @@ func SetupCredentialsInterativeLogin(tenant_id, client_id string) {
 
 func SetupCredentialsSecretLogin(tenant_id, client_id, secret string) {
 	// Set up credentials file for client_id + secret login
-	f := filepath.Join(confdir, "credentials.json")
+	f := filepath.Join(confdir, "credentials.yaml")
 	if ValidUUID(tenant_id) && ValidUUID(client_id) {
 		content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "client_id:", client_id, "client_secret:", secret)
 		if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
@@ -55,7 +55,7 @@ func SetupCredentialsSecretLogin(tenant_id, client_id, secret string) {
 
 func ReadCredentials() {
 	// Read credentials from file
-	f := filepath.Join(confdir, "credentials.json")
+	f := filepath.Join(confdir, "credentials.yaml")
 	if FileExist(f) {
 		// Read credentials file and update global variables accordingly
 		//creds := LoadFileJSON(f).(map[string]interface{}) // Assert as JSON object

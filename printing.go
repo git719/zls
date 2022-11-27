@@ -59,11 +59,12 @@ func PrintTersely(t string, x map[string]interface{}) {
 		Name := StrVal(Props["displayName"])
 		Type := MGType(StrVal(x["type"]))
 		print("%-38s  %-20s  %s\n", Id, Name, Type)
-	case "u", "g", "sp", "ap":
+	case "u", "g", "sp", "ap", "ra", "rd":
 		Id := StrVal(x["id"])
 		Name := StrVal(x["displayName"])
 		Type := StrVal(x["servicePrincipalType"])
 		AppId := StrVal(x["appId"])
+		Desc := StrVal(x["description"])
 		switch t {
 		case "u":
 			Upn := StrVal(x["userPrincipalName"])
@@ -75,6 +76,12 @@ func PrintTersely(t string, x map[string]interface{}) {
 			print("%s  %-60s %-22s %s\n", Id, Name, Type, AppId)
 		case "ap":
 			print("%s  %-60s %s\n", Id, Name, AppId)
+		case "ra":
+			print("%s  %-60s %s\n", Id, Name, Desc)
+		case "rd":
+			BuiltIn := "BuiltIn="+StrVal(x["isBuiltIn"])
+			Enabled := "Enabled="+StrVal(x["isEnabled"])
+			print("%s  %-60s  %s  %s\n", Id, Name, BuiltIn, Enabled)
 		}
 	}
 }
@@ -100,6 +107,10 @@ func PrintObject(t string, x map[string]interface{}) {
 		PrintSP(x)
 	case "ap":
 		PrintApp(x)
+	case "ra":
+		PrintAdRole(x)     // Active AD role
+	case "rd":
+		PrintAdRoleDef(x)  // Definition of AD role
 	}
 }
 
