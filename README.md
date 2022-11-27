@@ -1,7 +1,7 @@
 # zls
 Azure RBAC and MS Graph listing utility.
 
-This utility is more a proof-of-concept in using the [MSAL library for Go](https://github.com/AzureAD/microsoft-authentication-library-for-go), but can be used for casual querying of certain Azure ARM and MS Graph API objects.
+This utility is more of a _proof-of-concept_ in how to use [MSAL library for Go](https://github.com/AzureAD/microsoft-authentication-library-for-go) than anything else. However, some may find it useful to casually query certain Azure ARM and MS Graph API objects.
 
 This is the GoLang version. The Python version is called `azls` and sits within the https://github.com/git719/az repo. This version is a little snappier, and the single binary executable is easier to use without having to setup a Python environment. 
 
