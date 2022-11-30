@@ -2,6 +2,10 @@
 
 package main
 
+import (
+	"strings"
+)
+
 func PrintSP(obj map[string]interface{}) {
 	// Print service principal object in YAML-like style format
 	if obj["id"] == nil {
@@ -80,54 +84,27 @@ func PrintSP(obj map[string]interface{}) {
 	memberOf := GetObjectMemberOfs("sp", id) // For this SP object
 	PrintMemberOfs("sp", memberOf)
 
-	// Print API permissions
-	r = APIGet(mg_url+"/beta/servicePrincipals/"+id+"/appRoleAssignments", mg_headers, nil, false)
+	// Print API permissions 
+	r = APIGet(mg_url+"/v1.0/servicePrincipals/"+id+"/oauth2PermissionGrants", mg_headers, nil, false)
 	if r["value"] != nil && len(r["value"].([]interface{})) > 0 {
 		print("api_permissions:\n")
 		apiPerms := r["value"].([]interface{}) // Assert as JSON array
 
-		// Getting API app role permission name, such as Directory.Read.All, is a 2-step process:
-		// 1) Put all all the API "app role id":names pairs in a map.
-		//    We do one loop to preprocess id:names, so we can cache and speeds things up.
-		// 2) Do another loop to enumerate and print them
-
-		// Create unique list of all API IDs
-		var apiIds []string
+		// Print OAuth 2.0 scopes for each API
 		for _, i := range apiPerms {
-			api := i.(map[string]interface{}) // Assert as JSON object type
-			id := StrVal(api["resourceId"])
-			if ItemInList(id, apiIds) {
-				continue // This API ID is already in our growing list. Skip it and check the next one
+			api := i.(map[string]interface{}) // Assert as JSON object
+			apiName := "Unknown"
+			id := StrVal(api["resourceId"])   // Get API's SP to get its displayName
+			r := APIGet(mg_url+"/v1.0/servicePrincipals/"+id, mg_headers, nil, false)
+			if r["appDisplayName"] != nil {
+				apiName = StrVal(r["appDisplayName"])
 			}
-			apiIds = append(apiIds, id)
-		}
 
-		// Create unique map of all API app role ID + name pairs
-		apiRoles := make(map[string]string)
-		for _, resId := range apiIds {
-			r := APIGet(mg_url+"/beta/servicePrincipals/"+resId, mg_headers, nil, false)
-			if r["appRoles"] != nil {
-				for _, i := range r["appRoles"].([]interface{}) { // Iterate through all roles
-					role := i.(map[string]interface{}) // Assert JSON object type
-					if role["id"] != nil && role["value"] != nil {
-						apiRoles[StrVal(role["id"])] = StrVal(role["value"]) // Add entry to map
-					}
-				}
-			}
-		}
-
-		// Print them
-		for _, a := range apiPerms {
-			api := a.(map[string]interface{}) // Assert as JSON object type
-
-			apiName := StrVal(api["resourceDisplayName"]) // This API's name
-			resId := StrVal(api["resourceId"])            // This API's object id
-
-			if resId != "" {
-				pid := StrVal(api["appRoleId"]) // App role ID
-				print("  %-50s %s\n", apiName, apiRoles[pid])
-			} else {
-				print("  %-50s %s\n", apiName, "(Missing resourceId)")
+			// Print each delegated claim for this API
+			scope := StrVal(api["scope"])
+            claims := strings.Split(scope, " ")
+			for _, j := range claims {
+				print("  %-50s %s\n", apiName, j)
 			}
 		}
 	}

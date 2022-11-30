@@ -48,8 +48,7 @@ func PrintApp(obj map[string]interface{}) {
 	PrintMemberOfs("ap", memberOf)
 
 	// Print API permissions
-	// Just look under this app 'x' object attribute 'requiredResourceAccess'
-
+	// Just look under this object's 'requiredResourceAccess' attribute
 	if obj["requiredResourceAccess"] != nil && len(obj["requiredResourceAccess"].([]interface{})) > 0 {
 		print("api_permissions:\n")
 		APIs := obj["requiredResourceAccess"].([]interface{}) // Assert to JSON array
