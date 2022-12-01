@@ -101,7 +101,7 @@ func PrintSP(obj map[string]interface{}) {
 			}
 
 			// Print each delegated claim for this API
-			scope := StrVal(api["scope"])
+			scope := strings.TrimSpace(StrVal(api["scope"]))
             claims := strings.Split(scope, " ")
 			for _, j := range claims {
 				print("  %-50s %s\n", apiName, j)
