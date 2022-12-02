@@ -12,7 +12,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "172"
+	prgver  = "173"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -79,6 +79,11 @@ func exit(code int) {
 
 func print(format string, args ...interface{}) (n int, err error) {
 	return fmt.Printf(format, args...) // More syntactic sugar
+}
+
+func die(format string, args ...interface{}) {
+	fmt.Printf(format, args...) // Same as print function but does not return
+	os.Exit(1)                  // Always exit with return code 1
 }
 
 func sprint(format string, args ...interface{}) string {

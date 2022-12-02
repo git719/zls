@@ -19,16 +19,14 @@ func TestFunction() {
 	// f := filepath.Join("/Users/user1/obj.json")
 	// l := LoadFileJSON(f)
 	// if l == nil {
-	// 	print("Error loading file\n")
-	// 	exit(0)
+	// 	die("Error loading file\n")
 	// }
 	// obj := l.(map[string]interface{})
 
 	// f = filepath.Join("/Users/user1/obj2.json")
 	// l = LoadFileJSON(f)
 	// if l == nil {
-	// 	print("Error loading file\n")
-	// 	exit(0)
+	// 	die("Error loading file\n")
 	// }
 	// obj2 := l.(map[string]interface{})
 

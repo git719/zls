@@ -79,8 +79,7 @@ func PrintApp(obj map[string]interface{}) {
 			SPs := r["value"].([]interface{})
 
 			if len(SPs) > 1 {
-				print("  %-50s %s\n", resAppId, "Error. Multiple SPs for this AppId. Aborting.")
-				exit(1)
+				die("  %-50s %s\n", resAppId, "Error. Multiple SPs for this AppId. Aborting.")
 			}
 
 			sp := SPs[0].(map[string]interface{}) // The only expected entry, asserted as JSON object type

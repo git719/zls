@@ -32,8 +32,7 @@ func SetupCredentialsInterativeLogin(tenant_id, client_id string) {
 			panic(err.Error())
 		}
 	} else {
-		print("Error. TENANT_ID and/or CLIENT_ID are invalid UUIDs.\n")
-		exit(1)
+		die("Error. TENANT_ID and/or CLIENT_ID are invalid UUIDs.\n")
 	}
 	print("Updated credentials file: %s\n", f)
 }
@@ -47,8 +46,7 @@ func SetupCredentialsSecretLogin(tenant_id, client_id, secret string) {
 			panic(err.Error())
 		}
 	} else {
-		print("Error. TENANT_ID and/or CLIENT_ID are invalid UUIDs.\n")
-		exit(1)
+		die("Error. TENANT_ID and/or CLIENT_ID are invalid UUIDs.\n")
 	}
 	print("Updated credentials file: %s\n", f)
 }
@@ -61,31 +59,26 @@ func ReadCredentials() {
 		//creds := LoadFileJSON(f).(map[string]interface{}) // Assert as JSON object
 		creds := LoadFileYAML(f)
 		if creds == nil {
-			print("Unable to load/parse file '%s'\n", f)
-			exit(1)
+			die("Unable to load/parse file '%s'\n", f)
 		}
 		tenant_id = StrVal(creds["tenant_id"])
 		if !ValidUUID(tenant_id) {
-			print("tenant_id '%s' in '%s' is not a valid UUID\n", tenant_id, f)
-			exit(1)
+			die("tenant_id '%s' in '%s' is not a valid UUID\n", tenant_id, f)
 		}
 		client_id = StrVal(creds["client_id"])
 		if !ValidUUID(client_id) {
-			print("client_id '%s' in '%s' is not a valid UUID\n", client_id, f)
-			exit(1)
+			die("client_id '%s' in '%s' is not a valid UUID\n", client_id, f)
 		}
 		interactive = strings.ToLower(StrVal(creds["interactive"]))
 		if interactive != "true" {
 			client_secret = StrVal(creds["client_secret"])
 			if client_secret == "" {
-				print("client_secret in '%s' is blank\n", f)
-				exit(1)
+				die("client_secret in '%s' is blank\n", f)
 			}
 		}
 	} else {
-		print("Missing credentials file: '%s'\n", f)
-		print("Please rerun program using '-cr' or '-cri' option to specify credentials.\n")
-		exit(1)
+		die("Missing credentials file: '%s'\n", f +
+			"Please rerun program using '-cr' or '-cri' option to specify credentials.\n")
 	}
 }
 
