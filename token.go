@@ -23,6 +23,7 @@ func GetToken(scopes []string) (token string, err error) {
 
 	if interactive == "true" {
 		// New public app, for interactive login
+		print("%s\n%s\n", client_id, authority_url)
 		app, err := public.New(client_id,
 			public.WithAuthority(authority_url),
 			public.WithCache(cacheAccessor))
@@ -34,6 +35,11 @@ func GetToken(scopes []string) (token string, err error) {
 		if err != nil {
 			// Else, get a new token
 			result, err = app.AcquireTokenInteractive(context.Background(), scopes)
+			// AcquireTokenInteractive acquires a security token from the authority using the default web browser to select the account.
+			// See https://github.com/AzureAD/microsoft-authentication-library-for-go/blob/dev/apps/public/public.go
+			
+			PrintJSON(result)
+
 			if err != nil {
 				panic(err.Error())
 			}
@@ -55,6 +61,8 @@ func GetToken(scopes []string) (token string, err error) {
 		if err != nil {
 			// Else, get a new token
 			result, err = app.AcquireTokenByCredential(context.Background(), scopes)
+			// AcquireTokenByCredential acquires a security token from the authority, using the client credentials grant.
+            // See https://github.com/AzureAD/microsoft-authentication-library-for-go/blob/dev/apps/confidential/confidential.go
 			if err != nil {
 				panic(err.Error())
 			}

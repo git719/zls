@@ -65,7 +65,7 @@ func PrintUsage() {
 		"    -pags                            List all Azure AD Privileged Access Groups\n" +
 		"    -cr                              Dump values in credentials file\n" +
 		"    -cr  TENANT_ID CLIENT_ID SECRET  Set up secret login\n" +
-		"    -cri TENANT_ID CLIENT_ID         Set up interactive login (NOT WORKING)\n" +
+		"    -cri TENANT_ID UPN               Set up interactive login (NOT WORKING)\n" +
 		"    -st                              List local cache count and Azure count of all objects\n" +
 		"    -tx                              Delete accessTokens cache file\n" +
 		"    -xx                              Delete ALL cache local file\n" +
