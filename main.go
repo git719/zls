@@ -6,13 +6,12 @@ import (
 	"os"
 	"fmt"
 	"path/filepath"
-	"strings"
 )
 
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "173"
+	prgver  = "174"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -24,6 +23,7 @@ var (
 	client_id     = ""
 	client_secret = ""
 	interactive   = ""
+	username      = ""
 	authority_url = ""
 	mg_token      = ""
 	mg_headers    map[string]string
@@ -60,16 +60,16 @@ func PrintUsage() {
 		"      sp = Service Principals      ap = Applications            ra = Azure AD Roles Active\n" +
 		"      rd = Azure AD Roles Defs\n" +
 		"\n" +
-		"    -ar                              List all RBAC role assignments with resolved names\n" +
-		"    -mt                              List Management Group and subscriptions tree\n" +
-		"    -pags                            List all Azure AD Privileged Access Groups\n" +
-		"    -cr                              Dump values in credentials file\n" +
-		"    -cr  TENANT_ID CLIENT_ID SECRET  Set up secret login\n" +
-		"    -cri TENANT_ID UPN               Set up interactive login (NOT WORKING)\n" +
-		"    -st                              List local cache count and Azure count of all objects\n" +
-		"    -tx                              Delete accessTokens cache file\n" +
-		"    -xx                              Delete ALL cache local file\n" +
-		"    -v                               Print this usage page\n")
+		"    -ar                               List all RBAC role assignments with resolved names\n" +
+		"    -mt                               List Management Group and subscriptions tree\n" +
+		"    -pags                             List all Azure AD Privileged Access Groups\n" +
+		"    -st                               List local cache count and Azure count of all objects\n" +
+		"    -cr                               Dump values in credentials file\n" +
+		"    -cr  TENANT_ID CLIENT_ID SECRET   Set up MSAL automated client_id + secret login\n" +
+		"    -cri TENANT_ID USERNAME           Set up MSAL interactive browser popup login\n" +
+		"    -tx                               Delete MSAL accessTokens cache file\n" +
+		"    -xx                               Delete ALL cache local file\n" +
+		"    -v                                Print this usage page\n")
 	exit(0)
 }
 
@@ -92,11 +92,9 @@ func sprint(format string, args ...interface{}) string {
 
 func main() {
 	// TestFunction() // DEBUG
-
 	numberOfArguments := len(os.Args[1:]) // Not including the program itself
 	if numberOfArguments < 1 || numberOfArguments > 4 {
-		// Don't accept less than 1 or more than 4 arguments
-		PrintUsage()
+		PrintUsage()  // Don't accept less than 1 or more than 4 arguments
 	}
 
 	// Set up program configuration directory
@@ -110,29 +108,20 @@ func main() {
 	// Process given arguments
 	switch numberOfArguments {
 	case 1:
-		arg1 := strings.ToLower(os.Args[1]) // Always treat 1st argument as Lowercase, to ease comparisons
-
-		ReadCredentials() // Set up tenant ID and credentials
-
-		// First process these simple requests that don't need API tokens
-		switch arg1 {
-		case "-v":
+		arg1 := os.Args[1]
+		switch arg1 {  // First, process requests that don't need Credentials or API tokens
+	    case "-v":
 			PrintUsage()
 		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-rax", "-rdx":
-			t := arg1[1 : len(arg1)-1] // Single out the object type
-			RemoveCacheFile(t)         // Chop off the 1st 2 characters, to leverage oMap
+			t := arg1[1 : len(arg1)-1]  // Single out the object type
+			RemoveCacheFile(t)          // Chop off the 1st 2 characters, to leverage oMap
 		case "-xx":
 			RemoveCacheFile("all")
+		}
+		SetupApiTokens()
+		switch arg1 {
 		case "-cr":
 			DumpCredentials()
-		}
-
-		SetupTokens() // Remaining requests need API tokens
-
-		// TestFunction() // DEBUG
-
-		// Handle the three(3) primary single-argument list functions for all object types
-		switch arg1 {
 		case "-st":
 			PrintCountStatus()
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj": // Handle JSON-printing of all objects
@@ -150,16 +139,12 @@ func main() {
 		case "-z":
 			DumpVariables()
 		default:
-			print("No such option.\n")
+			PrintUsage()
 		}
-
 	case 2:
-		arg1 := strings.ToLower(os.Args[1])
+		arg1 := os.Args[1]
 		arg2 := os.Args[2]
-
-		ReadCredentials()
-		SetupTokens() // Remaining requests need API tokens
-
+		SetupApiTokens()
 		switch arg1 {
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
 			t := arg1[1 : len(arg1)-1] // Single out our object type letter (see oMap)
@@ -195,33 +180,29 @@ func main() {
 				}
 			}
 		default:
-			print("No such option.\n")
+			PrintUsage()
 		}
-
 	case 3:
-		arg1 := strings.ToLower(os.Args[1])
+		arg1 := os.Args[1]
 		arg2 := os.Args[2]
 		arg3 := os.Args[3]
-
 		switch arg1 {
 		case "-cri":
-			SetupCredentialsInterativeLogin(arg2, arg3)
+			SetupInterativeLogin(arg2, arg3)
 		default:
-			print("No such option.\n")
+			PrintUsage()
 		}
-
 	case 4:
-		arg1 := strings.ToLower(os.Args[1])
+		arg1 := os.Args[1]
 		arg2 := os.Args[2]
 		arg3 := os.Args[3]
 		arg4 := os.Args[4]
-
 		switch arg1 {
 		case "-cr":
-			SetupCredentialsSecretLogin(arg2, arg3, arg4)
+			SetupAutomatedLogin(arg2, arg3, arg4)
 		default:
-			print("No such option.\n")
+			PrintUsage()
 		}
 	}
-	os.Exit(0)
+	exit(0)
 }

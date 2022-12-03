@@ -4,25 +4,6 @@ package main
 
 import "log"
 
-func DumpVariables() {
-	// Pretty print all special variables
-	print("%-16s %s\n%-16s %s\n%-16s %s\n%-16s %s\n%-16s %s\n%-16s %s\n",
-	    "tenant_id:", tenant_id,
-		"client_id:", client_id,
-	    "client_secret:", client_secret,
-		"authority_url:", authority_url,
-		"mg_url:", mg_url,
-		"az_url:", az_url)
-	print("mg_headers:\n")
-	for k, v := range mg_headers {
-		print("  %-14s %s\n", StrVal(k) + ":", StrVal(v))
-	}
-	print("az_headers:\n")
-	for k, v := range az_headers {
-		print("  %-14s %s\n", StrVal(k) + ":", StrVal(v))
-	}
-}
-
 func PrintAllTersely(t string) {
 	// List tersely all object of type t
 	for _, i := range GetAllObjects(t) { // Iterate through all objects

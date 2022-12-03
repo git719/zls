@@ -8,95 +8,116 @@ import (
 	"strings"
 )
 
-func DumpCredentials() {
-	// Dump credentials file
-	f := filepath.Join(confdir, "credentials.yaml")
-	if FileExist(f) {
-		creds := LoadFileYAML(f)
-		tenant_id := StrVal(creds["tenant_id"])
-		client_id := StrVal(creds["client_id"])
-		client_secret := StrVal(creds["client_secret"])
-		interactive := StrVal(creds["interactive"])
-		print("%-14s %s\n", "tenant_id:", tenant_id)
-		print("%-14s %s\n", "client_id:", client_id)
-		if interactive == "true" {
-			print("%-14s %s\n", "interactive:", interactive)
-		} else {
-			print("%-14s %s\n", "client_secret:", client_secret)
-		}
-		exit(1)
+func DumpVariables() {
+	// Dump essential global variables
+	print("%-16s %s\n", "tenant_id:", tenant_id)
+    if interactive == "true" {
+		print("%-16s %s\n", "username:", username)	
+		print("%-16s %s\n", "interactive:", "true")	
+	} else {
+		print("%-16s %s\n", "client_id:", client_id)
+		print("%-16s %s\n", "client_secret:", client_secret)	
 	}
+	print("%-16s %s\n%-16s %s\n%-16s %s\n", "authority_url:", authority_url, "mg_url:", mg_url, "az_url:", az_url)
+	print("mg_headers:\n")
+	for k, v := range mg_headers {
+		print("  %-14s %s\n", StrVal(k) + ":", StrVal(v))
+	}
+	print("az_headers:\n")
+	for k, v := range az_headers {
+		print("  %-14s %s\n", StrVal(k) + ":", StrVal(v))
+	}
+	exit(1)
 }
 
-func SetupCredentialsInterativeLogin(tenant_id, client_id string) {
+func DumpCredentials() {
+	// Dump credentials file
+	creds_file := filepath.Join(confdir, "credentials.yaml")
+	creds := LoadFileYAML(creds_file)
+	print("%-14s %s\n", "tenant_id:", StrVal(creds["tenant_id"]))
+	if strings.ToLower(StrVal(creds["interactive"])) == "true" {
+		print("%-14s %s\n", "username:", StrVal(creds["username"]))
+		print("%-14s %s\n", "interactive:", "true")
+	} else {
+		print("%-14s %s\n", "client_id:", StrVal(creds["client_id"]))
+		print("%-14s %s\n", "client_secret:", StrVal(creds["client_secret"]))
+	}
+	exit(1)
+}
+
+func SetupInterativeLogin(tenant_id, username string) {
 	// Set up credentials file for interactive login
 	f := filepath.Join(confdir, "credentials.yaml")
 	if !ValidUUID(tenant_id) {
-		die("Error. TENANT_ID is an invalid UUIDs.\n")
+		die("Error. TENANT_ID is an invalid UUIs.\n")
 	}
-	content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "client_id:", client_id, "interactive:", "true")
+	content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "username:", username, "interactive:", "true")
 	if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
 		panic(err.Error())
 	}
 	print("[%s] Updated credentials\n", f)
 }
 
-func SetupCredentialsSecretLogin(tenant_id, client_id, secret string) {
+func SetupAutomatedLogin(tenant_id, client_id, secret string) {
 	// Set up credentials file for client_id + secret login
 	f := filepath.Join(confdir, "credentials.yaml")
-	if ValidUUID(tenant_id) && ValidUUID(client_id) {
-		content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "client_id:", client_id, "client_secret:", secret)
-		if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
-			panic(err.Error())
-		}
-	} else {
-		die("Error. TENANT_ID and/or CLIENT_ID are invalid UUIDs.\n")
+	if !ValidUUID(tenant_id) {
+		die("Error. TENANT_ID is an invalid UUIs.\n")
+	}
+	if !ValidUUID(client_id) {
+		die("Error. CLIENT_ID is an invalid UUIs.\n")
+	}
+	content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "client_id:", client_id, "client_secret:", secret)
+	if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
+		panic(err.Error())
 	}
 	print("[%s] Updated credentials\n", f)
 }
 
-func ReadCredentials() {
-	// Read credentials from file
-	f := filepath.Join(confdir, "credentials.yaml")
-	if FileExist(f) {
-		// Read credentials file and update global variables accordingly
-		//creds := LoadFileJSON(f).(map[string]interface{}) // Assert as JSON object
-		creds := LoadFileYAML(f)
-
-		// Note we're updating global variables
-		tenant_id = StrVal(creds["tenant_id"])
-		client_id = StrVal(creds["client_id"])
-		interactive = strings.ToLower(StrVal(creds["interactive"]))
-
-		if !ValidUUID(tenant_id) {
-			die("[%s] tenant_id '%s' is not a valid UUID\n", f, tenant_id)
-		}
-		if interactive != "true" {
-			client_secret = StrVal(creds["client_secret"])
-			if !ValidUUID(client_id) || client_secret == "" {
-				die("[%s] client_id '%s' is not a valid UUID\n", client_id, f)
-			}	
-		}
-	} else {
-		die("Missing credentials file: '%s'\n", f +
+func SetupCredentials() {
+	// Read credentials file and set up authentication parameters as global variables
+	creds_file := filepath.Join(confdir, "credentials.yaml")
+	if FileNotExist(creds_file) && FileSize(creds_file) < 1 {
+		die("Missing credentials file: '%s'\n", creds_file +
 			"Please rerun program using '-cr' or '-cri' option to specify credentials.\n")
+	}
+	creds := LoadFileYAML(creds_file)
+
+	// Note we're updating global variables
+	tenant_id = StrVal(creds["tenant_id"])
+	if !ValidUUID(tenant_id) {
+		die("[%s] tenant_id '%s' is not a valid UUID\n", creds_file, tenant_id)
+	}
+	interactive = strings.ToLower(StrVal(creds["interactive"]))
+	if interactive == "true" {
+		username = strings.ToLower(StrVal(creds["username"]))
+	} else {
+		client_id = StrVal(creds["client_id"])
+		if !ValidUUID(client_id) {
+			die("[%s] client_id '%s' is not a valid UUID\n", creds_file, client_id)
+		}	
+		client_secret = StrVal(creds["client_secret"])
+		if client_secret == "" {
+			die("[%s] client_secret is blank\n", creds_file)
+		}	
 	}
 }
 
-func SetupTokens() {
-	// Initialize global variables and grab tokens for each API
+func SetupApiTokens() {
+	// Initialize necessary global variables, acquire all API tokens, and set them up for use
+	SetupCredentials()  // Sets up tenant ID, client ID, authentication method, etc
 	authority_url = "https://login.microsoftonline.com/" + tenant_id
 
-	// For Azure Resource Management (ARM) API calls
+	// Get token for Azure Resource Management (ARM) API calls
+	az_scope := []string{az_url + "/.default"}  // List of case-sensitive URLs strings
 	// Scope '/.default' uses whatever static permissions are defined for the SP being used
-	az_scope := []string{az_url + "/.default"}
 	az_token, _ = GetToken(az_scope)
 	az_headers = map[string]string{ // Default headers for ARM calls
 		"Authorization": "Bearer " + az_token,
 		"Content-Type":  "application/json",
 	}
 
-	// For MS Graph (MG) API calls
+	// Get token for MS Graph (MG) API calls
 	mg_scope := []string{mg_url + "/.default"}
 	mg_token, _ = GetToken(mg_scope)
 	mg_headers = map[string]string{ // Default headers for MG calls
