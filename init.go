@@ -108,20 +108,18 @@ func SetupApiTokens() {
 	SetupCredentials()  // Sets up tenant ID, client ID, authentication method, etc
 	authority_url = "https://login.microsoftonline.com/" + tenant_id
 
-	// Get token for Azure Resource Management (ARM) API calls
-	az_scope := []string{az_url + "/.default"}  // List of case-sensitive URLs strings
-	// Scope '/.default' uses whatever static permissions are defined for the SP being used
-	az_token, _ = GetToken(az_scope)
-	az_headers = map[string]string{ // Default headers for ARM calls
-		"Authorization": "Bearer " + az_token,
-		"Content-Type":  "application/json",
-	}
+	// This utility calls 2 different resources, the Azure Resource Management (ARM) and MS Graph APIs, and each needs
+	// its own separate token. The Microsoft identity platform does not allow you to get a token for several resources at once.
+	// See https://learn.microsoft.com/en-us/azure/active-directory/develop/msal-net-user-gets-consent-for-multiple-resources
 
-	// Get token for MS Graph (MG) API calls
+	az_scope := []string{az_url + "/.default"}  // The scope is a slice of strings
+	// Appending '/.default' will allow using all static and consented permissions of the identity in use
+	// See https://learn.microsoft.com/en-us/azure/active-directory/develop/msal-v1-app-scopes
+	az_token, _ = GetToken(az_scope)  // Note, these are 2 global variable we are updating!
+	az_headers = map[string]string{ "Authorization": "Bearer " + az_token, "Content-Type":  "application/json", }
+	
+	// Rinse, repeat for MS Graph access	
 	mg_scope := []string{mg_url + "/.default"}
 	mg_token, _ = GetToken(mg_scope)
-	mg_headers = map[string]string{ // Default headers for MG calls
-		"Authorization": "Bearer " + mg_token,
-		"Content-Type":  "application/json",
-	}
+	mg_headers = map[string]string{"Authorization": "Bearer " + mg_token, "Content-Type":  "application/json", 	}
 }
