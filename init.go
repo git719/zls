@@ -122,4 +122,6 @@ func SetupApiTokens() {
 	mg_scope := []string{mg_url + "/.default"}
 	mg_token, _ = GetToken(mg_scope)
 	mg_headers = map[string]string{"Authorization": "Bearer " + mg_token, "Content-Type":  "application/json", 	}
+
+	// You would get other API tokens here ...
 }

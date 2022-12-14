@@ -11,7 +11,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "175"
+	prgver  = "176"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -109,17 +109,17 @@ func main() {
 	switch numberOfArguments {
 	case 1:
 		arg1 := os.Args[1]
-		switch arg1 {  // First, process requests that don't need Credentials or API tokens
+		switch arg1 {     // First, process 1-arg requests that don't need credentials and API tokens set up
 	    case "-v":
 			PrintUsage()
+		}
+		SetupApiTokens()  // The rest do need global credentials API tokens to be available
+		switch arg1 {
 		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-rax", "-rdx":
 			t := arg1[1 : len(arg1)-1]  // Single out the object type
 			RemoveCacheFile(t)          // Chop off the 1st 2 characters, to leverage oMap
 		case "-xx":
 			RemoveCacheFile("all")
-		}
-		SetupApiTokens()
-		switch arg1 {
 		case "-cr":
 			DumpCredentials()
 		case "-st":
