@@ -3,14 +3,33 @@
 package main
 
 import (
-	"log"
+	"os"
+	"fmt"
+	"log"	
 	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-func ValidUUID(s string) bool {
+func exit(code int) {
+	os.Exit(code)       // Syntactic sugar. Easier to type
+}
+
+func print(format string, args ...interface{}) (n int, err error) {
+	return fmt.Printf(format, args...) // More syntactic sugar
+}
+
+func die(format string, args ...interface{}) {
+	fmt.Printf(format, args...) // Same as print function but does not return
+	os.Exit(1)                  // Always exit with return code 1
+}
+
+func sprint(format string, args ...interface{}) string {
+	return fmt.Sprintf(format, args...)	// More syntactic sugar
+}
+
+func ValidUuid(s string) bool {
 	_, err := uuid.Parse(s)
 	return err == nil
 }
@@ -47,7 +66,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 	if FileUsable(localData) {
 		cacheFileEpoc := int64(FileModTime(localData))
 		cacheFileAge = int64(time.Now().Unix()) - cacheFileEpoc
-		l := LoadFileJSON(localData) // Load cache file
+		l := LoadFileJson(localData) // Load cache file
 		if l != nil {
 			oList = l.([]interface{}) // Get cached objects
 			if (t == "d" || t == "a" || t == "s" || t == "m") && cacheFileAge < cachePeriod {
@@ -63,16 +82,16 @@ func GetAllObjects(t string) (oList []interface{}) {
 	switch t {
 	case "d":
 		oList = GetRoleDefinitions("verbose")   // Get all role definitions from Azure
-		SaveFileJSON(oList, localData) // Cache it to local file
+		SaveFileJson(oList, localData) // Cache it to local file
 	case "a":
 		oList = GetRoleAssignments()   // Get all role assignments from Azure
-		SaveFileJSON(oList, localData) // Cache it to local file
+		SaveFileJson(oList, localData) // Cache it to local file
 	case "s":
 		oList = GetSubscriptions()     // Get all subscriptions from Azure
-		SaveFileJSON(oList, localData) // Cache it to local file
+		SaveFileJson(oList, localData) // Cache it to local file
 	case "m":
 		oList = GetManagementGroups()  // Get all Management Groups from Azure
-		SaveFileJSON(oList, localData) // Cache it to local file
+		SaveFileJson(oList, localData) // Cache it to local file
 	case "rd":
 		// Azure AD Role Definitions are under 'roleManagement/directory' so we're forced to process them
 		// differently than other MS Graph objects. Microsoft, this is not pretty :-(
@@ -80,7 +99,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 		r := APIGet(url, nil, nil, false)
 		if r["value"] != nil {
 			oList := r["value"].([]interface{}) // Treat as JSON array type
-			SaveFileJSON(oList, localData) // Cache it to local file
+			SaveFileJson(oList, localData) // Cache it to local file
 		}
 	case "u", "g", "sp", "ap", "ra":
 		// Use this file to keep track of the delta link for doing delta queries
@@ -93,7 +112,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 		if FileUsable(deltaLinkFile) && len(oList) > 0 {
 			// log.Println("Delta query") // DEBUG
 			fullQuery = false
-			deltaLinkMap = LoadFileJSON(deltaLinkFile).(map[string]interface{}) // Assert string map
+			deltaLinkMap = LoadFileJson(deltaLinkFile).(map[string]interface{}) // Assert string map
 			url = StrVal(deltaLinkMap["@odata.deltaLink"])                      // Delta URL
 		} else {
 			// log.Println("Full query") // DEBUG
@@ -138,7 +157,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 			if r["@odata.deltaLink"] != nil {
 				// If deltaLink appears it means we're done retrieving initial set and we can break out of for-loop
 				deltaLinkMap = map[string]interface{}{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
-				SaveFileJSON(deltaLinkMap, deltaLinkFile) // Save new deltaLink for next call
+				SaveFileJson(deltaLinkMap, deltaLinkFile) // Save new deltaLink for next call
 
 				// print("\nLocal count = %d (before merge/cleanup)\n", len(oList))
 				// print("Delta count = %d\n", len(deltaSet))
@@ -149,7 +168,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 				// print("Local count = %d (after merge/cleanup)\n", len(oList))
 				// print("Azure count = %d\n", azureCount)
 
-				SaveFileJSON(oList, localData) // Cache it to local file
+				SaveFileJson(oList, localData) // Cache it to local file
 				break                          // from infinite for-loop
 			}
 			r = APIGet(StrVal(r["@odata.nextLink"]), headers, nil, false) // Get next batch

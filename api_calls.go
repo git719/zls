@@ -51,7 +51,7 @@ func SpsCountLocal() (microsoft, native int64) {
 	var nativeList []interface{} = nil
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap["sp"]+".json")
     if FileUsable(localData) {
-		l := LoadFileJSON(localData) // Load cache file
+		l := LoadFileJson(localData) // Load cache file
 		if l != nil {
 			sps := l.([]interface{}) // Assert as JSON array type
 			for _, i := range sps {
@@ -96,7 +96,7 @@ func RoleDefinitionCountLocal() (builtin, custom int64) {
 	var builtinList []interface{} = nil
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap["d"]+".json")
     if FileUsable(localData) {
-		l := LoadFileJSON(localData) // Load cache file
+		l := LoadFileJson(localData) // Load cache file
 		if l != nil {
 			definitions := l.([]interface{}) // Assert as JSON array type
 			for _, i := range definitions {
@@ -138,7 +138,7 @@ func ObjectCountLocal(t string) int64 {
 	var oList []interface{} = nil // Start with an empty list
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap[t]+".json") // Define local data store file
     if FileUsable(localData) {
-		l := LoadFileJSON(localData) // Load cache file
+		l := LoadFileJson(localData) // Load cache file
 		if l != nil {
 			oList = l.([]interface{})
 			return int64(len(oList))

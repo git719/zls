@@ -4,14 +4,13 @@ package main
 
 import (
 	"os"
-	"fmt"
 	"path/filepath"
 )
 
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "176"
+	prgver  = "177"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -29,8 +28,7 @@ var (
 	mg_headers    map[string]string
 	az_token      = ""
 	az_headers    map[string]string
-	// String map for each ARM and MG object type to help generesize many of the functions
-	oMap = map[string]string{
+	oMap = map[string]string{	    // String map to help generesize many of the functions
 		"d":  "roleDefinitions",
 		"a":  "roleAssignments",
 		"s":  "subscriptions",
@@ -64,6 +62,8 @@ func PrintUsage() {
 		"    -mt                               List Management Group and subscriptions tree\n" +
 		"    -pags                             List all Azure AD Privileged Access Groups\n" +
 		"    -st                               List local cache count and Azure count of all objects\n" +
+		"\n" +
+		"    -z                                Dump variables in running program\n" +
 		"    -cr                               Dump values in credentials file\n" +
 		"    -cr  TENANT_ID CLIENT_ID SECRET   Set up MSAL automated client_id + secret login\n" +
 		"    -cri TENANT_ID USERNAME           Set up MSAL interactive browser popup login\n" +
@@ -71,23 +71,6 @@ func PrintUsage() {
 		"    -xx                               Delete ALL cache local file\n" +
 		"    -v                                Print this usage page\n")
 	exit(0)
-}
-
-func exit(code int) {
-	os.Exit(code) // Syntactic sugar. 'exit' is much more beautiful to type and read than 'os.Exit' :-)
-}
-
-func print(format string, args ...interface{}) (n int, err error) {
-	return fmt.Printf(format, args...) // More syntactic sugar
-}
-
-func die(format string, args ...interface{}) {
-	fmt.Printf(format, args...) // Same as print function but does not return
-	os.Exit(1)                  // Always exit with return code 1
-}
-
-func sprint(format string, args ...interface{}) string {
-	return fmt.Sprintf(format, args...)	// More syntactic sugar
 }
 
 func main() {
@@ -126,7 +109,7 @@ func main() {
 			PrintCountStatus()
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj": // Handle JSON-printing of all objects
 			t := arg1[1 : len(arg1)-1] // Single out the object type
-			PrintAllJSON(t)
+			PrintAllJson(t)
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd": // Handle tersely printing for all objects
 			t := arg1[1:] // Single out the object type
 			PrintAllTersely(t)
@@ -148,21 +131,21 @@ func main() {
 		switch arg1 {
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
 			t := arg1[1 : len(arg1)-1] // Single out our object type letter (see oMap)
-			if ValidUUID(arg2) {
+			if ValidUuid(arg2) {
 				x := GetObjectById(t, arg2) // Get single object by ID and print in JSON format
-				PrintJSON(x)
+				PrintJson(x)
 			} else {
 				oList := GetMatching(t, arg2) // Get all matching objects
 				if len(oList) > 1 {           // Print all matching objects as JSON
-					PrintJSON(oList)
+					PrintJson(oList)
 				} else if len(oList) > 0 { // Print single matching object as JSON
 					x := oList[0].(map[string]interface{})
-					PrintJSON(x)
+					PrintJson(x)
 				}
 			}
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd":
 			t := arg1[1:] // Single out the object type
-			if ValidUUID(arg2) {
+			if ValidUuid(arg2) {
 				x := GetObjectById(t, arg2) // Get single object by ID
 				PrintObject(t, x)           // Print in YAML-like format
 			} else if FileExist(arg2) && FileSize(arg2) > 0 {

@@ -33,7 +33,7 @@ func DumpVariables() {
 func DumpCredentials() {
 	// Dump credentials file
 	creds_file := filepath.Join(confdir, "credentials.yaml")
-	creds := LoadFileYAML(creds_file)
+	creds := LoadFileYaml(creds_file)
 	print("%-14s %s\n", "tenant_id:", StrVal(creds["tenant_id"]))
 	if strings.ToLower(StrVal(creds["interactive"])) == "true" {
 		print("%-14s %s\n", "username:", StrVal(creds["username"]))
@@ -48,7 +48,7 @@ func DumpCredentials() {
 func SetupInterativeLogin(tenant_id, username string) {
 	// Set up credentials file for interactive login
 	f := filepath.Join(confdir, "credentials.yaml")
-	if !ValidUUID(tenant_id) {
+	if !ValidUuid(tenant_id) {
 		die("Error. TENANT_ID is an invalid UUIs.\n")
 	}
 	content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "username:", username, "interactive:", "true")
@@ -61,10 +61,10 @@ func SetupInterativeLogin(tenant_id, username string) {
 func SetupAutomatedLogin(tenant_id, client_id, secret string) {
 	// Set up credentials file for client_id + secret login
 	f := filepath.Join(confdir, "credentials.yaml")
-	if !ValidUUID(tenant_id) {
+	if !ValidUuid(tenant_id) {
 		die("Error. TENANT_ID is an invalid UUIs.\n")
 	}
-	if !ValidUUID(client_id) {
+	if !ValidUuid(client_id) {
 		die("Error. CLIENT_ID is an invalid UUIs.\n")
 	}
 	content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "client_id:", client_id, "client_secret:", secret)
@@ -81,11 +81,11 @@ func SetupCredentials() {
 		die("Missing credentials file: '%s'\n", creds_file +
 			"Please rerun program using '-cr' or '-cri' option to specify credentials.\n")
 	}
-	creds := LoadFileYAML(creds_file)
+	creds := LoadFileYaml(creds_file)
 
 	// Note we're updating global variables
 	tenant_id = StrVal(creds["tenant_id"])
-	if !ValidUUID(tenant_id) {
+	if !ValidUuid(tenant_id) {
 		die("[%s] tenant_id '%s' is not a valid UUID\n", creds_file, tenant_id)
 	}
 	interactive = strings.ToLower(StrVal(creds["interactive"]))
@@ -93,7 +93,7 @@ func SetupCredentials() {
 		username = strings.ToLower(StrVal(creds["username"]))
 	} else {
 		client_id = StrVal(creds["client_id"])
-		if !ValidUUID(client_id) {
+		if !ValidUuid(client_id) {
 			die("[%s] client_id '%s' is not a valid UUID\n", creds_file, client_id)
 		}	
 		client_secret = StrVal(creds["client_secret"])

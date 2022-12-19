@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func LoadFileJSON(filePath string) (jsonObject interface{}) {
+func LoadFileJson(filePath string) (jsonObject interface{}) {
 	// Read/load/decode given filePath as some JSON object
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -30,7 +30,7 @@ func LoadFileJSON(filePath string) (jsonObject interface{}) {
 	return jsonObject
 }
 
-func SaveFileJSON(jsonObject interface{}, filePath string) {
+func SaveFileJson(jsonObject interface{}, filePath string) {
 	// Save given JSON object to given filePath
 	jsonData, err := json.Marshal(jsonObject)
 	if err != nil {
@@ -42,7 +42,7 @@ func SaveFileJSON(jsonObject interface{}, filePath string) {
 	}
 }
 
-func PrintJSON(jsonObject interface{}) {
+func PrintJson(jsonObject interface{}) {
 	pretty, err := Prettify(jsonObject)
 	if err != nil {
 		print("Prettify() error\n")
@@ -56,10 +56,10 @@ func Prettify(jsonObject interface{}) (pretty string, err error) {
 	return string(j), err
 }
 
-func PrintAllJSON(t string) {
+func PrintAllJson(t string) {
 	// List all object of type t in JSON
 	all := GetAllObjects(t) // Get all objects of this type
-	PrintJSON(all)
+	PrintJson(all)
 }
 
 func MergeMaps(m1, m2 map[string]string) (result map[string]string) {

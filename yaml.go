@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func LoadFileYAML(filePath string) (yamlObject map[interface{}]interface{}) {
+func LoadFileYaml(filePath string) (yamlObject map[interface{}]interface{}) {
 	// Read/load/decode given filePath as some YAML object
 	fileContent, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -24,7 +24,7 @@ func LoadFileYAML(filePath string) (yamlObject map[interface{}]interface{}) {
 	return yamlObject
 }
 
-func SaveFileYAML(yamlObject interface{}, filePath string) {
+func SaveFileYaml(yamlObject interface{}, filePath string) {
 	// Save given YAML object to given filePath
 	yamlData, err := yaml.Marshal(&yamlObject)
 	if err != nil {
@@ -36,7 +36,7 @@ func SaveFileYAML(yamlObject interface{}, filePath string) {
 	}
 }
 
-func PrintYAML(yamlObject interface{}) {
+func PrintYaml(yamlObject interface{}) {
 	pretty, err := yaml.Marshal(&yamlObject)
 	if err != nil {
 		log.Println(err)

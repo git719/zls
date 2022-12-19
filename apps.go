@@ -21,7 +21,7 @@ func PrintApp(obj map[string]interface{}) {
 		owners := r["value"].([]interface{}) // Assert as JSON array type
 		if len(owners) > 0 {
 			print("owners:\n")
-			// PrintJSON(groups) // DEBUG
+			// PrintJson(groups) // DEBUG
 			for _, i := range owners {
 				o := i.(map[string]interface{}) // Assert as JSON object type
 				Type, Name := "???", "???"

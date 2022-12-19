@@ -13,27 +13,27 @@ func TestFunction() {
 		"$recurse":    "true",
 	}
 	r := APIGet(az_url+url, az_headers, params, false)
-	PrintJSON(r)
+	PrintJson(r)
 
 	// Test MergeObjects function
 	// f := filepath.Join("/Users/user1/obj.json")
-	// l := LoadFileJSON(f)
+	// l := LoadFileJson(f)
 	// if l == nil {
 	// 	die("Error loading file\n")
 	// }
 	// obj := l.(map[string]interface{})
 
 	// f = filepath.Join("/Users/user1/obj2.json")
-	// l = LoadFileJSON(f)
+	// l = LoadFileJson(f)
 	// if l == nil {
 	// 	die("Error loading file\n")
 	// }
 	// obj2 := l.(map[string]interface{})
 
-	// PrintJSON(obj)
-	// PrintJSON(obj2)
+	// PrintJson(obj)
+	// PrintJson(obj2)
 	// x := MergeObjects(obj, obj2)
-	// PrintJSON(x)
+	// PrintJson(x)
 
 	exit(0)
 }

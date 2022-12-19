@@ -117,14 +117,14 @@ func CompareSpecfile(t, f string) {
 	switch t {
 	case "d":
 		// Load specfile
-		jsonFile := LoadFileJSON(f)
+		jsonFile := LoadFileJson(f)
 		if jsonFile == nil {
 			log.Printf("Invalid JSON specfile '%s'\n", f)
 			return
 		}
 		x := jsonFile.(map[string]interface{}) // Assert as single JSON object
 		print("==== This SPECFILE ===============================================\n")
-		PrintJSON(x)
+		PrintJson(x)
 
 		xProps := x["properties"].(map[string]interface{})
 		Name := StrVal(xProps["roleName"])
@@ -152,13 +152,13 @@ func CompareSpecfile(t, f string) {
 		}
 	case "a":
 		// Load specfile
-		x := LoadFileYAML(f)
+		x := LoadFileYaml(f)
 		if x == nil {
 			print("Invalid YAML specfile '%s'\n", f)
 			return
 		}
 		print("==== SPECFILE ===========================\n")
-		PrintYAML(x)
+		PrintYaml(x)
 
 		xProps := x["properties"].(map[string]interface{})
 		roleId := LastElem(StrVal(xProps["roleDefinitionId"]), "/")

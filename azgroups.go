@@ -36,7 +36,7 @@ func PrintGroup(x map[string]interface{}) {
 		members := r["value"].([]interface{}) // Assert as JSON array type
 		if len(members) > 0 {
 			print("members:\n")
-			// PrintJSON(members) // DEBUG
+			// PrintJson(members) // DEBUG
 			for _, i := range members {
 				m := i.(map[string]interface{}) // Assert as JSON object type
 				Type, Name := "-", "-"
