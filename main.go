@@ -10,7 +10,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "178"
+	prgver  = "179"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -92,26 +92,26 @@ func main() {
 	switch numberOfArguments {
 	case 1:
 		arg1 := os.Args[1]
-		switch arg1 {     // First, process 1-arg requests that don't need credentials and API tokens set up
+		switch arg1 {
+	    case "-v":
+			PrintUsage()
 		case "-cr":
 			DumpCredentials()
+		}
+		SetupApiTokens()
+		switch arg1 {
+		case "-xx":
+			RemoveCacheFile("all")
 		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-rax", "-rdx":
 			t := arg1[1 : len(arg1)-1]  // Single out the object type
 			RemoveCacheFile(t)          // Chop off the 1st 2 characters, to leverage oMap
-		case "-xx":
-			RemoveCacheFile("all")
-	    case "-v":
-			PrintUsage()
-		}
-		SetupApiTokens()  // The rest do need global credentials API tokens to be available
-		switch arg1 {
 		case "-st":
 			PrintCountStatus()
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj": // Handle JSON-printing of all objects
-			t := arg1[1 : len(arg1)-1] // Single out the object type
+			t := arg1[1 : len(arg1)-1]
 			PrintAllJson(t)
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd": // Handle tersely printing for all objects
-			t := arg1[1:] // Single out the object type
+			t := arg1[1:]               // Single out the object type
 			PrintAllTersely(t)
 		case "-ar":
 			PrintRoleAssignmentReport()
