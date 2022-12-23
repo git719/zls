@@ -10,7 +10,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "177"
+	prgver  = "178"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -58,6 +58,7 @@ func PrintUsage() {
 		"      sp = Service Principals      ap = Applications            ra = Azure AD Roles Active\n" +
 		"      rd = Azure AD Roles Defs\n" +
 		"\n" +
+		"    -xx                               Delete ALL cache local files\n" +
 		"    -ar                               List all RBAC role assignments with resolved names\n" +
 		"    -mt                               List Management Group and subscriptions tree\n" +
 		"    -pags                             List all Azure AD Privileged Access Groups\n" +
@@ -68,7 +69,6 @@ func PrintUsage() {
 		"    -cr  TENANT_ID CLIENT_ID SECRET   Set up MSAL automated client_id + secret login\n" +
 		"    -cri TENANT_ID USERNAME           Set up MSAL interactive browser popup login\n" +
 		"    -tx                               Delete MSAL accessTokens cache file\n" +
-		"    -xx                               Delete ALL cache local file\n" +
 		"    -v                                Print this usage page\n")
 	exit(0)
 }
@@ -93,18 +93,18 @@ func main() {
 	case 1:
 		arg1 := os.Args[1]
 		switch arg1 {     // First, process 1-arg requests that don't need credentials and API tokens set up
-	    case "-v":
-			PrintUsage()
-		}
-		SetupApiTokens()  // The rest do need global credentials API tokens to be available
-		switch arg1 {
+		case "-cr":
+			DumpCredentials()
 		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-rax", "-rdx":
 			t := arg1[1 : len(arg1)-1]  // Single out the object type
 			RemoveCacheFile(t)          // Chop off the 1st 2 characters, to leverage oMap
 		case "-xx":
 			RemoveCacheFile("all")
-		case "-cr":
-			DumpCredentials()
+	    case "-v":
+			PrintUsage()
+		}
+		SetupApiTokens()  // The rest do need global credentials API tokens to be available
+		switch arg1 {
 		case "-st":
 			PrintCountStatus()
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj": // Handle JSON-printing of all objects
