@@ -300,6 +300,10 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 	//   map[string]interface{}  for JSON object
 	//   []interface{}           for JSON array
 
+	if !strings.HasPrefix(url, "http") {
+		die(trace() + "Error: Bad URL, " + url + "\n")
+	}
+
 	// Set up headers according to API being called (AZ or MG)
 	if strings.HasPrefix(url, az_url) {
 		headers = MergeMaps(az_headers, headers)
@@ -314,12 +318,10 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 		panic(err.Error())
 	}
 
-	// Update headers
+	// Update headers and query params
 	for h, v := range headers {
 		req.Header.Add(h, v)
 	}
-
-	// Update query parameters
 	q := req.URL.Query()
 	for p, v := range params {
 		q.Add(p, v)
@@ -362,7 +364,6 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 			panic(err.Error())
 		}
 	}
-
 	if verbose {
 		print("==== RESPONSE ================================\n")
 	    print("STATUS: %d %s\n", r.StatusCode, http.StatusText(r.StatusCode)) 
@@ -374,7 +375,6 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 		}
 		print("HEADERS:\n%s\n", string(resHeaders)) 
 	}
-
 	return result
 }
 

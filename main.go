@@ -10,7 +10,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "181"
+	prgver  = "182"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -125,8 +125,7 @@ func main() {
 			PrintUsage()
 		}
 	case 2:
-		arg1 := os.Args[1]
-		arg2 := os.Args[2]
+		arg1 := os.Args[1] ; arg2 := os.Args[2]
 		SetupApiTokens()
 		switch arg1 {
 		case "-vs":
@@ -150,8 +149,6 @@ func main() {
 			if ValidUuid(arg2) {
 				x := GetAzObjectById(t, arg2) // Get single object by ID
 				PrintObject(t, x)           // Print in YAML-like format
-			} else if FileExist(arg2) && FileSize(arg2) > 0 {
-				CompareSpecfileOld(t, arg2) // Compare specfile to what's in Azure
 			} else {
 				oList := GetMatching(t, arg2) // Get all matching objects
 				if len(oList) > 1 {           // Print all matching objects tersely
@@ -168,9 +165,7 @@ func main() {
 			PrintUsage()
 		}
 	case 3:
-		arg1 := os.Args[1]
-		arg2 := os.Args[2]
-		arg3 := os.Args[3]
+		arg1 := os.Args[1] ; arg2 := os.Args[2] ; arg3 := os.Args[3]
 		switch arg1 {
 		case "-cri":
 			SetupInterativeLogin(arg2, arg3)
@@ -178,10 +173,7 @@ func main() {
 			PrintUsage()
 		}
 	case 4:
-		arg1 := os.Args[1]
-		arg2 := os.Args[2]
-		arg3 := os.Args[3]
-		arg4 := os.Args[4]
+		arg1 := os.Args[1] ; arg2 := os.Args[2] ; arg3 := os.Args[3] ; arg4 := os.Args[4]
 		switch arg1 {
 		case "-cr":
 			SetupAutomatedLogin(arg2, arg3, arg4)
