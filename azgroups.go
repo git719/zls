@@ -17,7 +17,7 @@ func PrintGroup(x map[string]interface{}) {
 
 	// OPTIONAL: Print other attributes here
 
-	r := APIGet(mg_url+"/beta/groups/"+id+"/owners", mg_headers, nil, false)
+	r := ApiGet(mg_url+"/beta/groups/"+id+"/owners", mg_headers, nil, false)
 	if r["value"] != nil {
 		owners := r["value"].([]interface{}) // Assert as JSON array type
 		if len(owners) > 0 {
@@ -30,8 +30,9 @@ func PrintGroup(x map[string]interface{}) {
 			print("%-28s %s\n", "owners:", "None")
 		}
 	}
+	ApiErrorCheck(r, trace())
 
-	r = APIGet(mg_url+"/beta/groups/"+id+"/members", mg_headers, nil, false)
+	r = ApiGet(mg_url+"/beta/groups/"+id+"/members", mg_headers, nil, false)
 	if r["value"] != nil {
 		members := r["value"].([]interface{}) // Assert as JSON array type
 		if len(members) > 0 {
@@ -53,6 +54,7 @@ func PrintGroup(x map[string]interface{}) {
 			print("%-28s %s\n", "members:", "None")
 		}
 	}
+	ApiErrorCheck(r, trace())
 
 	// Print all groups/roles it is a member of
 	memberOf := GetObjectMemberOfs("g", id) // For this Group object

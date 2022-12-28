@@ -31,11 +31,12 @@ func GetManagementGroups() (oList []interface{}) {
 	oList = nil
 	url := az_url + "/providers/Microsoft.Management/" + oMap["m"]
 	params := map[string]string{"api-version": "2020-05-01"}
-	r := APIGet(url, az_headers, params, false)
+	r := ApiGet(url, az_headers, params, false)
 	if r["value"] != nil {
 		objects := r["value"].([]interface{}) // Treat as JSON array type
 		oList = append(oList, objects...)     // Elipsis means the source may be more than one
 	}
+	ApiErrorCheck(r, trace())
 	return oList
 }
 
@@ -71,7 +72,7 @@ func PrintManagementGroupTree() {
 		"$expand":     "children",
 		"$recurse":    "true",
 	}
-	r := APIGet(az_url+url, az_headers, params, false)
+	r := ApiGet(az_url+url, az_headers, params, false)
 	if r["properties"] != nil {
 		// Print everything under the hierarchy
 		props := r["properties"].(map[string]interface{})
@@ -83,4 +84,5 @@ func PrintManagementGroupTree() {
 			PrintMGChildren(4, children)
 		}
 	}
+	ApiErrorCheck(r, trace())
 }

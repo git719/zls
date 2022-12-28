@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -51,7 +52,7 @@ func SpsCountLocal() (microsoft, native int64) {
 	var nativeList []interface{} = nil
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap["sp"]+".json")
     if FileUsable(localData) {
-		l := LoadFileJson(localData) // Load cache file
+		l, _ := LoadFileJson(localData) // Load cache file
 		if l != nil {
 			sps := l.([]interface{}) // Assert as JSON array type
 			for _, i := range sps {
@@ -96,7 +97,7 @@ func RoleDefinitionCountLocal() (builtin, custom int64) {
 	var builtinList []interface{} = nil
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap["d"]+".json")
     if FileUsable(localData) {
-		l := LoadFileJson(localData) // Load cache file
+		l, _:= LoadFileJson(localData) // Load cache file
 		if l != nil {
 			definitions := l.([]interface{}) // Assert as JSON array type
 			for _, i := range definitions {
@@ -138,7 +139,7 @@ func ObjectCountLocal(t string) int64 {
 	var oList []interface{} = nil // Start with an empty list
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap[t]+".json") // Define local data store file
     if FileUsable(localData) {
-		l := LoadFileJson(localData) // Load cache file
+		l, _ := LoadFileJson(localData) // Load cache file
 		if l != nil {
 			oList = l.([]interface{})
 			return int64(len(oList))
@@ -158,18 +159,20 @@ func ObjectCountAzure(t string) int64 {
 	case "u", "g", "sp", "ap", "ra":
 		// MS Graph API makes counting much easier with its dedicated '$count' filter
 		mg_headers["ConsistencyLevel"] = "eventual"
-		r := APIGet(mg_url+"/v1.0/"+oMap[t]+"/$count", mg_headers, nil, false)
+		r := ApiGet(mg_url+"/v1.0/"+oMap[t]+"/$count", mg_headers, nil, false)
 		if r["value"] != nil {
 			// Expect result to be a single int64 value for the count
 			return r["value"].(int64) // Assert as int64
 		}
+		ApiErrorCheck(r, trace())
 	case "rd":
 		// There is no $count filter option for AD role definitions so we have to get them all do length count
-		r := APIGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions", mg_headers, nil, false)
+		r := ApiGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions", mg_headers, nil, false)
 		if r["value"] != nil {
 			rds := r["value"].([]interface{}) // Assert as JSON array type
 			return int64(len(rds))
 		}
+		ApiErrorCheck(r, trace())
 	}
 	return 0
 }
@@ -177,7 +180,10 @@ func ObjectCountAzure(t string) int64 {
 func GetResourceGroupIds(subId string) (resGroupIds []string) {
 	// Get the fully qualified ID of each Resource Group in given subscription ID
 	resGroupIds = nil
-	r := APIGet(az_url+"/subscriptions/"+subId+"/resourcegroups", az_headers, nil, false)
+	params := map[string]string{
+		"api-version": "2022-09-01",  // subscriptions
+	}	
+	r := ApiGet(az_url+"/subscriptions/"+subId+"/resourcegroups", az_headers, params, false)
 	if r["value"] != nil {
 		resourceGroups := r["value"].([]interface{}) // Assert as JSON array type
 		for _, obj := range resourceGroups {
@@ -188,46 +194,102 @@ func GetResourceGroupIds(subId string) (resGroupIds []string) {
 			}
 		}
 	}
+	ApiErrorCheck(r, trace())
 	return resGroupIds
 }
 
-func GetObjectById(t, id string) (x map[string]interface{}) {
+func GetAzObjectById(t, id string) (x map[string]interface{}) {
 	// Retrieve Azure object by UUID
 	x = nil
 	switch t {
 	case "d", "a":
-		// First, search for this object at Tenant root level
-		url := az_url + "/providers/Microsoft.Management/managementGroups/" + tenant_id
-		url += "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
-		x = APIGet(url, az_headers, nil, false)
-		if x["error"] != nil {
-			// Finally, search for it under each Subscription scope
-			for _, subId := range GetSubIds() {
-				url = az_url + "/subscriptions/" + subId + "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
-				x2 := APIGet(url, az_headers, nil, false)
-				if x2["id"] != nil {
-					x = x2
-					break // As soon as we find it
-				}
+		// First, build list of scopes, which is all subscriptions to look under, and include the tenant root level
+		scopes := GetSubScopes()
+		scopes = append(scopes, "/providers/Microsoft.Management/managementGroups/" + tenant_id)
+		// Should we include all other Management Groups scopes?
+
+		// Look for objects under all these scopes
+		params := map[string]string{
+			"api-version": "2022-04-01",  // roleDefinitions and roleAssignments
+		}
+		for _, scope := range scopes {
+			url := az_url + scope + "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
+			r := ApiGet(url, az_headers, params, false) // Returns either an object or an error
+			if r != nil && r["id"] != nil {
+				return r
 			}
+			ApiErrorCheck(r, trace())
 		}
 	case "s":
-		x = APIGet(az_url+"/"+oMap[t]+"/"+id, az_headers, nil, false)
+		params := map[string]string{
+			"api-version": "2022-09-01",  // subscriptions
+		}
+		r := ApiGet(az_url + "/subscriptions/" + id, az_headers, params, false)
+		x = r
 	case "m":
-		x = APIGet(az_url+"/providers/Microsoft.Management/managementGroups/"+id, az_headers, nil, false)
+		params := map[string]string{
+			"api-version": "2022-04-01",  // managementGroups
+		}
+		r := ApiGet(az_url + "/providers/Microsoft.Management/managementGroups/" + id, az_headers, params, false)
+		x = r
 	case "u", "g", "sp", "ap", "ra":
-		x = APIGet(mg_url+"/v1.0/"+oMap[t]+"/"+id, mg_headers, nil, false)
+		r := ApiGet(mg_url + "/v1.0/" + oMap[t] + "/" + id, mg_headers, nil, false)
+		x = r
 	case "rd":
 		// Again, AD role definitions are under a different area, until they are activated
-		x = APIGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions/"+id, mg_headers, nil, false)
+		r := ApiGet(mg_url + "/v1.0/roleManagement/directory/roleDefinitions/" + id, mg_headers, nil, false)
+		x = r
 	}
 	return x
 }
 
-func APIGet(url string, headers, params map[string]string, verbose bool) (result map[string]interface{}) {
-	// Make API call and return JSON object
-	// This functions adds default headers and params for the respective AZ or MG APIs, so the expected
-	// headers and params options are for ADDITIONAL values of these.
+func GetAzObjectByName(t, name string) (x map[string]interface{}) {
+	// Retrieve Azure object by displayName, given its type t
+	switch t {
+	case "a":
+		return nil // Role assignments don't have a displayName attribute
+	case "d":
+		// First, build list of scopes, which is all subscriptions to look under, and include the tenant root level
+		scopes := GetSubScopes()
+		scopes = append(scopes, "/providers/Microsoft.Management/managementGroups/" + tenant_id)
+		// Should we include all other Management Groups scopes?
+
+		// Look for definition under all these scopes
+		params := map[string]string{
+			"api-version": "2022-04-01",  // roleDefinitions
+			"$filter":     "roleName eq '" + name + "'",
+		}
+		for _, scope := range scopes {
+			url := az_url + scope + "/providers/Microsoft.Authorization/roleDefinitions"
+			r := ApiGet(url, az_headers, params, false)
+			if r != nil && r["value"] != nil {
+				results := r["value"].([]interface{})  // Assert as JSON array type
+				for _, i := range results {
+					x := i.(map[string]interface{})    // Assert as JSON object type
+					xProps := x["properties"].(map[string]interface{})
+					roleName := StrVal(xProps["roleName"])
+					if roleName == name {
+						return x  // Return first match we find, since roleName are unique across the tenant
+					}
+				}
+			}
+			ApiErrorCheck(r, trace())
+		}
+	case "s":
+		//x = ApiGet(az_url+"/"+oMap[t]+"/"+id + "?api-version=2022-04-01", az_headers, nil, false)
+	case "m":
+		//x = ApiGet(az_url+"/providers/Microsoft.Management/managementGroups/"+id + "?api-version=2022-04-01", az_headers, nil, false)
+	case "u", "g", "sp", "ap", "ra":
+		//x = ApiGet(mg_url+"/v1.0/"+oMap[t]+"/"+id, mg_headers, nil, false)
+	case "rd":
+		// Again, AD role definitions are under a different area, until they are activated
+		//x = ApiGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions/"+id, mg_headers, nil, false)
+	}
+	return nil
+}
+
+func ApiGet(url string, headers, params map[string]string, verbose bool) (result map[string]interface{}) {
+	// Make API call and return JSON object. Global az_headers and mg_headers are merged with additional ones called with.
 
 	// The unknown JSON object that's returned can then be parsed by asserting any of the following types
 	// and checking values ( see https://eager.io/blog/go-and-json/ )
@@ -238,10 +300,8 @@ func APIGet(url string, headers, params map[string]string, verbose bool) (result
 	//   map[string]interface{}  for JSON object
 	//   []interface{}           for JSON array
 
-	// Set up parameters and headers according to API being called (AZ or MG)
+	// Set up headers according to API being called (AZ or MG)
 	if strings.HasPrefix(url, az_url) {
-		az_params := map[string]string{"api-version": "2018-07-01"}
-		params = MergeMaps(az_params, params)
 		headers = MergeMaps(az_headers, headers)
 	} else if strings.HasPrefix(url, mg_url) {
 		headers = MergeMaps(mg_headers, headers)
@@ -266,7 +326,17 @@ func APIGet(url string, headers, params map[string]string, verbose bool) (result
 	}
 	req.URL.RawQuery = q.Encode()
 
-	// === Make the call ============
+	// === MAKE THE CALL ============
+	if verbose {
+		print("==== REQUEST =================================\n")
+		print("GET " + url + "\n")
+		print("HEADERS:\n")
+		PrintJson(req.Header); print("\n") 
+		print("PARAMS:\n")
+		PrintJson(q); print("\n") 
+		// print("REQUEST_PAYLOAD:\n")
+		// PrintJson(BODY); print("\n") 
+	}
 	r, err := client.Do(req)
 	if err != nil {
 		panic(err.Error())
@@ -280,20 +350,7 @@ func APIGet(url string, headers, params map[string]string, verbose bool) (result
 	// Note that variable 'body' is of type []uint8 which is essentially a long string
 	// that evidently can be either A) a count integer number, or B) a JSON object string.
 	// This interpretation needs confirmation, and then better handling.
-
-	if verbose {
-		print("\nGET %s => %d %s => %s\n\n", url, r.StatusCode, http.StatusText(r.StatusCode), string(body))
-		// p, _ := Prettify(params)
-		// h, _ := Prettify(headers)
-		// print("REQUEST_PARAMS: %s\n", p)
-		// print("REQUEST_HEADERS: %s\n", h)
-		// r_headers, err := httputil.DumpResponse(r, false)
-		// if err != nil {
-		// 	panic(err.Error())
-		// }
-		// print("RESPONSE_HEADERS:\n%s\n", string(r_headers))
-	}
-
+		
 	if count, err := strconv.ParseInt(string(body), 10, 64); err == nil {
 		// If entire body is a string representing an integer value, create
 		// a JSON object with this count value we just converted to int64
@@ -305,5 +362,25 @@ func APIGet(url string, headers, params map[string]string, verbose bool) (result
 			panic(err.Error())
 		}
 	}
+
+	if verbose {
+		print("==== RESPONSE ================================\n")
+	    print("STATUS: %d %s\n", r.StatusCode, http.StatusText(r.StatusCode)) 
+		print("RESULT:\n")
+		PrintJson(result); print("\n") 
+		resHeaders, err := httputil.DumpResponse(r, false)
+		if err != nil {
+			panic(err.Error())
+		}
+		print("HEADERS:\n%s\n", string(resHeaders)) 
+	}
+
 	return result
+}
+
+func ApiErrorCheck(r map[string]interface{}, caller string) {
+	if r["error"] != nil {
+		e := r["error"].(map[string]interface{})
+		print(caller + " error: " + e["message"].(string) + "\n")
+	}
 }

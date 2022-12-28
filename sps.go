@@ -20,7 +20,7 @@ func PrintSP(obj map[string]interface{}) {
 	}
 
 	// Print owners
-	r := APIGet(mg_url+"/beta/servicePrincipals/"+id+"/owners", mg_headers, nil, false)
+	r := ApiGet(mg_url+"/beta/servicePrincipals/"+id+"/owners", mg_headers, nil, false)
 	if r["value"] != nil {
 		owners := r["value"].([]interface{}) // JSON array
 		if len(owners) > 0 {
@@ -45,9 +45,10 @@ func PrintSP(obj map[string]interface{}) {
 			print("%-28s %s\n", "owners:", "None")
 		}
 	}
+	ApiErrorCheck(r, trace())
 
 	// Print members and their roles
-	r = APIGet(mg_url+"/beta/servicePrincipals/"+id+"/appRoleAssignedTo", mg_headers, nil, false)
+	r = ApiGet(mg_url+"/beta/servicePrincipals/"+id+"/appRoleAssignedTo", mg_headers, nil, false)
 	if r["value"] != nil {
 		members := r["value"].([]interface{}) // JSON array
 		if len(members) > 0 {
@@ -79,13 +80,14 @@ func PrintSP(obj map[string]interface{}) {
 			print("%-28s %s\n", "members:", "None")
 		}
 	}
+	ApiErrorCheck(r, trace())
 
 	// Print all groups/roles it is a member of
 	memberOf := GetObjectMemberOfs("sp", id) // For this SP object
 	PrintMemberOfs("sp", memberOf)
 
 	// Print API permissions 
-	r = APIGet(mg_url+"/v1.0/servicePrincipals/"+id+"/oauth2PermissionGrants", mg_headers, nil, false)
+	r = ApiGet(mg_url+"/v1.0/servicePrincipals/"+id+"/oauth2PermissionGrants", mg_headers, nil, false)
 	if r["value"] != nil && len(r["value"].([]interface{})) > 0 {
 		print("api_permissions:\n")
 		apiPerms := r["value"].([]interface{}) // Assert as JSON array
@@ -95,10 +97,11 @@ func PrintSP(obj map[string]interface{}) {
 			api := i.(map[string]interface{}) // Assert as JSON object
 			apiName := "Unknown"
 			id := StrVal(api["resourceId"])   // Get API's SP to get its displayName
-			r := APIGet(mg_url+"/v1.0/servicePrincipals/"+id, mg_headers, nil, false)
+			r := ApiGet(mg_url+"/v1.0/servicePrincipals/"+id, mg_headers, nil, false)
 			if r["appDisplayName"] != nil {
 				apiName = StrVal(r["appDisplayName"])
 			}
+			ApiErrorCheck(r, trace())
 
 			// Print each delegated claim for this API
 			scope := strings.TrimSpace(StrVal(api["scope"]))
@@ -108,4 +111,5 @@ func PrintSP(obj map[string]interface{}) {
 			}
 		}
 	}
+	ApiErrorCheck(r, trace())
 }

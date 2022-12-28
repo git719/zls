@@ -5,29 +5,25 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
-func LoadFileJson(filePath string) (jsonObject interface{}) {
+func LoadFileJson(filePath string) (jsonObject interface{}, err error) {
 	// Read/load/decode given filePath as some JSON object
 	f, err := os.Open(filePath)
 	if err != nil {
-		log.Println(err)
-		return nil
+		return nil, err
 	}
 	defer f.Close()
 	byteValue, err := ioutil.ReadAll(f)
 	if err != nil {
-		log.Println(err)
-		return nil
+		return nil, err
 	}
 	err = json.Unmarshal([]byte(byteValue), &jsonObject)
 	if err != nil {
-		log.Println(err)
-		return nil
+		return nil, err
 	}
-	return jsonObject
+	return jsonObject, nil
 }
 
 func SaveFileJson(jsonObject interface{}, filePath string) {
@@ -49,6 +45,7 @@ func PrintJson(jsonObject interface{}) {
 	} else {
 		print(pretty)
 	}
+	print("\n")
 }
 
 func Prettify(jsonObject interface{}) (pretty string, err error) {

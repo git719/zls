@@ -1,4 +1,4 @@
-// helper.go
+// init.go
 
 package main
 
@@ -33,7 +33,11 @@ func DumpVariables() {
 func DumpCredentials() {
 	// Dump credentials file
 	creds_file := filepath.Join(confdir, "credentials.yaml")
-	creds := LoadFileYaml(creds_file)
+	credsRaw, err := LoadFileYaml(creds_file)
+    if err != nil {
+		die("[%s] %s\n", creds_file, err)
+	}
+	creds := credsRaw.(map[string]interface{})
 	print("%-14s %s\n", "tenant_id:", StrVal(creds["tenant_id"]))
 	if strings.ToLower(StrVal(creds["interactive"])) == "true" {
 		print("%-14s %s\n", "username:", StrVal(creds["username"]))
@@ -81,7 +85,11 @@ func SetupCredentials() {
 		die("Missing credentials file: '%s'\n", creds_file +
 			"Please rerun program using '-cr' or '-cri' option to specify credentials.\n")
 	}
-	creds := LoadFileYaml(creds_file)
+	credsRaw, err := LoadFileYaml(creds_file)
+    if err != nil {
+		die("[%s] %s\n", creds_file, err)
+	}
+	creds := credsRaw.(map[string]interface{})
 
 	// Note we're updating global variables
 	tenant_id = StrVal(creds["tenant_id"])

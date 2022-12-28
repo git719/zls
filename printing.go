@@ -68,9 +68,6 @@ func PrintTersely(t string, x map[string]interface{}) {
 }
 
 func PrintObject(t string, x map[string]interface{}) {
-	if x["id"] == nil {
-		return
-	}
 	switch t {
 	case "d":
 		PrintRoleDefinition(x)
@@ -112,17 +109,17 @@ func PrintMemberOfs(t string, memberOf []interface{}) {
 	}
 }
 
-func CompareSpecfile(t, f string) {
-	// Compare object of type t defined in specfile f with what's really in Azure
+func CompareSpecfileOld(t, filePath string) {
+	// Compare object of type t defined in specfile filePath with what's really in Azure
 	switch t {
 	case "d":
 		// Load specfile
-		jsonFile := LoadFileJson(f)
-		if jsonFile == nil {
-			log.Printf("Invalid JSON specfile '%s'\n", f)
+		objRaw, err := LoadFileJson(filePath)
+		if objRaw == nil {
+			log.Printf("Invalid JSON specfile '%s': %s\n", filePath, err)
 			return
 		}
-		x := jsonFile.(map[string]interface{}) // Assert as single JSON object
+		x := objRaw.(map[string]interface{}) // Assert as single JSON object
 		print("==== This SPECFILE ===============================================\n")
 		PrintJson(x)
 
@@ -134,7 +131,8 @@ func CompareSpecfile(t, f string) {
 		for _, scope := range scopes {
 			url := az_url + "/" + scope.(string)
 			url += "/providers/Microsoft.Authorization/roleDefinitions?$filter=roleName+eq+'" + Name + "'"
-			r := APIGet(url, az_headers, nil, false)
+			params := map[string]string{"api-version": "2022-04-01"}
+			r := ApiGet(url, az_headers, params, false)
 			if r["value"] != nil && len(r["value"].([]interface{})) == 1 {
 				y := r["value"].([]interface{})
 				z := y[0].(map[string]interface{})
@@ -145,6 +143,7 @@ func CompareSpecfile(t, f string) {
 					break // Break, since any other subsequent match will be exactly the same
 				}
 			}
+			ApiErrorCheck(r, trace())
 		}
 		if notFound {
 			print("==== What's in AZURE =============================================\n")
@@ -152,12 +151,13 @@ func CompareSpecfile(t, f string) {
 		}
 	case "a":
 		// Load specfile
-		x := LoadFileYaml(f)
-		if x == nil {
-			print("Invalid YAML specfile '%s'\n", f)
+		objRaw, err := LoadFileYaml(filePath)
+		if objRaw == nil {
+			log.Printf("Invalid YAML specfile '%s': %s\n", filePath, err)
 			return
 		}
-		print("==== SPECFILE ===========================\n")
+		x := objRaw.(map[string]interface{}) // Assert as single JSON object
+		print("==== This SPECFILE ===============================================\n")
 		PrintYaml(x)
 
 		xProps := x["properties"].(map[string]interface{})
@@ -170,7 +170,8 @@ func CompareSpecfile(t, f string) {
 		// Search for role assignment in the scope defined in specfile
 		url := az_url + scope
 		url += "/providers/Microsoft.Authorization/roleAssignments?$filter=principalId+eq+'" + principalId + "'"
-		r := APIGet(url, az_headers, nil, false)
+		params := map[string]string{"api-version": "2022-04-01"}
+		r := ApiGet(url, az_headers, params, false)
 		if r["value"] != nil && len(r["value"].([]interface{})) > 0 {
 			for _, i := range r["value"].([]interface{}) {
 				y := i.(map[string]interface{})
@@ -188,7 +189,8 @@ func CompareSpecfile(t, f string) {
 			print("==== AZURE ==============================\n")
 			print("Role assignment does not exist as defined in specfile\n")
 		}
+		ApiErrorCheck(r, trace())
 	default:
-		print("This option is not yet available.\n")
+		print("Option not yet available for this object type.\n")
 	}
 }

@@ -10,7 +10,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "179"
+	prgver  = "180"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 )
@@ -49,8 +49,8 @@ func PrintUsage() {
 		"    -X \"string\"        List all X objects whose name has \"string\" in it\n" +
 		"    -Xj UUID|\"string\"  List specific X or matching objects in JSON format\n" +
 		"    -X UUID            List specific X object in YAML-like human-readable format\n" +
-		"    -X <specfile>      Compare X object specification file to what's in Azure\n" +
 		"    -Xx                Delete X object cache local file\n" +
+		"    -vs SPECFILE       Compare specification file to what's in Azure, only works for d and a objects\n" +
 		"\n" +
 		"    Where 'X' can be any of these object types:\n" +
 		"      d  = RBAC Role Definitions   a  = RBAC Role Assignments   s  = Azure Subscriptions  \n" +
@@ -92,14 +92,14 @@ func main() {
 	switch numberOfArguments {
 	case 1:
 		arg1 := os.Args[1]
-		switch arg1 {
+		switch arg1 {         // First 1-arg check doesn't require API tokens or global vars
 	    case "-v":
 			PrintUsage()
 		case "-cr":
 			DumpCredentials()
 		}
 		SetupApiTokens()
-		switch arg1 {
+		switch arg1 {        // The rest do required API tokens and global vars
 		case "-xx":
 			RemoveCacheFile("all")
 		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-rax", "-rdx":
@@ -129,10 +129,12 @@ func main() {
 		arg2 := os.Args[2]
 		SetupApiTokens()
 		switch arg1 {
+		case "-vs":
+			CompareSpecfile(arg2)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
 			t := arg1[1 : len(arg1)-1] // Single out our object type letter (see oMap)
 			if ValidUuid(arg2) {
-				x := GetObjectById(t, arg2) // Get single object by ID and print in JSON format
+				x := GetAzObjectById(t, arg2) // Get single object by ID and print in JSON format
 				PrintJson(x)
 			} else {
 				oList := GetMatching(t, arg2) // Get all matching objects
@@ -146,10 +148,10 @@ func main() {
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd":
 			t := arg1[1:] // Single out the object type
 			if ValidUuid(arg2) {
-				x := GetObjectById(t, arg2) // Get single object by ID
+				x := GetAzObjectById(t, arg2) // Get single object by ID
 				PrintObject(t, x)           // Print in YAML-like format
 			} else if FileExist(arg2) && FileSize(arg2) > 0 {
-				CompareSpecfile(t, arg2) // Compare specfile to what's in Azure
+				CompareSpecfileOld(t, arg2) // Compare specfile to what's in Azure
 			} else {
 				oList := GetMatching(t, arg2) // Get all matching objects
 				if len(oList) > 1 {           // Print all matching objects tersely

@@ -16,7 +16,7 @@ func PrintApp(obj map[string]interface{}) {
 	}
 
 	// Print owners
-	r := APIGet(mg_url+"/beta/applications/"+id+"/owners", mg_headers, nil, false)
+	r := ApiGet(mg_url+"/beta/applications/"+id+"/owners", mg_headers, nil, false)
 	if r["value"] != nil {
 		owners := r["value"].([]interface{}) // Assert as JSON array type
 		if len(owners) > 0 {
@@ -42,6 +42,7 @@ func PrintApp(obj map[string]interface{}) {
 			print("%-21s %s\n", "owners:", "None")
 		}
 	}
+	ApiErrorCheck(r, trace())
 
 	// Print all groups/roles it is a member of
 	memberOf := GetObjectMemberOfs("ap", id) // For this App object
@@ -68,13 +69,13 @@ func PrintApp(obj map[string]interface{}) {
 			resAppId := StrVal(api["resourceAppId"])
 
 			// Get this API's SP object with all relevant attributes
-			r := APIGet(mg_url+"/beta/servicePrincipals?filter=appId+eq+'"+resAppId+"'", mg_headers, nil, false)
+			r := ApiGet(mg_url+"/beta/servicePrincipals?filter=appId+eq+'"+resAppId+"'", mg_headers, nil, false)
 			// Unclear why result is a list instead of a single entry
-
 			if r["value"] == nil {
 				print("  %-50s %s\n", resAppId, "Unable to get Resource App object. Skipping this API.")
 				continue
 			}
+			ApiErrorCheck(r, trace())
 
 			SPs := r["value"].([]interface{})
 

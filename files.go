@@ -76,3 +76,36 @@ func RemoveCacheFile(t string) {
 	}
 	exit(0)
 }
+
+func CompareSpecfile(filePath string) {
+	if FileNotExist(filePath) || FileSize(filePath) < 1 {
+		die("File does not exist, or is zero size\n")
+	}
+    ft, t, x := GetObjectFromFile(filePath)
+	if ft != "JSON" && ft != "YAML" {
+        die("File is not in JSON nor YAML format\n")
+    }
+    if t != "d" && t != "a" {
+        die("This " + ft + " file is not a role definition nor an assignment specfile\n")
+    }
+	
+    print("==== SPECFILE ============================\n")
+    PrintObject(t, x)
+    print("==== AZURE ===============================\n")
+    if t == "d" {
+        y := GetAzRoleDefinition(x)
+        if y == nil {
+            print("Above definition does NOT exist in current Azure tenant\n")
+        } else {
+            PrintObject("d", y)
+        }
+    } else {
+        y := GetAzRoleAssignment(x)
+        if y == nil {
+            print("Above assignment does NOT exist in current Azure tenant\n")
+        } else {
+            PrintObject("a", y)
+        }
+    }
+    exit(0)	
+}

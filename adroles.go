@@ -16,7 +16,7 @@ func PrintAdRole(obj map[string]interface{}) {
 	}
 
 	// Print members of this role
-	r := APIGet(mg_url+"/v1.0/directoryRoles/"+id+"/members", mg_headers, nil, false)
+	r := ApiGet(mg_url+"/v1.0/directoryRoles/"+id+"/members", mg_headers, nil, false)
 	if r["value"] != nil {
 		members := r["value"].([]interface{}) // Assert as JSON array type
 		if len(members) > 0 {
@@ -31,7 +31,8 @@ func PrintAdRole(obj map[string]interface{}) {
 		} else {
 			print("%-28s %s\n", "members:", "None")
 		}
-	}	
+	}
+	ApiErrorCheck(r, trace())
 }
 
 func PrintAdRoleDef(obj map[string]interface{}) {
