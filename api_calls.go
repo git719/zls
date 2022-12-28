@@ -381,6 +381,6 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 func ApiErrorCheck(r map[string]interface{}, caller string) {
 	if r["error"] != nil {
 		e := r["error"].(map[string]interface{})
-		print(caller + " error: " + e["message"].(string) + "\n")
+		print(caller + "Error: " + e["message"].(string) + "\n")
 	}
 }
