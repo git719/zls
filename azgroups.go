@@ -63,10 +63,13 @@ func PrintGroup(x map[string]interface{}) {
 
 func PrintPAGs() {
 	// List all Privileged Access Groups
-	for _, i := range GetAllObjects("g") { // Iterate through all objects
-		x := i.(map[string]interface{}) // Assert JSON object type
+	for _, i := range GetAllObjects("g") {  // Iterate through all objects
+		x := i.(map[string]interface{})     // Assert JSON object type
 		if x["isAssignableToRole"] != nil {
-			PrintTersely("g", x) // Pring group tersely
+			isAssignableToRole := x["isAssignableToRole"].(bool)
+			if isAssignableToRole {
+				PrintTersely("g", x) // Pring group tersely
+			}
 		}
 	}
 }

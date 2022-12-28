@@ -33,12 +33,11 @@ func sprint(format string, args ...interface{}) string {
 func trace() (string) {
 	// Return string showing current "File_path [line number] function_name"
 	// https://stackoverflow.com/questions/25927660/how-to-get-the-current-function-name
-    progCounter, filePath, lineInt, success := runtime.Caller(1)
-	line := sprint("%v", lineInt)
-    if !success { return "? [0] ?" }
+    progCounter, fp, ln, ok := runtime.Caller(1)
+    if !ok { return sprint("%s\n    %s:%d\n", "?", "?", 0) }
     funcPointer := runtime.FuncForPC(progCounter)
-    if funcPointer == nil { return filePath + " [" + line + "] ?" }
-    return filePath + " [" + line + "] " + funcPointer.Name()
+    if funcPointer == nil { return sprint("%s\n    %s:%d\n", "?", fp, ln) }
+	return sprint("%s\n    %s:%d\n", funcPointer.Name(), fp, ln)
 }
 
 func ValidUuid(s string) bool {
@@ -122,7 +121,9 @@ func GetAllObjects(t string) (oList []interface{}) {
 
 		var fullQuery bool = true
 		url := mg_url + "/v1.0/" + oMap[t] + "/delta?$select=" // Base URL
-		if FileUsable(deltaLinkFile) && len(oList) > 0 {
+		deltaAge := int64(time.Now().Unix()) - int64(FileModTime(deltaLinkFile))
+		// DeltaLink files cannot be older than 30 days (using 27)
+		if (deltaAge < int64(3660 * 24 * 27)) && FileUsable(deltaLinkFile) && len(oList) > 0 {
 			// log.Println("Delta query") // DEBUG
 			fullQuery = false
 			tmpVal, _ := LoadFileJson(deltaLinkFile)
@@ -153,7 +154,9 @@ func GetAllObjects(t string) (oList []interface{}) {
 
 		var deltaSet []interface{} = nil                         // Assume zero new delta objects
 		headers := map[string]string{"Prefer": "return=minimal"} // Additional required header
+
 		r := ApiGet(url, headers, nil, false)
+		ApiErrorCheck(r, trace())
 		for {
 			// Infinite loop until deltalLink appears (meaning we're done getting current delta set)
 			if r["value"] != nil {
@@ -186,6 +189,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 				break                          // from infinite for-loop
 			}
 			r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil, false) // Get next batch
+			ApiErrorCheck(r, trace())
 			apiCalls++
 		}
 		if fullQuery {
