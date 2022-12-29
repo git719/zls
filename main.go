@@ -10,9 +10,11 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "182"
+	prgver  = "183"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
+	rUp     = "\x1B[2K\r"
+		// See https://stackoverflow.com/questions/1508490/erase-the-current-printed-console-line
 )
 
 var (
@@ -44,8 +46,7 @@ var (
 
 func PrintUsage() {
 	print(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
-		"    -Xj                List all X objects in JSON format\n" +
-		"    -X                 List all X objects tersely (UUID and most essential attributes)\n" +
+		"    -X[j]              List all X objects tersely, with JSON as output option\n" +
 		"    -X \"string\"        List all X objects whose name has \"string\" in it\n" +
 		"    -Xj UUID|\"string\"  List specific X or matching objects in JSON format\n" +
 		"    -X UUID            List specific X object in YAML-like human-readable format\n" +
@@ -107,10 +108,12 @@ func main() {
 			RemoveCacheFile(t)          // Chop off the 1st 2 characters, to leverage oMap
 		case "-st":
 			PrintCountStatus()
-		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj": // Handle JSON-printing of all objects
+		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
+			// Handle JSON-printing of all objects
 			t := arg1[1 : len(arg1)-1]
 			PrintAllJson(t)
-		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd": // Handle tersely printing for all objects
+		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd":
+			// Handle tersely printing for all objects
 			t := arg1[1:]               // Single out the object type
 			PrintAllTersely(t)
 		case "-ar":

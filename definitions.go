@@ -6,15 +6,9 @@ import "strings"
 
 func PrintRoleDefinition(x map[string]interface{}) {
 	// Print role definition object in YAML format
-	if x == nil {
-		return
-	}
+	if x == nil { return }
 
-	if x["name"] != nil {
-		print("id: %s\n", StrVal(x["name"]))
-	}
-	// ######### DEBUG ##########
-	//PrintJson(x); print("\n")
+	if x["name"] != nil { print("id: %s\n", StrVal(x["name"])) }
 
 	print("properties:\n")
 	if x["properties"] == nil {
@@ -112,8 +106,8 @@ func PrintRoleDefinition(x map[string]interface{}) {
 	}
 }
 
-func GetRoleDefinitions(mode string) (oList []interface{}) {
-	// Get all role definitions that are available to use in current tenant 
+func GetAzRoleDefinitionAll(verbose bool) (oList []interface{}) {
+	// Get all Azure role definitions that are available to use in current tenant 
 
 	// As of api-version 2022-04-01, the RBAC API $filter=AtScopeAndBelow() does not appear to work as
     // documented at https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions-list.
@@ -134,7 +128,9 @@ func GetRoleDefinitions(mode string) (oList []interface{}) {
 	
     // The best practice a customer can follow is to define ALL of their custom roles as universally as possible,
     // at the highest scope, the Tenant Root Group scope. That way, they are "visible" and therefore consumable
-    // anywhere witin the tenant. As of this writing, Microsoft Azure still has a limitation whereby any custom
+    // anywhere witin the tenant. That is essentially how Azure BuiltIn roles are defined, universally.
+	//
+	// Note that as of 2022-12-30, Microsoft Azure still has a limitation whereby any custom, role having
     // role having DataAction or NotDataAction CANNOT be defined at any MG scope level, and that prevents this
     // good practice. Microsoft is actively working to lift this restriction, see: 
     // https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles
@@ -142,33 +138,31 @@ func GetRoleDefinitions(mode string) (oList []interface{}) {
     // There may be customers out there who at some point decided to define some of their custom roles within some
     // of the hidden subscopes, and that's the reason why this utility follows this search algorithm to gather
     // the full list of roles definitions. Note however, that this utility ONLY searches as deep as subscriptions,
-    // so if there are role definitions hidden within Resource Groups or individual resoures it will MISS them.
+    // so if there are role definitions hidden within Resource Groups or individual resoures it may miss them.
 
 	oList = nil
 
-	// First, build list of scopes, which is all subscriptions to look under, and include the tenant root level
-	scopes := GetSubScopes()
-	scopes = append(scopes, "/providers/Microsoft.Management/managementGroups/" + tenant_id)
-	// Should we include all other Management Groups scopes?
+	// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
+	// and all subscription scopes.
+	scopes := GetMgScopes()
+	subScopes := GetSubScopes()
+	scopes = append(scopes, subScopes...) // Elipsis means add two lists
 	
-	var uuids []string  // Keep track of each unique role definition to whittle out repeats that come up in lower scopes
-	apiCalls := 1       // Track number of API calls below
-	subMap := GetIdNameMap("s")  // To ease printing sub names during calling
+	var uuids []string  // Keep track of each unique objects to whittle out inherited repeats
+	calls := 1          // Track number of API calls below
 
 	// Look for objects under all these scopes
 	params := map[string]string{
 		"api-version": "2022-04-01",  // roleDefinitions
 	}
 	for _, scope := range scopes {
-		subId := LastElem(scope, "/")
-		subName := subMap[subId]
 		url := az_url + scope + "/providers/Microsoft.Authorization/roleDefinitions"
 		r := ApiGet(url, az_headers, params, false)
 		if r["value"] != nil {
 			definitions := r["value"].([]interface{}) // Assert as JSON array type
-			if mode == "verbose" {
-				print("\r(API calls = %d) %d definitions at '%s'", apiCalls, len(definitions), subName)
-				PadSpaces(20)
+			if verbose {
+				// Using global var rUp to overwrite last line. Defer newline until done
+				print("%s(API calls = %d) %d assignments in set %d", rUp, calls, len(definitions), calls)
 			}
 			for _, i := range definitions {
 				x := i.(map[string]interface{})
@@ -181,10 +175,10 @@ func GetRoleDefinitions(mode string) (oList []interface{}) {
 			}
 		}
 		ApiErrorCheck(r, trace())
-		apiCalls++
+		calls++
 	}
-	if mode == "verbose" {
-		print("\n")
+	if verbose {
+		print("\n")  // Use newline now
 	}
 	return oList
 }
@@ -193,34 +187,23 @@ func GetAzRoleDefinition(x map[string]interface{}) (y map[string]interface{}) {
 	// Retrieve role definition y from Azure if it exists and matches given x object's displayName and assignableScopes
     
 	// First, make sure x is a searchable role definition object
-	if x == nil {
-		return nil  // Don't look for empty objects
-	}
+	if x == nil { return nil }  // Don't look for empty objects
+
 	xProps := x["properties"].(map[string]interface{})
-	if xProps == nil {              // Return nil if properties missing
-		return nil
-	}
+	if xProps == nil { return nil }  // Return nil if properties missing
+		
 	xScopes := xProps["assignableScopes"].([]interface{})
 	if VarType(xScopes)[0] != '[' || len(xScopes) < 1 {
 		// Return nil if assignableScopes not an array, or it's empty
 		return nil
 	}
 	xRoleName := StrVal(xProps["roleName"])
-	if xRoleName == "" {
-		return nil
-	}
-
-	// Include the root tenant scope anyway
-	xScopes = append(xScopes, "/providers/Microsoft.Management/managementGroups/" + tenant_id)
+	if xRoleName == "" { return nil }
 
 	// Look for x under all its scopes
 	for _, i := range xScopes {
 		scope := StrVal(i)
-		if scope == "/" {
-			// Handle BuiltIn role types. This is unlikely to happen, but just in case
-			scope = ""  
-		}
-
+		if scope == "/" { scope = "" } // Highly unlikely but just to avoid an err
 		// Get all role assignments for xPrincipalId under xScope
 		params := map[string]string{
 			"api-version": "2022-04-01",  // roleDefinitions

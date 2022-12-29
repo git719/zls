@@ -36,7 +36,7 @@ func PrintTersely(t string, x map[string]interface{}) {
 		Id := StrVal(x["name"])
 		Props := x["properties"].(map[string]interface{})
 		Name := StrVal(Props["displayName"])
-		Type := MGType(StrVal(x["type"]))
+		Type := MgType(StrVal(x["type"]))
 		print("%-38s  %-20s  %s\n", Id, Name, Type)
 	case "u", "g", "sp", "ap", "ra", "rd":
 		Id := StrVal(x["id"])
@@ -58,8 +58,10 @@ func PrintTersely(t string, x map[string]interface{}) {
 		case "ra":
 			print("%s  %-60s %s\n", Id, Name, Desc)
 		case "rd":
-			BuiltIn := "BuiltIn="+StrVal(x["isBuiltIn"])
-			Enabled := "Enabled="+StrVal(x["isEnabled"])
+			BuiltIn := "Custom"
+			if StrVal(x["isBuiltIn"]) == "true" { BuiltIn = "BuiltIn" }
+			Enabled := "NotEnabled"
+			if StrVal(x["isEnabled"]) == "true" { Enabled = "Enabled" }
 			print("%s  %-60s  %s  %s\n", Id, Name, BuiltIn, Enabled)
 		}
 	}

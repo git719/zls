@@ -120,7 +120,8 @@ func RoleDefinitionCountAzure() (builtin, custom int64) {
 	// Dedicated role definition Azure counter able to discern if role is custom to native tenant or it's an Azure BuilIn role
 	var customList []interface{} = nil
 	var builtinList []interface{} = nil
-	definitions := GetRoleDefinitions("silent")
+	quiet := false
+	definitions := GetAzRoleDefinitionAll(quiet)
 	for _, i := range definitions {
 		x := i.(map[string]interface{}) // Assert as JSON object type
 		xProp := x["properties"].(map[string]interface{})
@@ -160,10 +161,8 @@ func ObjectCountAzure(t string) int64 {
 		// MS Graph API makes counting much easier with its dedicated '$count' filter
 		mg_headers["ConsistencyLevel"] = "eventual"
 		r := ApiGet(mg_url+"/v1.0/"+oMap[t]+"/$count", mg_headers, nil, false)
-		if r["value"] != nil {
-			// Expect result to be a single int64 value for the count
-			return r["value"].(int64) // Assert as int64
-		}
+		if r["value"] != nil { return r["value"].(int64) }  // Assert as int64
+		// Expect result to be a single int64 value for the count
 		ApiErrorCheck(r, trace())
 	case "rd":
 		// There is no $count filter option for AD role definitions so we have to get them all do length count
@@ -203,10 +202,11 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 	x = nil
 	switch t {
 	case "d", "a":
-		// First, build list of scopes, which is all subscriptions to look under, and include the tenant root level
-		scopes := GetSubScopes()
-		scopes = append(scopes, "/providers/Microsoft.Management/managementGroups/" + tenant_id)
-		// Should we include all other Management Groups scopes?
+		// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
+		// and all subscription scopes.
+		scopes := GetMgScopes()
+		subScopes := GetSubScopes()
+		scopes = append(scopes, subScopes...) // Elipsis means add two lists
 
 		// Look for objects under all these scopes
 		params := map[string]string{
@@ -215,9 +215,7 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		for _, scope := range scopes {
 			url := az_url + scope + "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
 			r := ApiGet(url, az_headers, params, false) // Returns either an object or an error
-			if r != nil && r["id"] != nil {
-				return r
-			}
+			if r != nil && r["id"] != nil { return r }
 			ApiErrorCheck(r, trace())
 		}
 	case "s":
@@ -249,10 +247,11 @@ func GetAzObjectByName(t, name string) (x map[string]interface{}) {
 	case "a":
 		return nil // Role assignments don't have a displayName attribute
 	case "d":
-		// First, build list of scopes, which is all subscriptions to look under, and include the tenant root level
-		scopes := GetSubScopes()
-		scopes = append(scopes, "/providers/Microsoft.Management/managementGroups/" + tenant_id)
-		// Should we include all other Management Groups scopes?
+		// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
+		// and all subscription scopes.
+		scopes := GetMgScopes()
+		subScopes := GetSubScopes()
+		scopes = append(scopes, subScopes...) // Elipsis means add two lists
 
 		// Look for definition under all these scopes
 		params := map[string]string{
@@ -268,9 +267,8 @@ func GetAzObjectByName(t, name string) (x map[string]interface{}) {
 					x := i.(map[string]interface{})    // Assert as JSON object type
 					xProps := x["properties"].(map[string]interface{})
 					roleName := StrVal(xProps["roleName"])
-					if roleName == name {
-						return x  // Return first match we find, since roleName are unique across the tenant
-					}
+					if roleName == name { return x }
+					// Return first match we find, since roleName are unique across the tenant
 				}
 			}
 			ApiErrorCheck(r, trace())
