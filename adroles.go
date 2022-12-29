@@ -2,17 +2,15 @@
 
 package main
 
-func PrintAdRole(obj map[string]interface{}) {
+func PrintAdRole(x map[string]interface{}) {
 	// Print object in YAML-like style format
-	if obj["id"] == nil {
-		return
-	}
-	id := StrVal(obj["id"])
+	if x == nil { return }
+	id := StrVal(x["id"])
 
 	// Print the most important attributes first
 	list := []string{"id", "displayName", "description", "roleTemplateId"}
 	for _, i := range list {
-		print("%-21s %s\n", i+":", StrVal(obj[i]))
+		print("%-21s %s\n", i+":", StrVal(x[i]))
 	}
 
 	// Print members of this role
@@ -35,24 +33,21 @@ func PrintAdRole(obj map[string]interface{}) {
 	ApiErrorCheck(r, trace())
 }
 
-func PrintAdRoleDef(obj map[string]interface{}) {
+func PrintAdRoleDef(x map[string]interface{}) {
 	// Print object in YAML-like style format
-	if obj["id"] == nil {
-		return
-	}
-	//id := StrVal(obj["id"])
+	if x == nil { return }
 
 	// Print the most important attributes first
 	list := []string{"id", "displayName", "description", "isBuiltIn", "isEnabled"}
 	for _, i := range list {
-		print("%-21s %s\n", i+":", StrVal(obj[i]))
+		print("%-21s %s\n", i+":", StrVal(x[i]))
 	}
 
 	// List permissions
-	if obj["rolePermissions"] != nil {
-		rolePerms := obj["rolePermissions"].([]interface{}) // Assert to JSON array
+	if x["rolePermissions"] != nil {
+		rolePerms := x["rolePermissions"].([]interface{}) // Assert to JSON array
 		if len(rolePerms) > 0 {
-			// Unclear why rolePermissions is a list instead of the single entry that it always is
+			// Unclear why rolePermissions is a list instead of the single entry that it usually is
 			perms := rolePerms[0].(map[string]interface{}) // Assert JSON object
 			if perms["allowedResourceActions"] != nil && len(perms["allowedResourceActions"].([]interface{})) > 0 {
 				print("permissions:\n")

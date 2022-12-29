@@ -92,17 +92,18 @@ func GetAllObjects(t string) (oList []interface{}) {
 	// Get all objects of type t
 	switch t {
 	case "d":
-		oList = GetRoleDefinitions("verbose")   // Get all role definitions from Azure
-		SaveFileJson(oList, localData) // Cache it to local file
+		verbose := true
+		oList = GetAzRoleDefinitionAll(verbose)
+		SaveFileJson(oList, localData)  // Cache it to local file
 	case "a":
-		oList = GetRoleAssignments()   // Get all role assignments from Azure
-		SaveFileJson(oList, localData) // Cache it to local file
+		oList = GetAzRoleAssignmentAll()
+		SaveFileJson(oList, localData)
 	case "s":
-		oList = GetSubscriptions()     // Get all subscriptions from Azure
-		SaveFileJson(oList, localData) // Cache it to local file
+		oList = GetAzSubscriptionAll()
+		SaveFileJson(oList, localData)
 	case "m":
-		oList = GetManagementGroups()  // Get all Management Groups from Azure
-		SaveFileJson(oList, localData) // Cache it to local file
+		oList = GetAzManagementGroupAll()
+		SaveFileJson(oList, localData)
 	case "rd":
 		// Azure AD Role Definitions are under 'roleManagement/directory' so we're forced to process them
 		// differently than other MS Graph objects. Microsoft, this is not pretty :-(
@@ -124,13 +125,11 @@ func GetAllObjects(t string) (oList []interface{}) {
 		deltaAge := int64(time.Now().Unix()) - int64(FileModTime(deltaLinkFile))
 		// DeltaLink files cannot be older than 30 days (using 27)
 		if (deltaAge < int64(3660 * 24 * 27)) && FileUsable(deltaLinkFile) && len(oList) > 0 {
-			// log.Println("Delta query") // DEBUG
 			fullQuery = false
 			tmpVal, _ := LoadFileJson(deltaLinkFile)
-			deltaLinkMap = tmpVal.(map[string]interface{}) // Assert as JSON object
-			url = StrVal(deltaLinkMap["@odata.deltaLink"])                      // Delta URL
+			deltaLinkMap = tmpVal.(map[string]interface{})  // Assert as JSON object
+			url = StrVal(deltaLinkMap["@odata.deltaLink"])  // Delta URL
 		} else {
-			// log.Println("Full query") // DEBUG
 			switch t { // Build attribute select URL depending on type
 			case "u":
 				url = url + "displayName,mailNickname,userPrincipalName,onPremisesSamAccountName,onPremisesDomainName,onPremisesUserPrincipalName"
@@ -145,12 +144,12 @@ func GetAllObjects(t string) (oList []interface{}) {
 			}
 		}
 
-		azureCount := ObjectCountAzure(t) // Get number of objects in Azure right at this moment
+		azureCount := ObjectCountAzure(t)  // Get number of objects in Azure right at this moment
 		if fullQuery {
 			log.Printf("%d objects to get\n", azureCount)
 		}
 
-		apiCalls := 1 // Track how often we call API before getting the deltaLink
+		calls := 1 // Track how often we call API before getting the deltaLink
 
 		var deltaSet []interface{} = nil                         // Assume zero new delta objects
 		headers := map[string]string{"Prefer": "return=minimal"} // Additional required header
@@ -162,13 +161,13 @@ func GetAllObjects(t string) (oList []interface{}) {
 			if r["value"] != nil {
 				// Continue building deltaSet
 				thisBatch := r["value"].([]interface{}) // Treat as JSON array type
-				if len(thisBatch) > 0 {
-					deltaSet = append(deltaSet, thisBatch...) // Concatenate this set to growing list
-				}
+				// Now concatenate this set to growing list
+				if len(thisBatch) > 0 { deltaSet = append(deltaSet, thisBatch...) }
 			}
 
 			if fullQuery {
-				print("\r%d (API calls = %d)", len(deltaSet), apiCalls) // Progress count indicator
+				// Using global var rUp to overwrite last line. Defer newline until done
+				print("%s%d (API calls = %d)", rUp, len(deltaSet), calls) // Progress count indicator
 			}
 
 			if r["@odata.deltaLink"] != nil {
@@ -190,7 +189,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 			}
 			r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil, false) // Get next batch
 			ApiErrorCheck(r, trace())
-			apiCalls++
+			calls++
 		}
 		if fullQuery {
 			print("\n")
@@ -308,34 +307,27 @@ func GetObjectMemberOfs(t, id string) (oList []interface{}) {
 func GetObjectFromFile(filePath string) (formatType, t string, obj map[string]interface{}) {
 	// Returns 3 values: File format type, oMap type, and the object itself
 
-
 	// Because JSON is essentially a subset of YAML, we have to check JSON first
 	// As an aside, see https://news.ycombinator.com/item?id=31406473
 	objRaw, _ := LoadFileJson(filePath)  // Ignore the errors
 	formatType = "JSON"
 	if objRaw == nil {
 		objRaw, _ = LoadFileYaml(filePath)  // See if it's YAML, ignoring the error
-		if objRaw == nil {
-			return "", "", nil           // It's neither, return null values
-		}
+		if objRaw == nil { return "", "", nil }  // It's neither, return null values
 		formatType = "YAML"
 	}
 	obj = objRaw.(map[string]interface{})  // Henceforht, assert as single JSON object
 
 	// Continue unpacking the object to see what it is
 	xProps, ok := obj["properties"].(map[string]interface{}) // See if it has a top-level 'properties' section
-	if !ok {
-		return formatType, "", nil // Assertion failed, also return null values
-	}
-	roleName := StrVal(xProps["roleName"])       // Assert and assume it's a definition
-	roleId := StrVal(xProps["roleDefinitionId"]) // assert and assume it's an assignment
+	if !ok { return formatType, "", nil }  // Assertion failed, also return null values
+	roleName := StrVal(xProps["roleName"])        // Assert and assume it's a definition
+	roleId := StrVal(xProps["roleDefinitionId"])  // assert and assume it's an assignment
 
     if roleName != "" {
-        // It's a role definition
-        return formatType, "d", obj   // Type can then neatly be used with oMap generized functions
+        return formatType, "d", obj  // It's a role definition. Type can neatly be used with oMap
     } else if roleId != "" {
-        // It's a role assignment 
-        return formatType, "a", obj
+        return formatType, "a", obj  // It's a role assignment 
     } else {
         return formatType, "", obj
     }

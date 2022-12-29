@@ -8,9 +8,8 @@ func GetSubIds() (subIds []string) {
 	for _, i := range GetAllObjects("s") {
 		x := i.(map[string]interface{}) // Assert as JSON object type
 		name := StrVal(x["displayName"])
-		if name == "Access to Azure Active Directory" {
-			continue // Skip legacy subscriptions (they have no role definitions)
-		}
+		// Skip legacy subscriptions with below name, since they have no role definitions
+		if name == "Access to Azure Active Directory" { continue }
 		subIds = append(subIds, StrVal(x["subscriptionId"]))
 	}
 	return subIds
@@ -22,27 +21,24 @@ func GetSubScopes() (subScopes []string) {
 	for _, i := range GetAllObjects("s") {
 		x := i.(map[string]interface{}) // Assert as JSON object type
 		name := StrVal(x["displayName"])
-		if name == "Access to Azure Active Directory" {
-			continue // Skip legacy subscriptions (they have no role definitions)
-		}
+		// Skip legacy subscriptions with below name, since they have no role definitions
+		if name == "Access to Azure Active Directory" { continue }
 		subScopes = append(subScopes, StrVal(x["id"]))
 	}
 	return subScopes
 }
 
 func PrintSubscription(x map[string]interface{}) {
-	// Print subscription object in YAML-like style format
-	if x["id"] == nil {
-		return
-	}
-
+	// Print subscription object in YAML
+	if x == nil { return }
 	list := []string{"displayName", "subscriptionId", "state", "tenantId"}
 	for _, i := range list {
 		print("%-20s %s\n", i+":", StrVal(x[i]))
 	}
 }
 
-func GetSubscriptions() (oList []interface{}) {
+func GetAzSubscriptionAll() (oList []interface{}) {
+	// Get all Azure subscriptions in this tenant
 	oList = nil
 	params := map[string]string{
 		"api-version": "2022-09-01",  // subscriptions

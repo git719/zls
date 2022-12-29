@@ -2,8 +2,6 @@
 
 package main
 
-import "log"
-
 func PrintAllTersely(t string) {
 	// List tersely all object of type t
 	for _, i := range GetAllObjects(t) { // Iterate through all objects
@@ -38,7 +36,7 @@ func PrintTersely(t string, x map[string]interface{}) {
 		Id := StrVal(x["name"])
 		Props := x["properties"].(map[string]interface{})
 		Name := StrVal(Props["displayName"])
-		Type := MGType(StrVal(x["type"]))
+		Type := MgType(StrVal(x["type"]))
 		print("%-38s  %-20s  %s\n", Id, Name, Type)
 	case "u", "g", "sp", "ap", "ra", "rd":
 		Id := StrVal(x["id"])
@@ -60,8 +58,10 @@ func PrintTersely(t string, x map[string]interface{}) {
 		case "ra":
 			print("%s  %-60s %s\n", Id, Name, Desc)
 		case "rd":
-			BuiltIn := "BuiltIn="+StrVal(x["isBuiltIn"])
-			Enabled := "Enabled="+StrVal(x["isEnabled"])
+			BuiltIn := "Custom"
+			if StrVal(x["isBuiltIn"]) == "true" { BuiltIn = "BuiltIn" }
+			Enabled := "NotEnabled"
+			if StrVal(x["isEnabled"]) == "true" { Enabled = "Enabled" }
 			print("%s  %-60s  %s  %s\n", Id, Name, BuiltIn, Enabled)
 		}
 	}
@@ -106,91 +106,5 @@ func PrintMemberOfs(t string, memberOf []interface{}) {
 		}
 	} else {
 		print("%-21s %s\n", "memberof:", "None")
-	}
-}
-
-func CompareSpecfileOld(t, filePath string) {
-	// Compare object of type t defined in specfile filePath with what's really in Azure
-	switch t {
-	case "d":
-		// Load specfile
-		objRaw, err := LoadFileJson(filePath)
-		if objRaw == nil {
-			log.Printf("Invalid JSON specfile '%s': %s\n", filePath, err)
-			return
-		}
-		x := objRaw.(map[string]interface{}) // Assert as single JSON object
-		print("==== This SPECFILE ===============================================\n")
-		PrintJson(x)
-
-		xProps := x["properties"].(map[string]interface{})
-		Name := StrVal(xProps["roleName"])
-		// Search for role definition in all scopes defined in specfile
-		notFound := true
-		scopes := xProps["assignableScopes"].([]interface{})
-		for _, scope := range scopes {
-			url := az_url + "/" + scope.(string)
-			url += "/providers/Microsoft.Authorization/roleDefinitions?$filter=roleName+eq+'" + Name + "'"
-			params := map[string]string{"api-version": "2022-04-01"}
-			r := ApiGet(url, az_headers, params, false)
-			if r["value"] != nil && len(r["value"].([]interface{})) == 1 {
-				y := r["value"].([]interface{})
-				z := y[0].(map[string]interface{})
-				if z["id"] != nil {
-					notFound = false
-					print("==== What's in AZURE (in YAML-like format for easier reading) ====\n")
-					PrintObject("d", z)
-					break // Break, since any other subsequent match will be exactly the same
-				}
-			}
-			ApiErrorCheck(r, trace())
-		}
-		if notFound {
-			print("==== What's in AZURE =============================================\n")
-			print("Role definition as defined in this specfile does NOT exist in Azure.\n")
-		}
-	case "a":
-		// Load specfile
-		objRaw, err := LoadFileYaml(filePath)
-		if objRaw == nil {
-			log.Printf("Invalid YAML specfile '%s': %s\n", filePath, err)
-			return
-		}
-		x := objRaw.(map[string]interface{}) // Assert as single JSON object
-		print("==== This SPECFILE ===============================================\n")
-		PrintYaml(x)
-
-		xProps := x["properties"].(map[string]interface{})
-		roleId := LastElem(StrVal(xProps["roleDefinitionId"]), "/")
-		principalId := StrVal(xProps["principalId"])
-		scope := StrVal(xProps["scope"])
-		if scope == "" {
-			scope = StrVal(xProps["Scope"]) // Uppercase version
-		}
-		// Search for role assignment in the scope defined in specfile
-		url := az_url + scope
-		url += "/providers/Microsoft.Authorization/roleAssignments?$filter=principalId+eq+'" + principalId + "'"
-		params := map[string]string{"api-version": "2022-04-01"}
-		r := ApiGet(url, az_headers, params, false)
-		if r["value"] != nil && len(r["value"].([]interface{})) > 0 {
-			for _, i := range r["value"].([]interface{}) {
-				y := i.(map[string]interface{})
-				yProps := y["properties"].(map[string]interface{})
-				azRoleId := LastElem(StrVal(yProps["roleDefinitionId"]), "/")
-				azPrincipalId := StrVal(yProps["principalId"])
-				azScope := StrVal(yProps["scope"])
-				if azRoleId == roleId && azPrincipalId == principalId && azScope == scope {
-					print("==== AZURE ==============================\n")
-					PrintObject("a", y)
-					break // Break loop as soon as we find match
-				}
-			}
-		} else {
-			print("==== AZURE ==============================\n")
-			print("Role assignment does not exist as defined in specfile\n")
-		}
-		ApiErrorCheck(r, trace())
-	default:
-		print("Option not yet available for this object type.\n")
 	}
 }

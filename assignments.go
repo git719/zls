@@ -44,16 +44,10 @@ func PrintRoleAssignmentReport() {
 }
 
 func PrintRoleAssignment(x map[string]interface{}) {
-	// Print role definition object in YAML-like style format
-	if x == nil {
-		return
-	}
+	// Print role definition object in YAML
+	if x == nil { return }
 
-	if x["name"] != nil {
-		print("id: %s\n", StrVal(x["name"]))
-	}
-	// ######### DEBUG ##########
-	//PrintJson(x); print("\n")
+	if x["name"] != nil { print("id: %s\n", StrVal(x["name"])) }
 
 	print("properties:\n")
 	if x["properties"] == nil {
@@ -80,9 +74,7 @@ func PrintRoleAssignment(x map[string]interface{}) {
 	}
 	pId := StrVal(xProp["principalId"])
 	pName := nameMap[StrVal(xProp["principalId"])]
-	if pName == "" {
-		pName = "???" 
-	}
+	if pName == "" { pName = "???" }
 	print("  %-17s %s  # principaltype = %s, displayName = \"%s\"\n", "principalId:", pId, pType, pName)
 
 	subMap := GetIdNameMap("s")  // Get subscriptions id:name map
@@ -91,53 +83,52 @@ func PrintRoleAssignment(x map[string]interface{}) {
 		split := strings.Split(scope, "/")
 		subName := subMap[split[2]]
 		print("  %-17s %s  # Sub = %s\n", "scope:", scope, subName)
+	} else if scope == "/" {
+		print("  %-17s %s  # Entire tenant\n", "scope:", scope)
 	} else {
 		print("  %-17s %s\n", "scope:", scope)
 	}
 }
 
-func GetRoleAssignments() (oList []interface{}) {
+func GetAzRoleAssignmentAll() (oList []interface{}) {
 	// Get all role assigments from Azure
-	// See https://docs.microsoft.com/en-us/rest/api/authorization/role-assignments/list
-
+	// See https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-rest
 	oList = nil
 
-	// First, build list of scopes, which is all subscriptions to look under, and include the tenant root level
-	scopes := GetSubScopes()
-	scopes = append(scopes, "/providers/Microsoft.Management/managementGroups/" + tenant_id)
-	// Should we include all other Management Groups scopes?
-
-	var uuids []string  // Keep track of each unique role definition to whittle out repeats that come up in lower scopes
-	apiCalls := 1       // Track number of API calls below
-	subMap := GetIdNameMap("s")  // To ease printing sub names during calling
+	// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
+	// and all subscription scopes.
+	scopes := GetMgScopes()
+	subScopes := GetSubScopes()
+	scopes = append(scopes, subScopes...) // Elipsis means add two lists
+	
+	var uuids []string  // Keep track of each unique objects to whittle out inherited repeats
+	calls := 1          // Track number of API calls below
 
 	// Look for objects under all these scopes
 	params := map[string]string{
 		"api-version": "2022-04-01",  // roleAssignments
 	}
 	for _, scope := range scopes {
-		subId := LastElem(scope, "/")
-		subName := subMap[subId]
 		url := az_url + scope + "/providers/Microsoft.Authorization/roleAssignments"
 		r := ApiGet(url, az_headers, params, false)
 		if r["value"] != nil {
 			assignments := r["value"].([]interface{}) // Assert as JSON array type
-			print("\r(API calls = %d) %d assignments at '%s'", apiCalls, len(assignments), subName)
-			PadSpaces(20)
+			// Using global var rUp to overwrite last line. Defer newline until done
+			print("%s(API calls = %d) %d assignments in set %d", rUp, calls, len(assignments), calls)
 			for _, i := range assignments {
 				x := i.(map[string]interface{}) // Assert as JSON object type
 				uuid := StrVal(x["name"])  // NOTE that 'name' key is the role assignment UUID
 				if !ItemInList(uuid, uuids) {
-					// Add this role assignment to growing list ONLY if it's NOT in it already - they DO repeat!
+					// Role assignments DO repeat! Add to growing list ONLY if it's NOT in it already
 					oList = append(oList, x)
 					uuids = append(uuids, uuid)
 				}
 			}
 		}
 		ApiErrorCheck(r, trace())
-		apiCalls++
+		calls++
 	}
-	print("\n")
+	print("\n")  // Use newline now
 	return oList
 }
 
@@ -146,19 +137,15 @@ func GetAzRoleAssignment(x map[string]interface{}) (y map[string]interface{}) {
 	// Above 3 parameters make role assignments unique
 
 	// First, make sure x is a searchable role assignment object
-	if x == nil {
-		return nil      // Don't look for empty objects
-	}
+	if x == nil { return nil }  // Don't look for empty objects
+
 	xProps := x["properties"].(map[string]interface{})
-	if xProps == nil {  // Return nil if properties missing
-		return nil
-	}
+	if xProps == nil { return nil }  // Return nil if properties missing
+
 	xRoleDefinitionId := LastElem(StrVal(xProps["roleDefinitionId"]), "/")
 	xPrincipalId      := StrVal(xProps["principalId"])
 	xScope            := StrVal(xProps["scope"])
-	if xScope == "" {
-		xScope = StrVal(xProps["Scope"])  // Account for capitalized Scope key
-	}
+	if xScope == "" { xScope = StrVal(xProps["Scope"]) }  // Account for possibly capitalized key
 	if xScope == "" || xPrincipalId == "" || xRoleDefinitionId == "" {
 		return nil
 	}

@@ -1,12 +1,10 @@
-// azgroups.go
+// groups.go
 
 package main
 
 func PrintGroup(x map[string]interface{}) {
-	// Print group object in YAML-like style format
-	if x["id"] == nil {
-		return
-	}
+	// Print group object in YAML
+	if x == nil { return }
 	id := StrVal(x["id"])
 
 	// Print the most important attributes

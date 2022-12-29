@@ -1,8 +1,18 @@
-// mggroups.go
+// mgroups.go
 
 package main
 
-func MGType(typeIn string) string {
+func GetMgScopes() (mgScopes []string) {
+	// Get all Management Group scope strings
+	mgScopes = nil
+	for _, i := range GetAllObjects("m") {
+		x := i.(map[string]interface{}) // Assert as JSON object type
+		mgScopes = append(mgScopes, StrVal(x["id"]))
+	}
+	return mgScopes
+}
+
+func MgType(typeIn string) string {
 	switch typeIn {
 	case "Microsoft.Management/managementGroups":
 		return "ManagementGroup"
@@ -14,23 +24,24 @@ func MGType(typeIn string) string {
 }
 
 func PrintManagementGroup(x map[string]interface{}) {
-	// Print subscription object in YAML-like style format
-	if x["id"] == nil {
-		return
-	}
+	// Print management group object in YAML
+	if x["id"] == nil { return }
 	id := StrVal(x["name"])
 	xProp := x["properties"].(map[string]interface{})
 	Name := StrVal(xProp["displayName"])
-	Type := MGType(StrVal(x["type"]))
+	Type := MgType(StrVal(x["type"]))
 	print("%-20s %s\n", "displayName:", Name)
 	print("%-20s %s\n", "id:", id)
 	print("%-20s %s\n", "type:", Type)
 }
 
-func GetManagementGroups() (oList []interface{}) {
+func GetAzManagementGroupAll() (oList []interface{}) {
+	// Get all Management Groups in this Azure tenant
 	oList = nil
 	url := az_url + "/providers/Microsoft.Management/" + oMap["m"]
-	params := map[string]string{"api-version": "2020-05-01"}
+	params := map[string]string{
+		"api-version": "2020-05-01",  // managementGroups
+	}
 	r := ApiGet(url, az_headers, params, false)
 	if r["value"] != nil {
 		objects := r["value"].([]interface{}) // Treat as JSON array type
@@ -40,12 +51,12 @@ func GetManagementGroups() (oList []interface{}) {
 	return oList
 }
 
-func PrintMGChildren(indent int, children []interface{}) {
+func PrintMgChildren(indent int, children []interface{}) {
 	for _, i := range children {
 		child := i.(map[string]interface{})
 		name := StrVal(child["displayName"])
 		id := StrVal(child["name"])
-		Type := MGType(StrVal(child["type"]))
+		Type := MgType(StrVal(child["type"]))
 
 		if name == "Access to Azure Active Directory" && Type == "Subscription" {
 			continue // Skip legacy subscriptions. We don't care
@@ -59,7 +70,8 @@ func PrintMGChildren(indent int, children []interface{}) {
 		print("%-*s  %-38s  %s\n", padding, name, id, Type)
 		if child["children"] != nil {
 			descendants := child["children"].([]interface{})
-			PrintMGChildren(indent+4, descendants) // Recurse to print additional children
+			PrintMgChildren(indent+4, descendants)
+			// Using recursion here to print additional children
 		}
 	}
 }
@@ -68,7 +80,7 @@ func PrintManagementGroupTree() {
 	// Get the entire MG and subscription hierarchy tree for the tenant
 	url := "/providers/Microsoft.Management/managementGroups/" + tenant_id
 	params := map[string]string{
-		"api-version": "2020-05-01",
+		"api-version": "2020-05-01",  // managementGroups
 		"$expand":     "children",
 		"$recurse":    "true",
 	}
@@ -81,7 +93,7 @@ func PrintManagementGroupTree() {
 		print("%-38s  %-38s  TENANT\n", name, id)
 		if props["children"] != nil {
 			children := props["children"].([]interface{})
-			PrintMGChildren(4, children)
+			PrintMgChildren(4, children)
 		}
 	}
 	ApiErrorCheck(r, trace())
