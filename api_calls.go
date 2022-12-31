@@ -216,26 +216,55 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 			url := az_url + scope + "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
 			r := ApiGet(url, az_headers, params, false) // Returns either an object or an error
 			if r != nil && r["id"] != nil { return r }
-			ApiErrorCheck(r, trace())
+			//ApiErrorCheck(r, trace()) // # DEBUG
 		}
 	case "s":
 		params := map[string]string{
 			"api-version": "2022-09-01",  // subscriptions
 		}
 		r := ApiGet(az_url + "/subscriptions/" + id, az_headers, params, false)
+		ApiErrorCheck(r, trace())
 		x = r
 	case "m":
 		params := map[string]string{
 			"api-version": "2022-04-01",  // managementGroups
 		}
 		r := ApiGet(az_url + "/providers/Microsoft.Management/managementGroups/" + id, az_headers, params, false)
+		ApiErrorCheck(r, trace())
 		x = r
-	case "u", "g", "sp", "ap", "ra":
+	case "u", "g", "ra":
 		r := ApiGet(mg_url + "/v1.0/" + oMap[t] + "/" + id, mg_headers, nil, false)
+		ApiErrorCheck(r, trace())
+		x = r
+	case "ap", "sp":
+		url := mg_url + "/v1.0/" + oMap[t]
+		r := ApiGet(url + "/" + id, mg_headers, nil, false)
+		if r != nil && r["error"] != nil {
+			// Also look for this app/SP using the appId
+			params := map[string]string{
+				"$filter": "appId eq '" + id + "'",
+			}
+			r := ApiGet(url, mg_headers, params, false)
+			if r != nil && r["value"] != nil {
+				list := r["value"].([]interface{})
+				count := len(list)
+				if count == 1 {
+					x = list[0].(map[string]interface{})  // Return single value found
+					return x
+				} else if count > 1 {
+					// Not sure this will ever happen
+					print("Found %d entries with this appId\n", count)
+					return nil
+				} else {
+					return nil
+				}
+			}
+		}
 		x = r
 	case "rd":
 		// Again, AD role definitions are under a different area, until they are activated
 		r := ApiGet(mg_url + "/v1.0/roleManagement/directory/roleDefinitions/" + id, mg_headers, nil, false)
+		ApiErrorCheck(r, trace())
 		x = r
 	}
 	return x

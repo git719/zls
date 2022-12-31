@@ -7,16 +7,15 @@ import (
 )
 
 func PrintSP(obj map[string]interface{}) {
-	// Print service principal object in YAML-like style format
-	if obj["id"] == nil {
-		return
-	}
+	// Print service principal object in YAML format
+	if obj == nil { return 	}
 	id := StrVal(obj["id"])
 
 	// Print the most important attributes
 	list := []string{"displayName", "id", "appId", "accountEnabled", "servicePrincipalType"}
 	for _, i := range list {
-		print("%-21s %s\n", i+":", StrVal(obj[i]))
+		v := StrVal(obj[i])
+		if v != "" { print("%-21s %s\n", i+":", v) } // Only print non-null attributes
 	}
 
 	// Print owners

@@ -3,7 +3,7 @@
 package main
 
 func PrintUser(x map[string]interface{}) {
-	// Print user object in YAML-like style format
+	// Print user object in YAML format
 	if x["id"] == nil {
 		return
 	}
@@ -13,7 +13,8 @@ func PrintUser(x map[string]interface{}) {
 	list := []string{"displayName", "id", "userPrincipalName", "mailNickname", "onPremisesSamAccountName",
 		"onPremisesDomainName", "onPremisesUserPrincipalName"}
 	for _, i := range list {
-		print("%-28s %s\n", i+":", StrVal(x[i]))
+		v := StrVal(x[i])
+		if v != "" { print("%-28s %s\n", i+":", v) } // Only print non-null attributes
 	}
 
 	if x["otherMails"] != nil {

@@ -10,7 +10,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "183"
+	prgver  = "184"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 	rUp     = "\x1B[2K\r"
@@ -46,12 +46,10 @@ var (
 
 func PrintUsage() {
 	print(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
-		"    -X[j]              List all X objects tersely, with JSON as output option\n" +
-		"    -X \"string\"        List all X objects whose name has \"string\" in it\n" +
-		"    -Xj UUID|\"string\"  List specific X or matching objects in JSON format\n" +
-		"    -X UUID            List specific X object in YAML-like human-readable format\n" +
-		"    -Xx                Delete X object cache local file\n" +
-		"    -vs SPECFILE       Compare specification file to what's in Azure, only works for d and a objects\n" +
+		"    -vs SPECFILE         Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +
+		"    -X[j]                List all X objects tersely, with JSON output option\n" +
+		"    -X[j] UUID|\"string\"  Show/list X object(s) matching on UUID or \"string\" attribute, JSON option\n" +
+		"    -Xx                  Delete X object local file cache\n" +
 		"\n" +
 		"    Where 'X' can be any of these object types:\n" +
 		"      d  = RBAC Role Definitions   a  = RBAC Role Assignments   s  = Azure Subscriptions  \n" +
@@ -91,7 +89,7 @@ func main() {
 
 	// Process given arguments
 	switch numberOfArguments {
-	case 1:
+	case 1:    // Process 1-argument requests
 		arg1 := os.Args[1]
 		switch arg1 {         // First 1-arg check doesn't require API tokens or global vars
 	    case "-v":
@@ -127,7 +125,7 @@ func main() {
 		default:
 			PrintUsage()
 		}
-	case 2:
+	case 2:    // Process 2-argument requests
 		arg1 := os.Args[1] ; arg2 := os.Args[2]
 		SetupApiTokens()
 		switch arg1 {
@@ -136,13 +134,13 @@ func main() {
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
 			t := arg1[1 : len(arg1)-1] // Single out our object type letter (see oMap)
 			if ValidUuid(arg2) {
-				x := GetAzObjectById(t, arg2) // Get single object by ID and print in JSON format
+				x := GetAzObjectById(t, arg2) // Get single object by ID and print in JSON
 				PrintJson(x)
 			} else {
 				oList := GetMatching(t, arg2) // Get all matching objects
-				if len(oList) > 1 {           // Print all matching objects as JSON
+				if len(oList) > 1 {           // Print all matching objects in JSON
 					PrintJson(oList)
-				} else if len(oList) > 0 { // Print single matching object as JSON
+				} else if len(oList) > 0 {    // Print single matching object in JSON
 					x := oList[0].(map[string]interface{})
 					PrintJson(x)
 				}
@@ -151,7 +149,7 @@ func main() {
 			t := arg1[1:] // Single out the object type
 			if ValidUuid(arg2) {
 				x := GetAzObjectById(t, arg2) // Get single object by ID
-				PrintObject(t, x)           // Print in YAML-like format
+				PrintObject(t, x)             // Print in YAML
 			} else {
 				oList := GetMatching(t, arg2) // Get all matching objects
 				if len(oList) > 1 {           // Print all matching objects tersely
@@ -159,7 +157,7 @@ func main() {
 						x := i.(map[string]interface{})
 						PrintTersely(t, x)
 					}
-				} else if len(oList) > 0 { // Print single matching object in YAML-like format
+				} else if len(oList) > 0 {    // Print single matching object in YAML
 					x := oList[0].(map[string]interface{})
 					PrintObject(t, x)
 				}
@@ -167,7 +165,7 @@ func main() {
 		default:
 			PrintUsage()
 		}
-	case 3:
+	case 3:    // Process 3-argument requests
 		arg1 := os.Args[1] ; arg2 := os.Args[2] ; arg3 := os.Args[3]
 		switch arg1 {
 		case "-cri":
@@ -175,7 +173,7 @@ func main() {
 		default:
 			PrintUsage()
 		}
-	case 4:
+	case 4:    // Process 4-argument requests
 		arg1 := os.Args[1] ; arg2 := os.Args[2] ; arg3 := os.Args[3] ; arg4 := os.Args[4]
 		switch arg1 {
 		case "-cr":

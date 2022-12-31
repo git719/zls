@@ -10,7 +10,8 @@ func PrintGroup(x map[string]interface{}) {
 	// Print the most important attributes
 	list := []string{"displayName", "description", "id", "isAssignableToRole", "mailEnabled", "mailNickname"}
 	for _, i := range list {
-		print("%-28s %s\n", i+":", StrVal(x[i]))
+		v := StrVal(x[i])
+		if v != "" { print("%-21s %s\n", i+":", v) } // Only print non-null attributes
 	}
 
 	// OPTIONAL: Print other attributes here

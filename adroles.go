@@ -3,14 +3,15 @@
 package main
 
 func PrintAdRole(x map[string]interface{}) {
-	// Print object in YAML-like style format
+	// Print active Azure AD role object in YAML format
 	if x == nil { return }
 	id := StrVal(x["id"])
 
 	// Print the most important attributes first
 	list := []string{"id", "displayName", "description", "roleTemplateId"}
 	for _, i := range list {
-		print("%-21s %s\n", i+":", StrVal(x[i]))
+		v := StrVal(x[i])
+		if v != "" { print("%-21s %s\n", i+":", v) } // Only print non-null attributes
 	}
 
 	// Print members of this role
@@ -34,13 +35,14 @@ func PrintAdRole(x map[string]interface{}) {
 }
 
 func PrintAdRoleDef(x map[string]interface{}) {
-	// Print object in YAML-like style format
+	// Print Azure AD role definition object in YAML format
 	if x == nil { return }
 
 	// Print the most important attributes first
 	list := []string{"id", "displayName", "description", "isBuiltIn", "isEnabled"}
 	for _, i := range list {
-		print("%-21s %s\n", i+":", StrVal(x[i]))
+		v := StrVal(x[i])
+		if v != "" { print("%-21s %s\n", i+":", v) } // Only print non-null attributes
 	}
 
 	// List permissions

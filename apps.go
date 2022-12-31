@@ -3,16 +3,15 @@
 package main
 
 func PrintApp(obj map[string]interface{}) {
-	// Print application object in YAML-like style format
-	if obj["id"] == nil {
-		return
-	}
+	// Print application object in YAML format
+	if obj == nil { return }
 	id := StrVal(obj["id"])
 
 	// Print the most important attributes first
 	list := []string{"displayName", "appId", "id"}
 	for _, i := range list {
-		print("%-21s %s\n", i+":", StrVal(obj[i]))
+		v := StrVal(obj[i])
+		if v != "" { print("%-21s %s\n", i+":", v) } // Only print non-null attributes
 	}
 
 	// Print owners

@@ -33,7 +33,8 @@ func PrintSubscription(x map[string]interface{}) {
 	if x == nil { return }
 	list := []string{"displayName", "subscriptionId", "state", "tenantId"}
 	for _, i := range list {
-		print("%-20s %s\n", i+":", StrVal(x[i]))
+		v := StrVal(x[i])
+		if v != "" { print("%-20s %s\n", i+":", v) } // Only print non-null attributes
 	}
 }
 
