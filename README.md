@@ -52,14 +52,11 @@ Please note that the **primary goal** of this utility is to serve as a study aid
 
 ## Usage
 ```
-zls Azure RBAC and MS Graph listing utility v174
-    -Xj                List all X objects in JSON format
-    -X                 List all X objects tersely (UUID and most essential attributes)
-    -X "string"        List all X objects whose name has "string" in it
-    -Xj UUID|"string"  List specific X or matching objects in JSON format
-    -X UUID            List specific X object in YAML-like human-readable format
-    -X <specfile>      Compare X object specification file to what's in Azure
-    -Xx                Delete X object cache local file
+zls Azure RBAC and MS Graph listing utility v184
+    -vs SPECFILE         Compare YAML or JSON specfile to what's in Azure (only for d and a objects)
+    -X[j]                List all X objects tersely, with JSON output option
+    -X[j] UUID|"string"  Show/list X object(s) matching on UUID or "string" attribute, JSON option
+    -Xx                  Delete X object local file cache
 
     Where 'X' can be any of these object types:
       d  = RBAC Role Definitions   a  = RBAC Role Assignments   s  = Azure Subscriptions
@@ -67,14 +64,16 @@ zls Azure RBAC and MS Graph listing utility v174
       sp = Service Principals      ap = Applications            ra = Azure AD Roles Active
       rd = Azure AD Roles Defs
 
+    -xx                               Delete ALL cache local files
     -ar                               List all RBAC role assignments with resolved names
     -mt                               List Management Group and subscriptions tree
     -pags                             List all Azure AD Privileged Access Groups
     -st                               List local cache count and Azure count of all objects
+
+    -z                                Dump variables in running program
     -cr                               Dump values in credentials file
     -cr  TENANT_ID CLIENT_ID SECRET   Set up MSAL automated client_id + secret login
     -cri TENANT_ID USERNAME           Set up MSAL interactive browser popup login
     -tx                               Delete MSAL accessTokens cache file
-    -xx                               Delete ALL cache local file
     -v                                Print this usage page
 ```
