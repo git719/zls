@@ -56,6 +56,30 @@ func VarType(v interface{}) string {
 	return sprint("%T", v)
 }
 
+func GetAzRbacScopes() (scopes []string) {
+	// Get all scopes from the Azure RBAC hierarchy
+	var mgScopes []string = nil
+	for _, i := range GetAllObjects("m") {
+		x := i.(map[string]interface{}) // Assert as JSON object type
+		mgScopes = append(mgScopes, StrVal(x["id"]))
+	}
+
+	subScopes = nil
+	// Get all subscription scope strings
+	for _, i := range GetAllObjects("s") {
+		x := i.(map[string]interface{}) // Assert as JSON object type
+		name := StrVal(x["displayName"])
+		// Skip legacy subscriptions with below name, since they have no role definitions
+		if name == "Access to Azure Active Directory" { continue }
+		subScopes = append(subScopes, StrVal(x["id"]))
+	}
+
+	subScopes := GetSubScopes()
+	scopes = append(scopes, subScopes...) // Elipsis means add two lists
+
+	return scopes
+}
+
 func GetAllObjects(t string) (oList []interface{}) {
 	// This function determines whether to retrieve all the objects from Azure or from the local
 	// cache based on the age of the local cache.

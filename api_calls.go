@@ -208,7 +208,8 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		subScopes := GetSubScopes()
 		scopes = append(scopes, subScopes...) // Elipsis means add two lists
 
-		// Look for objects under all these scopes
+		// Look for objects under all theRBAC pes
+		scopes := GetAzRbacScopes()
 		params := map[string]string{
 			"api-version": "2022-04-01",  // roleDefinitions and roleAssignments
 		}
@@ -240,7 +241,7 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		url := mg_url + "/v1.0/" + oMap[t]
 		r := ApiGet(url + "/" + id, mg_headers, nil, false)
 		if r != nil && r["error"] != nil {
-			// Also look for this app/SP using the appId
+			// Also look for this app/SP using its appId
 			params := map[string]string{
 				"$filter": "appId eq '" + id + "'",
 			}
@@ -276,13 +277,8 @@ func GetAzObjectByName(t, name string) (x map[string]interface{}) {
 	case "a":
 		return nil // Role assignments don't have a displayName attribute
 	case "d":
-		// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
-		// and all subscription scopes.
-		scopes := GetMgScopes()
-		subScopes := GetSubScopes()
-		scopes = append(scopes, subScopes...) // Elipsis means add two lists
-
-		// Look for definition under all these scopes
+		// Look for definition under all RBAC scopes
+		scopes := GetAzRbacScopes()
 		params := map[string]string{
 			"api-version": "2022-04-01",  // roleDefinitions
 			"$filter":     "roleName eq '" + name + "'",

@@ -2,16 +2,6 @@
 
 package main
 
-func GetMgScopes() (mgScopes []string) {
-	// Get all Management Group scope strings
-	mgScopes = nil
-	for _, i := range GetAllObjects("m") {
-		x := i.(map[string]interface{}) // Assert as JSON object type
-		mgScopes = append(mgScopes, StrVal(x["id"]))
-	}
-	return mgScopes
-}
-
 func MgType(typeIn string) string {
 	switch typeIn {
 	case "Microsoft.Management/managementGroups":
