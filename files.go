@@ -39,18 +39,14 @@ func FileNotExist(filePath string) (e bool) {
 
 func FileSize(filePath string) int64 {
 	f, err := os.Stat(filePath)
-	if err != nil {
-		return 0
-	}
+	if err != nil { return 0 }
 	return f.Size()
 }
 
 func FileModTime(filePath string) int {
 	// Modified time in Unix epoch
 	f, err := os.Stat(filePath)
-	if err != nil {
-		return 0
-	}
+	if err != nil { return 0 }
 	return int(f.ModTime().Unix())
 }
 

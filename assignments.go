@@ -46,7 +46,6 @@ func PrintRoleAssignmentReport() {
 func PrintRoleAssignment(x map[string]interface{}) {
 	// Print role definition object in YAML
 	if x == nil { return }
-
 	if x["name"] != nil { print("id: %s\n", StrVal(x["name"])) }
 
 	print("properties:\n")
@@ -92,19 +91,12 @@ func PrintRoleAssignment(x map[string]interface{}) {
 
 func GetAzRoleAssignmentAll() (oList []interface{}) {
 	// Get all role assigments from Azure
+
 	// See https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-rest
 	oList = nil
-
-	// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
-	// and all subscription scopes.
-	scopes := GetMgScopes()
-	subScopes := GetSubScopes()
-	scopes = append(scopes, subScopes...) // Elipsis means add two lists
-	
-	var uuids []string  // Keep track of each unique objects to whittle out inherited repeats
-	calls := 1          // Track number of API calls below
-
-	// Look for objects under all these scopes
+	scopes := GetAzRbacScopes()  // Look for objects under all the RBAC hierarchy scopes
+	var uuids []string           // Keep track of each unique objects to whittle out inherited repeats
+	calls := 1                   // Track number of API calls below
 	params := map[string]string{
 		"api-version": "2022-04-01",  // roleAssignments
 	}

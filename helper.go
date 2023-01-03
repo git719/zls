@@ -58,25 +58,21 @@ func VarType(v interface{}) string {
 
 func GetAzRbacScopes() (scopes []string) {
 	// Get all scopes from the Azure RBAC hierarchy
-	var mgScopes []string = nil
+
+	// Let's start with all management group scopes
+	scopes = nil
 	for _, i := range GetAllObjects("m") {
 		x := i.(map[string]interface{}) // Assert as JSON object type
-		mgScopes = append(mgScopes, StrVal(x["id"]))
+		scopes = append(scopes, StrVal(x["id"]))
 	}
 
-	subScopes = nil
-	// Get all subscription scope strings
+	// Now add all the subscription scopes
 	for _, i := range GetAllObjects("s") {
 		x := i.(map[string]interface{}) // Assert as JSON object type
-		name := StrVal(x["displayName"])
-		// Skip legacy subscriptions with below name, since they have no role definitions
-		if name == "Access to Azure Active Directory" { continue }
-		subScopes = append(subScopes, StrVal(x["id"]))
+		// // Skip legacy subscriptions with below name, since they have no role definitions
+		// if StrVal(x["displayName"]) == "Access to Azure Active Directory" { continue }
+		scopes = append(scopes, StrVal(x["id"]))
 	}
-
-	subScopes := GetSubScopes()
-	scopes = append(scopes, subScopes...) // Elipsis means add two lists
-
 	return scopes
 }
 
@@ -226,8 +222,8 @@ func GetAllObjects(t string) (oList []interface{}) {
 func GetIdNameMap(t string) (idNameMap map[string]string) {
 	// Return uuid:name map for given object type t
 	idNameMap = make(map[string]string)
-	for _, i := range GetAllObjects(t) { // Iterate through all objects
-		x := i.(map[string]interface{}) // Assert JSON object type
+	for _, i := range GetAllObjects(t) {  // Iterate through all objects
+		x := i.(map[string]interface{})   // Assert JSON object type
 		switch t {
 		case "d":
 			// Role definitions
@@ -321,9 +317,7 @@ func GetObjectMemberOfs(t, id string) (oList []interface{}) {
 	// Get all group/role objects this object of type 't' with 'id' is a memberof
 	oList = nil
 	r := ApiGet(mg_url+"/beta/"+oMap[t]+"/"+id+"/memberof", mg_headers, nil, false)
-	if r["value"] != nil {
-		oList = r["value"].([]interface{}) // Assert as JSON array type
-	}
+	if r["value"] != nil { oList = r["value"].([]interface{}) }  // Assert as JSON array type
 	ApiErrorCheck(r, trace())
 	return oList
 }

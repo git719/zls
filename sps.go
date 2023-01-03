@@ -97,9 +97,7 @@ func PrintSP(obj map[string]interface{}) {
 			apiName := "Unknown"
 			id := StrVal(api["resourceId"])   // Get API's SP to get its displayName
 			r := ApiGet(mg_url+"/v1.0/servicePrincipals/"+id, mg_headers, nil, false)
-			if r["appDisplayName"] != nil {
-				apiName = StrVal(r["appDisplayName"])
-			}
+			if r["appDisplayName"] != nil { apiName = StrVal(r["appDisplayName"]) }
 			ApiErrorCheck(r, trace())
 
 			// Print each delegated claim for this API

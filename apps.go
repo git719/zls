@@ -77,10 +77,7 @@ func PrintApp(obj map[string]interface{}) {
 			ApiErrorCheck(r, trace())
 
 			SPs := r["value"].([]interface{})
-
-			if len(SPs) > 1 {
-				die("  %-50s %s\n", resAppId, "Error. Multiple SPs for this AppId. Aborting.")
-			}
+			if len(SPs) > 1 { die("  %-50s %s\n", resAppId, "Error. Multiple SPs for this AppId. Aborting.") }
 
 			sp := SPs[0].(map[string]interface{}) // The only expected entry, asserted as JSON object type
 

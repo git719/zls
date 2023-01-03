@@ -11,31 +11,21 @@ import (
 func LoadFileJson(filePath string) (jsonObject interface{}, err error) {
 	// Read/load/decode given filePath as some JSON object
 	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 	defer f.Close()
 	byteValue, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 	err = json.Unmarshal([]byte(byteValue), &jsonObject)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 	return jsonObject, nil
 }
 
 func SaveFileJson(jsonObject interface{}, filePath string) {
 	// Save given JSON object to given filePath
 	jsonData, err := json.Marshal(jsonObject)
-	if err != nil {
-		panic(err.Error())
-	}
+	if err != nil { panic(err.Error()) }
 	err = ioutil.WriteFile(filePath, jsonData, 0600)
-	if err != nil {
-		panic(err.Error())
-	}
+	if err != nil { panic(err.Error()) }
 }
 
 func PrintJson(jsonObject interface{}) {
@@ -95,9 +85,7 @@ func SelectObject(id string, objSet []interface{}) (x map[string]interface{}) {
 	for _, obj := range objSet {
 		x = obj.(map[string]interface{})
 		objId := StrVal(x["id"])
-		if id == objId {
-			return x
-		}
+		if id == objId { return x }
 	}
 	return nil
 }
@@ -128,9 +116,7 @@ func NormalizeCache(baseSet, deltaSet []interface{}) (oList []interface{}) {
 	for _, i := range baseSet {
 		x := i.(map[string]interface{})
 		id := StrVal(x["id"])
-		if ItemInList(id, deletedIds) {
-			continue
-		}
+		if ItemInList(id, deletedIds) { continue }
 		oList = append(oList, x)
 		baseIds = append(baseIds, id)
 	}
