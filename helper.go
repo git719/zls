@@ -56,6 +56,26 @@ func VarType(v interface{}) string {
 	return sprint("%T", v)
 }
 
+func GetAzRbacScopes() (scopes []string) {
+	// Get all scopes from the Azure RBAC hierarchy
+
+	// Let's start with all management group scopes
+	scopes = nil
+	for _, i := range GetAllObjects("m") {
+		x := i.(map[string]interface{}) // Assert as JSON object type
+		scopes = append(scopes, StrVal(x["id"]))
+	}
+
+	// Now add all the subscription scopes
+	for _, i := range GetAllObjects("s") {
+		x := i.(map[string]interface{}) // Assert as JSON object type
+		// // Skip legacy subscriptions with below name, since they have no role definitions
+		// if StrVal(x["displayName"]) == "Access to Azure Active Directory" { continue }
+		scopes = append(scopes, StrVal(x["id"]))
+	}
+	return scopes
+}
+
 func GetAllObjects(t string) (oList []interface{}) {
 	// This function determines whether to retrieve all the objects from Azure or from the local
 	// cache based on the age of the local cache.
@@ -202,8 +222,8 @@ func GetAllObjects(t string) (oList []interface{}) {
 func GetIdNameMap(t string) (idNameMap map[string]string) {
 	// Return uuid:name map for given object type t
 	idNameMap = make(map[string]string)
-	for _, i := range GetAllObjects(t) { // Iterate through all objects
-		x := i.(map[string]interface{}) // Assert JSON object type
+	for _, i := range GetAllObjects(t) {  // Iterate through all objects
+		x := i.(map[string]interface{})   // Assert JSON object type
 		switch t {
 		case "d":
 			// Role definitions
@@ -297,9 +317,7 @@ func GetObjectMemberOfs(t, id string) (oList []interface{}) {
 	// Get all group/role objects this object of type 't' with 'id' is a memberof
 	oList = nil
 	r := ApiGet(mg_url+"/beta/"+oMap[t]+"/"+id+"/memberof", mg_headers, nil, false)
-	if r["value"] != nil {
-		oList = r["value"].([]interface{}) // Assert as JSON array type
-	}
+	if r["value"] != nil { oList = r["value"].([]interface{}) }  // Assert as JSON array type
 	ApiErrorCheck(r, trace())
 	return oList
 }

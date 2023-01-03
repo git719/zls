@@ -34,9 +34,7 @@ func StrVal(x interface{}) string {
 
 func ItemInList(arg string, argList []string) bool {
 	for _, value := range argList {
-		if value == arg {
-			return true
-		}
+		if value == arg { return true }
 	}
 	return false
 }

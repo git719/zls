@@ -176,46 +176,21 @@ func ObjectCountAzure(t string) int64 {
 	return 0
 }
 
-func GetResourceGroupIds(subId string) (resGroupIds []string) {
-	// Get the fully qualified ID of each Resource Group in given subscription ID
-	resGroupIds = nil
-	params := map[string]string{
-		"api-version": "2022-09-01",  // subscriptions
-	}	
-	r := ApiGet(az_url+"/subscriptions/"+subId+"/resourcegroups", az_headers, params, false)
-	if r["value"] != nil {
-		resourceGroups := r["value"].([]interface{}) // Assert as JSON array type
-		for _, obj := range resourceGroups {
-			x := obj.(map[string]interface{}) // Assert as JSON object
-			id := StrVal(x["id"])
-			if id != "" {
-				resGroupIds = append(resGroupIds, id)
-			}
-		}
-	}
-	ApiErrorCheck(r, trace())
-	return resGroupIds
-}
-
 func GetAzObjectById(t, id string) (x map[string]interface{}) {
-	// Retrieve Azure object by UUID
+	// Retrieve Azure object by Object Id
 	x = nil
 	switch t {
 	case "d", "a":
-		// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
-		// and all subscription scopes.
-		scopes := GetMgScopes()
-		subScopes := GetSubScopes()
-		scopes = append(scopes, subScopes...) // Elipsis means add two lists
-
-		// Look for objects under all these scopes
+		scopes := GetAzRbacScopes()  // Look for objects under all the RBAC hierarchy scopes
+		// Add null string below to represent the root "/" scope, else we miss any role assignments for it
+		scopes = append(scopes, "")
 		params := map[string]string{
 			"api-version": "2022-04-01",  // roleDefinitions and roleAssignments
 		}
 		for _, scope := range scopes {
 			url := az_url + scope + "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
-			r := ApiGet(url, az_headers, params, false) // Returns either an object or an error
-			if r != nil && r["id"] != nil { return r }
+			r := ApiGet(url, az_headers, params, false)
+			if r != nil && r["id"] != nil { return r }  // Returns as soon as we find a match
 			//ApiErrorCheck(r, trace()) // # DEBUG
 		}
 	case "s":
@@ -240,7 +215,7 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		url := mg_url + "/v1.0/" + oMap[t]
 		r := ApiGet(url + "/" + id, mg_headers, nil, false)
 		if r != nil && r["error"] != nil {
-			// Also look for this app/SP using the appId
+			// Also look for this app or SP using its appId
 			params := map[string]string{
 				"$filter": "appId eq '" + id + "'",
 			}
@@ -252,13 +227,13 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 					x = list[0].(map[string]interface{})  // Return single value found
 					return x
 				} else if count > 1 {
-					// Not sure this will ever happen
-					print("Found %d entries with this appId\n", count)
+					print("Found %d entries with this appId\n", count)  // Not sure this would ever happen, but just in case
 					return nil
 				} else {
 					return nil
 				}
 			}
+			//ApiErrorCheck(r, trace())  // DEBUG
 		}
 		x = r
 	case "rd":
@@ -271,18 +246,14 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 }
 
 func GetAzObjectByName(t, name string) (x map[string]interface{}) {
+	// FUTURE, not yet in use
+
 	// Retrieve Azure object by displayName, given its type t
 	switch t {
 	case "a":
 		return nil // Role assignments don't have a displayName attribute
 	case "d":
-		// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
-		// and all subscription scopes.
-		scopes := GetMgScopes()
-		subScopes := GetSubScopes()
-		scopes = append(scopes, subScopes...) // Elipsis means add two lists
-
-		// Look for definition under all these scopes
+		scopes := GetAzRbacScopes()  // Look for objects under all the RBAC hierarchy scopes
 		params := map[string]string{
 			"api-version": "2022-04-01",  // roleDefinitions
 			"$filter":     "roleName eq '" + name + "'",
@@ -292,6 +263,8 @@ func GetAzObjectByName(t, name string) (x map[string]interface{}) {
 			r := ApiGet(url, az_headers, params, false)
 			if r != nil && r["value"] != nil {
 				results := r["value"].([]interface{})  // Assert as JSON array type
+				// NOTE: Would results ever be an array with MORE than 1 element? Is below name
+				// confirmation even needed? Can we just return r["value"][0]
 				for _, i := range results {
 					x := i.(map[string]interface{})    // Assert as JSON object type
 					xProps := x["properties"].(map[string]interface{})
@@ -341,9 +314,7 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 	// Set up new HTTP client
 	client := &http.Client{Timeout: time.Second * 60} // One minute timeout
 	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		panic(err.Error())
-	}
+	if err != nil { panic(err.Error()) }
 
 	// Update headers and query params
 	for h, v := range headers {
@@ -367,15 +338,12 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 		// PrintJson(BODY); print("\n") 
 	}
 	r, err := client.Do(req)
-	if err != nil {
-		panic(err.Error())
-	}
+	if err != nil { panic(err.Error()) }
 	defer r.Body.Close()
 
 	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		panic(err.Error())
-	}
+	if err != nil { panic(err.Error()) }
+	
 	// Note that variable 'body' is of type []uint8 which is essentially a long string
 	// that evidently can be either A) a count integer number, or B) a JSON object string.
 	// This interpretation needs confirmation, and then better handling.
@@ -397,9 +365,7 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 		print("RESULT:\n")
 		PrintJson(result); print("\n") 
 		resHeaders, err := httputil.DumpResponse(r, false)
-		if err != nil {
-			panic(err.Error())
-		}
+		if err != nil { panic(err.Error()) }
 		print("HEADERS:\n%s\n", string(resHeaders)) 
 	}
 	return result

@@ -34,9 +34,7 @@ func DumpCredentials() {
 	// Dump credentials file
 	creds_file := filepath.Join(confdir, "credentials.yaml")
 	credsRaw, err := LoadFileYaml(creds_file)
-    if err != nil {
-		die("[%s] %s\n", creds_file, err)
-	}
+    if err != nil { die("[%s] %s\n", creds_file, err) }
 	creds := credsRaw.(map[string]interface{})
 	print("%-14s %s\n", "tenant_id:", StrVal(creds["tenant_id"]))
 	if strings.ToLower(StrVal(creds["interactive"])) == "true" {
@@ -52,9 +50,7 @@ func DumpCredentials() {
 func SetupInterativeLogin(tenant_id, username string) {
 	// Set up credentials file for interactive login
 	f := filepath.Join(confdir, "credentials.yaml")
-	if !ValidUuid(tenant_id) {
-		die("Error. TENANT_ID is an invalid UUIs.\n")
-	}
+	if !ValidUuid(tenant_id) { die("Error. TENANT_ID is an invalid UUIs.\n") }
 	content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "username:", username, "interactive:", "true")
 	if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
 		panic(err.Error())
@@ -65,12 +61,8 @@ func SetupInterativeLogin(tenant_id, username string) {
 func SetupAutomatedLogin(tenant_id, client_id, secret string) {
 	// Set up credentials file for client_id + secret login
 	f := filepath.Join(confdir, "credentials.yaml")
-	if !ValidUuid(tenant_id) {
-		die("Error. TENANT_ID is an invalid UUIs.\n")
-	}
-	if !ValidUuid(client_id) {
-		die("Error. CLIENT_ID is an invalid UUIs.\n")
-	}
+	if !ValidUuid(tenant_id) { die("Error. TENANT_ID is an invalid UUIs.\n") }
+	if !ValidUuid(client_id) { die("Error. CLIENT_ID is an invalid UUIs.\n") }
 	content := sprint("%-14s %s\n%-14s %s\n%-14s %s\n", "tenant_id:", tenant_id, "client_id:", client_id, "client_secret:", secret)
 	if err := ioutil.WriteFile(f, []byte(content), 0600); err != nil { // Write string to file
 		panic(err.Error())
@@ -86,28 +78,20 @@ func SetupCredentials() {
 			"Please rerun program using '-cr' or '-cri' option to specify credentials.\n")
 	}
 	credsRaw, err := LoadFileYaml(creds_file)
-    if err != nil {
-		die("[%s] %s\n", creds_file, err)
-	}
+    if err != nil { die("[%s] %s\n", creds_file, err) }
 	creds := credsRaw.(map[string]interface{})
 
 	// Note we're updating global variables
 	tenant_id = StrVal(creds["tenant_id"])
-	if !ValidUuid(tenant_id) {
-		die("[%s] tenant_id '%s' is not a valid UUID\n", creds_file, tenant_id)
-	}
+	if !ValidUuid(tenant_id) { die("[%s] tenant_id '%s' is not a valid UUID\n", creds_file, tenant_id) }
 	interactive = strings.ToLower(StrVal(creds["interactive"]))
 	if interactive == "true" {
 		username = strings.ToLower(StrVal(creds["username"]))
 	} else {
 		client_id = StrVal(creds["client_id"])
-		if !ValidUuid(client_id) {
-			die("[%s] client_id '%s' is not a valid UUID\n", creds_file, client_id)
-		}	
+		if !ValidUuid(client_id) { die("[%s] client_id '%s' is not a valid UUID\n", creds_file, client_id) }	
 		client_secret = StrVal(creds["client_secret"])
-		if client_secret == "" {
-			die("[%s] client_secret is blank\n", creds_file)
-		}	
+		if client_secret == "" { die("[%s] client_secret is blank\n", creds_file) }
 	}
 }
 

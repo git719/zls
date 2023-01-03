@@ -24,9 +24,7 @@ func GetToken(scopes []string) (token string, err error) {
 		psClientId := "1950a258-227b-4e31-a9cf-717495945fc2"  // Using a local variable for this
 		// See https://stackoverflow.com/questions/30454771/how-does-azure-powershell-work-with-username-password-based-auth
 		app, err := public.New(psClientId, public.WithAuthority(authority_url), public.WithCache(cacheAccessor))
-		if err != nil {
-			panic(err.Error())
-		}
+		if err != nil { panic(err.Error()) }
 
 		// Select the account to use based on username variable 
 		var targetAccount public.Account  // Type is defined in 'public' module 
@@ -43,9 +41,7 @@ func GetToken(scopes []string) (token string, err error) {
 			// Else, get a new token
 			result, err = app.AcquireTokenInteractive(context.Background(), scopes)
 			// AcquireTokenInteractive acquires a security token from the authority using the default web browser to select the account.
-			if err != nil {
-				panic(err.Error())
-			}
+			if err != nil { panic(err.Error()) }
 		}
 		return result.AccessToken, nil	// Return only the AccessToken, which is of type string
 	} else {
@@ -54,15 +50,11 @@ func GetToken(scopes []string) (token string, err error) {
 
 		// Initializing the client credential
 		cred, err := confidential.NewCredFromSecret(client_secret)
-		if err != nil {
-			print("Could not create a cred object from client_secret.\n")
-		}
+		if err != nil { print("Could not create a cred object from client_secret.\n") }
 
 		// Automated login obviously uses the registered app client_id (App ID)
 		app, err := confidential.New(client_id,	cred, confidential.WithAuthority(authority_url), confidential.WithAccessor(cacheAccessor))
-		if err != nil {
-			panic(err.Error())
-		}
+		if err != nil { panic(err.Error()) }
 
 		// Try getting cached token 1st
 		// targetAccount not required, as it appears to locate existing cached tokens without it
@@ -71,9 +63,7 @@ func GetToken(scopes []string) (token string, err error) {
 			// Else, get a new token
 			result, err = app.AcquireTokenByCredential(context.Background(), scopes)
 			// AcquireTokenByCredential acquires a security token from the authority, using the client credentials grant.
-			if err != nil {
-				panic(err.Error())
-			}
+			if err != nil { panic(err.Error()) }
 		}
 		return result.AccessToken, nil  // Return only the AccessToken, which is of type string
 	}

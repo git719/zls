@@ -4,9 +4,7 @@ package main
 
 func PrintUser(x map[string]interface{}) {
 	// Print user object in YAML format
-	if x["id"] == nil {
-		return
-	}
+	if x == nil { return }
 	id := StrVal(x["id"])
 
 	// Print the most important attributes

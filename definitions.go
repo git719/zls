@@ -7,7 +7,6 @@ import "strings"
 func PrintRoleDefinition(x map[string]interface{}) {
 	// Print role definition object in YAML format
 	if x == nil { return }
-
 	if x["name"] != nil { print("id: %s\n", StrVal(x["name"])) }
 
 	print("properties:\n")
@@ -141,17 +140,9 @@ func GetAzRoleDefinitionAll(verbose bool) (oList []interface{}) {
     // so if there are role definitions hidden within Resource Groups or individual resoures it may miss them.
 
 	oList = nil
-
-	// First, build list of all scopes in the RBAC hierachy: That means all Management Groups scopes,
-	// and all subscription scopes.
-	scopes := GetMgScopes()
-	subScopes := GetSubScopes()
-	scopes = append(scopes, subScopes...) // Elipsis means add two lists
-	
-	var uuids []string  // Keep track of each unique objects to whittle out inherited repeats
-	calls := 1          // Track number of API calls below
-
-	// Look for objects under all these scopes
+	scopes := GetAzRbacScopes()  // Look for objects under all the RBAC hierarchy scopes
+	var uuids []string           // Keep track of each unique objects to whittle out inherited repeats
+	calls := 1                   // Track number of API calls below
 	params := map[string]string{
 		"api-version": "2022-04-01",  // roleDefinitions
 	}
@@ -177,9 +168,7 @@ func GetAzRoleDefinitionAll(verbose bool) (oList []interface{}) {
 		ApiErrorCheck(r, trace())
 		calls++
 	}
-	if verbose {
-		print("\n")  // Use newline now
-	}
+	if verbose { print("\n") }  // Use newline now
 	return oList
 }
 
