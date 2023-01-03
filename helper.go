@@ -69,8 +69,8 @@ func GetAzRbacScopes() (scopes []string) {
 	// Now add all the subscription scopes
 	for _, i := range GetAllObjects("s") {
 		x := i.(map[string]interface{}) // Assert as JSON object type
-		// // Skip legacy subscriptions with below name, since they have no role definitions
-		// if StrVal(x["displayName"]) == "Access to Azure Active Directory" { continue }
+		// Skip legacy subscriptions, since they have no role definitions and calling them causes an error.
+		if StrVal(x["displayName"]) == "Access to Azure Active Directory" { continue }
 		scopes = append(scopes, StrVal(x["id"]))
 	}
 	return scopes

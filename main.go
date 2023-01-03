@@ -10,7 +10,7 @@ import (
 const (
 	// Global constants
 	prgname = "zls"
-	prgver  = "186"
+	prgver  = "187"
 	mg_url  = "https://graph.microsoft.com"
 	az_url  = "https://management.azure.com"
 	rUp     = "\x1B[2K\r"
