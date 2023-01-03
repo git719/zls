@@ -3,8 +3,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"path/filepath"
@@ -160,13 +161,15 @@ func ObjectCountAzure(t string) int64 {
 	case "u", "g", "sp", "ap", "ra":
 		// MS Graph API makes counting much easier with its dedicated '$count' filter
 		mg_headers["ConsistencyLevel"] = "eventual"
-		r := ApiGet(mg_url+"/v1.0/"+oMap[t]+"/$count", mg_headers, nil, false)
+		url := mg_url + "/v1.0/" + oMap[t] + "/$count"
+		r := ApiGet(url, mg_headers, nil)
 		if r["value"] != nil { return r["value"].(int64) }  // Assert as int64
 		// Expect result to be a single int64 value for the count
 		ApiErrorCheck(r, trace())
 	case "rd":
 		// There is no $count filter option for AD role definitions so we have to get them all do length count
-		r := ApiGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions", mg_headers, nil, false)
+		url := mg_url + "/v1.0/roleManagement/directory/roleDefinitions"
+		r := ApiGet(url, mg_headers, nil)
 		if r["value"] != nil {
 			rds := r["value"].([]interface{}) // Assert as JSON array type
 			return int64(len(rds))
@@ -189,7 +192,7 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		}
 		for _, scope := range scopes {
 			url := az_url + scope + "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
-			r := ApiGet(url, az_headers, params, false)
+			r := ApiGet(url, az_headers, params)
 			if r != nil && r["id"] != nil { return r }  // Returns as soon as we find a match
 			//ApiErrorCheck(r, trace()) // # DEBUG
 		}
@@ -197,29 +200,32 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		params := map[string]string{
 			"api-version": "2022-09-01",  // subscriptions
 		}
-		r := ApiGet(az_url + "/subscriptions/" + id, az_headers, params, false)
+		url := az_url + "/subscriptions/" + id
+		r := ApiGet(url, az_headers, params)
 		ApiErrorCheck(r, trace())
 		x = r
 	case "m":
 		params := map[string]string{
 			"api-version": "2022-04-01",  // managementGroups
 		}
-		r := ApiGet(az_url + "/providers/Microsoft.Management/managementGroups/" + id, az_headers, params, false)
+		url := az_url + "/providers/Microsoft.Management/managementGroups/" + id
+		r := ApiGet(url, az_headers, params)
 		ApiErrorCheck(r, trace())
 		x = r
 	case "u", "g", "ra":
-		r := ApiGet(mg_url + "/v1.0/" + oMap[t] + "/" + id, mg_headers, nil, false)
+		url := mg_url + "/v1.0/" + oMap[t] + "/" + id
+		r := ApiGet(url, mg_headers, nil)
 		ApiErrorCheck(r, trace())
 		x = r
 	case "ap", "sp":
 		url := mg_url + "/v1.0/" + oMap[t]
-		r := ApiGet(url + "/" + id, mg_headers, nil, false)
+		r := ApiGet(url + "/" + id, mg_headers, nil)  // First search is for direct Object Id
 		if r != nil && r["error"] != nil {
-			// Also look for this app or SP using its appId
+			// Also look for this app or SP using its App/Client Id
 			params := map[string]string{
 				"$filter": "appId eq '" + id + "'",
 			}
-			r := ApiGet(url, mg_headers, params, false)
+			r := ApiGet(url, mg_headers, params)
 			if r != nil && r["value"] != nil {
 				list := r["value"].([]interface{})
 				count := len(list)
@@ -238,7 +244,8 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		x = r
 	case "rd":
 		// Again, AD role definitions are under a different area, until they are activated
-		r := ApiGet(mg_url + "/v1.0/roleManagement/directory/roleDefinitions/" + id, mg_headers, nil, false)
+		url := mg_url + "/v1.0/roleManagement/directory/roleDefinitions/" + id
+		r := ApiGet(url, mg_headers, nil)
 		ApiErrorCheck(r, trace())
 		x = r
 	}
@@ -260,7 +267,7 @@ func GetAzObjectByName(t, name string) (x map[string]interface{}) {
 		}
 		for _, scope := range scopes {
 			url := az_url + scope + "/providers/Microsoft.Authorization/roleDefinitions"
-			r := ApiGet(url, az_headers, params, false)
+			r := ApiGet(url, az_headers, params)
 			if r != nil && r["value"] != nil {
 				results := r["value"].([]interface{})  // Assert as JSON array type
 				// NOTE: Would results ever be an array with MORE than 1 element? Is below name
@@ -276,33 +283,32 @@ func GetAzObjectByName(t, name string) (x map[string]interface{}) {
 			ApiErrorCheck(r, trace())
 		}
 	case "s":
-		//x = ApiGet(az_url+"/"+oMap[t]+"/"+id + "?api-version=2022-04-01", az_headers, nil, false)
+		//x = ApiGet(az_url+"/"+oMap[t]+"/"+id + "?api-version=2022-04-01", az_headers, nil)
 	case "m":
-		//x = ApiGet(az_url+"/providers/Microsoft.Management/managementGroups/"+id + "?api-version=2022-04-01", az_headers, nil, false)
+		//x = ApiGet(az_url+"/providers/Microsoft.Management/managementGroups/"+id + "?api-version=2022-04-01", az_headers, nil)
 	case "u", "g", "sp", "ap", "ra":
-		//x = ApiGet(mg_url+"/v1.0/"+oMap[t]+"/"+id, mg_headers, nil, false)
+		//x = ApiGet(mg_url+"/v1.0/"+oMap[t]+"/"+id, mg_headers, nil)
 	case "rd":
 		// Again, AD role definitions are under a different area, until they are activated
-		//x = ApiGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions/"+id, mg_headers, nil, false)
+		//x = ApiGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions/"+id, mg_headers, nil)
 	}
 	return nil
 }
 
-func ApiGet(url string, headers, params map[string]string, verbose bool) (result map[string]interface{}) {
+func ApiGet(url string, headers, params map[string]string) (result map[string]interface{}) {
+	// Basic, without debugging
+	return ApiCall("GET", url, nil, headers, params, false)  // Verbose = false
+}
+
+func ApiGetDebug(url string, headers, params map[string]string) (result map[string]interface{}) {
+	// Sets verbose boolean to true
+	return ApiCall("GET", url, nil, headers, params, true)  // Verbose = true
+}
+
+func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params map[string]string, verbose bool) (result map[string]interface{}) {
 	// Make API call and return JSON object. Global az_headers and mg_headers are merged with additional ones called with.
 
-	// The unknown JSON object that's returned can then be parsed by asserting any of the following types
-	// and checking values ( see https://eager.io/blog/go-and-json/ )
-	//   nil                     for JSON null
-	//   bool                    for JSON boolean
-	//   string                  for JSON string
-	//   float64                 for JSON number
-	//   map[string]interface{}  for JSON object
-	//   []interface{}           for JSON array
-
-	if !strings.HasPrefix(url, "http") {
-		die(trace() + "Error: Bad URL, " + url + "\n")
-	}
+	if !strings.HasPrefix(url, "http") { die(trace() + "Error: Bad URL, " + url + "\n") }
 
 	// Set up headers according to API being called (AZ or MG)
 	if strings.HasPrefix(url, az_url) {
@@ -313,13 +319,32 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 
 	// Set up new HTTP client
 	client := &http.Client{Timeout: time.Second * 60} // One minute timeout
-	req, err := http.NewRequest("GET", url, nil)
+	var req *http.Request = nil
+	var err error = nil
+	switch strings.ToUpper(method) {
+	case "GET":
+		req, err = http.NewRequest("GET", url, nil)
+	case "POST":
+		jsonData, ok := json.Marshal(jsonObj)
+		if ok != nil { panic(err.Error()) }
+		req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	case "PUT":
+		jsonData, ok := json.Marshal(jsonObj)
+		if ok != nil { panic(err.Error()) }
+		req, err = http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+	case "DELETE":
+		req, err = http.NewRequest("DELETE", url, nil)
+	default:
+		die(trace() + "Error: Unsupported HTTP method\n")
+	}
 	if err != nil { panic(err.Error()) }
 
-	// Update headers and query params
+	// Merge additional headers
 	for h, v := range headers {
 		req.Header.Add(h, v)
 	}
+
+	// Merge additional query parameters and encode
 	q := req.URL.Query()
 	for p, v := range params {
 		q.Add(p, v)
@@ -341,13 +366,22 @@ func ApiGet(url string, headers, params map[string]string, verbose bool) (result
 	if err != nil { panic(err.Error()) }
 	defer r.Body.Close()
 
-	body, err := io.ReadAll(r.Body)
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil { panic(err.Error()) }
 	
 	// Note that variable 'body' is of type []uint8 which is essentially a long string
 	// that evidently can be either A) a count integer number, or B) a JSON object string.
 	// This interpretation needs confirmation, and then better handling.
-		
+
+	// Also, when dealing with unknown JSON object that are returned, one can assert the result to one
+	// of the types below then parsing the values accordingly (see https://eager.io/blog/go-and-json/)
+	//   nil                     for JSON null
+	//   bool                    for JSON boolean
+	//   string                  for JSON string
+	//   float64                 for JSON number
+	//   map[string]interface{}  for JSON object
+	//   []interface{}           for JSON array
+
 	if count, err := strconv.ParseInt(string(body), 10, 64); err == nil {
 		// If entire body is a string representing an integer value, create
 		// a JSON object with this count value we just converted to int64

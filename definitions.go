@@ -148,7 +148,7 @@ func GetAzRoleDefinitionAll(verbose bool) (oList []interface{}) {
 	}
 	for _, scope := range scopes {
 		url := az_url + scope + "/providers/Microsoft.Authorization/roleDefinitions"
-		r := ApiGet(url, az_headers, params, false)
+		r := ApiGet(url, az_headers, params)
 		if r["value"] != nil {
 			definitions := r["value"].([]interface{}) // Assert as JSON array type
 			if verbose {
@@ -199,7 +199,7 @@ func GetAzRoleDefinition(x map[string]interface{}) (y map[string]interface{}) {
 			"$filter":     "roleName eq '" + xRoleName + "'",
 		}
 		url := az_url + scope + "/providers/Microsoft.Authorization/roleDefinitions"
-		r := ApiGet(url, az_headers, params, false)
+		r := ApiGet(url, az_headers, params)
 		if r != nil && r["value"] != nil {
 			results := r["value"].([]interface{})
 			if len(results) == 1 {

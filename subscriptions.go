@@ -18,7 +18,8 @@ func GetAzSubscriptionAll() (oList []interface{}) {
 	params := map[string]string{
 		"api-version": "2022-09-01",  // subscriptions
 	}
-	r := ApiGet(az_url + "/subscriptions", az_headers, params, false)
+	url := az_url + "/subscriptions"
+	r := ApiGet(url, az_headers, params)
 	if r != nil && r["value"] != nil {
 		objects := r["value"].([]interface{})  // Treat as JSON array type
 		oList = append(oList, objects...)      // Elipsis means the source may be more than one

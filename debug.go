@@ -6,13 +6,13 @@ func TestFunction() {
 	// url := "/providers/Microsoft.Management/getEntities"
 	// url := "/providers/Microsoft.Management/managementGroups"
 	// url := "/providers/Microsoft.Management/managementGroups/" + tenant_id + "/descendants"
-	url := "/providers/Microsoft.Management/managementGroups/" + tenant_id
+	url := az_url + "/providers/Microsoft.Management/managementGroups/" + tenant_id
 	params := map[string]string{
 		"api-version": "2022-04-01",
 		"$expand":     "children",
 		"$recurse":    "true",
 	}
-	r := ApiGet(az_url+url, az_headers, params, false)
+	r := ApiGet(url, az_headers, params)
 	ApiErrorCheck(r, trace())
 	PrintJson(r)
 

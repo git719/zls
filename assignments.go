@@ -102,7 +102,7 @@ func GetAzRoleAssignmentAll() (oList []interface{}) {
 	}
 	for _, scope := range scopes {
 		url := az_url + scope + "/providers/Microsoft.Authorization/roleAssignments"
-		r := ApiGet(url, az_headers, params, false)
+		r := ApiGet(url, az_headers, params)
 		if r["value"] != nil {
 			assignments := r["value"].([]interface{}) // Assert as JSON array type
 			// Using global var rUp to overwrite last line. Defer newline until done
@@ -147,7 +147,8 @@ func GetAzRoleAssignment(x map[string]interface{}) (y map[string]interface{}) {
 		"api-version": "2022-04-01",  // roleAssignments
 		"$filter":     "principalId eq '" + xPrincipalId + "'",
 	}
-	r := ApiGet(az_url + xScope + "/providers/Microsoft.Authorization/roleAssignments", az_headers, params, false)
+	url := az_url + xScope + "/providers/Microsoft.Authorization/roleAssignments"
+	r := ApiGet(url, az_headers, params)
 	if r != nil && r["value"] != nil {
 		results := r["value"].([]interface{})
 		for _, i := range results {

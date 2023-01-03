@@ -16,7 +16,8 @@ func PrintGroup(x map[string]interface{}) {
 
 	// OPTIONAL: Print other attributes here
 
-	r := ApiGet(mg_url+"/beta/groups/"+id+"/owners", mg_headers, nil, false)
+	url := mg_url + "/beta/groups/" + id + "/owners"
+	r := ApiGet(url, mg_headers, nil)
 	if r["value"] != nil {
 		owners := r["value"].([]interface{}) // Assert as JSON array type
 		if len(owners) > 0 {
@@ -31,7 +32,8 @@ func PrintGroup(x map[string]interface{}) {
 	}
 	ApiErrorCheck(r, trace())
 
-	r = ApiGet(mg_url+"/beta/groups/"+id+"/members", mg_headers, nil, false)
+	url = mg_url + "/beta/groups/" + id + "/members"
+	r = ApiGet(url, mg_headers, nil)
 	if r["value"] != nil {
 		members := r["value"].([]interface{}) // Assert as JSON array type
 		if len(members) > 0 {

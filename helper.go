@@ -128,7 +128,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 		// Azure AD Role Definitions are under 'roleManagement/directory' so we're forced to process them
 		// differently than other MS Graph objects. Microsoft, this is not pretty :-(
 		url := mg_url + "/v1.0/roleManagement/directory/roleDefinitions"
-		r := ApiGet(url, nil, nil, false)
+		r := ApiGet(url, nil, nil)
 		if r["value"] != nil {
 			oList := r["value"].([]interface{}) // Treat as JSON array type
 			SaveFileJson(oList, localData) // Cache it to local file
@@ -174,7 +174,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 		var deltaSet []interface{} = nil                         // Assume zero new delta objects
 		headers := map[string]string{"Prefer": "return=minimal"} // Additional required header
 
-		r := ApiGet(url, headers, nil, false)
+		r := ApiGet(url, headers, nil)
 		ApiErrorCheck(r, trace())
 		for {
 			// Infinite loop until deltalLink appears (meaning we're done getting current delta set)
@@ -207,7 +207,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 				SaveFileJson(oList, localData) // Cache it to local file
 				break                          // from infinite for-loop
 			}
-			r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil, false) // Get next batch
+			r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil)  // Get next batch
 			ApiErrorCheck(r, trace())
 			calls++
 		}
@@ -316,7 +316,8 @@ func GetMatching(t, name string) (oList []interface{}) {
 func GetObjectMemberOfs(t, id string) (oList []interface{}) {
 	// Get all group/role objects this object of type 't' with 'id' is a memberof
 	oList = nil
-	r := ApiGet(mg_url+"/beta/"+oMap[t]+"/"+id+"/memberof", mg_headers, nil, false)
+	url := mg_url + "/beta/" + oMap[t] + "/" + id + "/memberof"
+	r := ApiGet(url, mg_headers, nil)
 	if r["value"] != nil { oList = r["value"].([]interface{}) }  // Assert as JSON array type
 	ApiErrorCheck(r, trace())
 	return oList

@@ -32,7 +32,7 @@ func GetAzManagementGroupAll() (oList []interface{}) {
 	params := map[string]string{
 		"api-version": "2020-05-01",  // managementGroups
 	}
-	r := ApiGet(url, az_headers, params, false)
+	r := ApiGet(url, az_headers, params)
 	if r["value"] != nil {
 		objects := r["value"].([]interface{}) // Treat as JSON array type
 		oList = append(oList, objects...)     // Elipsis means the source may be more than one
@@ -68,13 +68,13 @@ func PrintMgChildren(indent int, children []interface{}) {
 
 func PrintManagementGroupTree() {
 	// Get the entire MG and subscription hierarchy tree for the tenant
-	url := "/providers/Microsoft.Management/managementGroups/" + tenant_id
+	url := az_url + "/providers/Microsoft.Management/managementGroups/" + tenant_id
 	params := map[string]string{
 		"api-version": "2020-05-01",  // managementGroups
 		"$expand":     "children",
 		"$recurse":    "true",
 	}
-	r := ApiGet(az_url+url, az_headers, params, false)
+	r := ApiGet(url, az_headers, params)
 	if r["properties"] != nil {
 		// Print everything under the hierarchy
 		props := r["properties"].(map[string]interface{})
