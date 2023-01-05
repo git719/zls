@@ -78,7 +78,7 @@ func PrintRoleAssignment(x map[string]interface{}) {
 
 	subMap := GetIdNameMap("s")  // Get subscriptions id:name map
 	scope := StrVal(xProp["scope"])
-	if scope == "" { scope = StrVal(xProps["Scope"]) }  // Account for possibly capitalized key
+	if scope == "" { scope = StrVal(xProp["Scope"]) }  // Account for possibly capitalized key
 	if strings.HasPrefix(scope, "/subscriptions") {
 		split := strings.Split(scope, "/")
 		subName := subMap[split[2]]
