@@ -9,12 +9,12 @@ import (
 
 const (
 	// Global constants
-	prgname = "zls"
-	prgver  = "187"
-	mg_url  = "https://graph.microsoft.com"
-	az_url  = "https://management.azure.com"
-	rUp     = "\x1B[2K\r"
-		// See https://stackoverflow.com/questions/1508490/erase-the-current-printed-console-line
+	prgname  = "zls"
+	prgver   = "188"
+	mg_url   = "https://graph.microsoft.com"
+	az_url   = "https://management.azure.com"
+	auth_url = "https://login.microsoftonline.com/"
+	rUp      = "\x1B[2K\r"           // See https://stackoverflow.com/questions/1508490/erase-the-current-printed-console-line
 )
 
 var (
@@ -30,7 +30,7 @@ var (
 	mg_headers    map[string]string
 	az_token      = ""
 	az_headers    map[string]string
-	oMap = map[string]string{	    // String map to help generesize many of the functions
+	oMap          = map[string]string{    // String map to help generesize many of the functions
 		"d":  "roleDefinitions",
 		"a":  "roleAssignments",
 		"s":  "subscriptions",
