@@ -2,6 +2,11 @@
 
 package main
 
+import (
+	"os"
+	"github.com/git719/utl"
+)
+
 func TestFunction() {
 	// url := "/providers/Microsoft.Management/getEntities"
 	// url := "/providers/Microsoft.Management/managementGroups"
@@ -13,8 +18,8 @@ func TestFunction() {
 		"$recurse":    "true",
 	}
 	r := ApiGet(url, az_headers, params)
-	ApiErrorCheck(r, trace())
-	PrintJson(r)
+	ApiErrorCheck(r, utl.Trace())
+	utl.PrintJson(r)
 
 	// Test MergeObjects function
 	// filePath := filepath.Join("/Users/user1/obj.json")
@@ -36,5 +41,5 @@ func TestFunction() {
 	// x := MergeObjects(obj, obj2)
 	// PrintJson(x)
 
-	exit(0)
+	os.Exit(0)
 }

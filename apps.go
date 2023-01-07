@@ -2,6 +2,10 @@
 
 package main
 
+import (
+	"github.com/git719/utl"
+)
+
 func PrintApp(obj map[string]interface{}) {
 	// Print application object in YAML format
 	if obj == nil { return }
@@ -25,7 +29,7 @@ func PrintApp(obj map[string]interface{}) {
 			for _, i := range owners {
 				o := i.(map[string]interface{}) // Assert as JSON object type
 				Type, Name := "???", "???"
-				Type = LastElem(StrVal(o["@odata.type"]), ".")
+				Type = utl.LastElem(StrVal(o["@odata.type"]), ".")
 				switch Type {
 				case "user":
 					Name = StrVal(o["userPrincipalName"])
@@ -42,7 +46,7 @@ func PrintApp(obj map[string]interface{}) {
 			print("%-21s %s\n", "owners:", "None")
 		}
 	}
-	ApiErrorCheck(r, trace())
+	ApiErrorCheck(r, utl.Trace())
 
 	// Print all groups/roles it is a member of
 	memberOf := GetObjectMemberOfs("ap", id) // For this App object
@@ -76,10 +80,10 @@ func PrintApp(obj map[string]interface{}) {
 				print("  %-50s %s\n", resAppId, "Unable to get Resource App object. Skipping this API.")
 				continue
 			}
-			ApiErrorCheck(r, trace())
+			ApiErrorCheck(r, utl.Trace())
 
 			SPs := r["value"].([]interface{})
-			if len(SPs) > 1 { die("  %-50s %s\n", resAppId, "Error. Multiple SPs for this AppId. Aborting.") }
+			if len(SPs) > 1 { utl.Die("  %-50s %s\n", resAppId, "Error. Multiple SPs for this AppId. Aborting.") }
 
 			sp := SPs[0].(map[string]interface{}) // The only expected entry, asserted as JSON object type
 

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/git719/utl"
 )
 
 func PrintCountStatus() {
@@ -52,8 +53,8 @@ func SpsCountLocal() (microsoft, native int64) {
 	var microsoftList []interface{} = nil
 	var nativeList []interface{} = nil
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap["sp"]+".json")
-    if FileUsable(localData) {
-		l, _ := LoadFileJson(localData) // Load cache file
+    if utl.FileUsable(localData) {
+		l, _ := utl.LoadFileJson(localData) // Load cache file
 		if l != nil {
 			sps := l.([]interface{}) // Assert as JSON array type
 			for _, i := range sps {
@@ -97,8 +98,8 @@ func RoleDefinitionCountLocal() (builtin, custom int64) {
 	var customList []interface{} = nil
 	var builtinList []interface{} = nil
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap["d"]+".json")
-    if FileUsable(localData) {
-		l, _:= LoadFileJson(localData) // Load cache file
+    if utl.FileUsable(localData) {
+		l, _:= utl.LoadFileJson(localData) // Load cache file
 		if l != nil {
 			definitions := l.([]interface{}) // Assert as JSON array type
 			for _, i := range definitions {
@@ -140,8 +141,8 @@ func RoleDefinitionCountAzure() (builtin, custom int64) {
 func ObjectCountLocal(t string) int64 {
 	var oList []interface{} = nil // Start with an empty list
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap[t]+".json") // Define local data store file
-    if FileUsable(localData) {
-		l, _ := LoadFileJson(localData) // Load cache file
+    if utl.FileUsable(localData) {
+		l, _ := utl.LoadFileJson(localData) // Load cache file
 		if l != nil {
 			oList = l.([]interface{})
 			return int64(len(oList))
@@ -165,7 +166,7 @@ func ObjectCountAzure(t string) int64 {
 		r := ApiGet(url, mg_headers, nil)
 		if r["value"] != nil { return r["value"].(int64) }  // Assert as int64
 		// Expect result to be a single int64 value for the count
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 	case "rd":
 		// There is no $count filter option for AD role definitions so we have to get them all do length count
 		url := mg_url + "/v1.0/roleManagement/directory/roleDefinitions"
@@ -174,7 +175,7 @@ func ObjectCountAzure(t string) int64 {
 			rds := r["value"].([]interface{}) // Assert as JSON array type
 			return int64(len(rds))
 		}
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 	}
 	return 0
 }
@@ -194,7 +195,7 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 			url := az_url + scope + "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
 			r := ApiGet(url, az_headers, params)
 			if r != nil && r["id"] != nil { return r }  // Returns as soon as we find a match
-			//ApiErrorCheck(r, trace()) // # DEBUG
+			//ApiErrorCheck(r, utl.Trace()) // # DEBUG
 		}
 	case "s":
 		params := map[string]string{
@@ -202,7 +203,7 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		}
 		url := az_url + "/subscriptions/" + id
 		r := ApiGet(url, az_headers, params)
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 		x = r
 	case "m":
 		params := map[string]string{
@@ -210,12 +211,12 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 		}
 		url := az_url + "/providers/Microsoft.Management/managementGroups/" + id
 		r := ApiGet(url, az_headers, params)
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 		x = r
 	case "u", "g", "ra":
 		url := mg_url + "/v1.0/" + oMap[t] + "/" + id
 		r := ApiGet(url, mg_headers, nil)
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 		x = r
 	case "ap", "sp":
 		url := mg_url + "/v1.0/" + oMap[t]
@@ -239,14 +240,14 @@ func GetAzObjectById(t, id string) (x map[string]interface{}) {
 					return nil
 				}
 			}
-			//ApiErrorCheck(r, trace())  // DEBUG
+			//ApiErrorCheck(r, utl.Trace())  // DEBUG
 		}
 		x = r
 	case "rd":
 		// Again, AD role definitions are under a different area, until they are activated
 		url := mg_url + "/v1.0/roleManagement/directory/roleDefinitions/" + id
 		r := ApiGet(url, mg_headers, nil)
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 		x = r
 	}
 	return x
@@ -280,7 +281,7 @@ func GetAzObjectByName(t, name string) (x map[string]interface{}) {
 					// Return first match we find, since roleName are unique across the tenant
 				}
 			}
-			ApiErrorCheck(r, trace())
+			ApiErrorCheck(r, utl.Trace())
 		}
 	case "s":
 		//x = ApiGet(az_url+"/"+oMap[t]+"/"+id + "?api-version=2022-04-01", az_headers, nil)
@@ -308,13 +309,13 @@ func ApiGetDebug(url string, headers, params map[string]string) (result map[stri
 func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params map[string]string, verbose bool) (result map[string]interface{}) {
 	// Make API call and return JSON object. Global az_headers and mg_headers are merged with additional ones called with.
 
-	if !strings.HasPrefix(url, "http") { die(trace() + "Error: Bad URL, " + url + "\n") }
+	if !strings.HasPrefix(url, "http") { utl.Die(utl.Trace() + "Error: Bad URL, " + url + "\n") }
 
 	// Set up headers according to API being called (AZ or MG)
 	if strings.HasPrefix(url, az_url) {
-		headers = MergeMaps(az_headers, headers)
+		headers = utl.MergeMaps(az_headers, headers)
 	} else if strings.HasPrefix(url, mg_url) {
-		headers = MergeMaps(mg_headers, headers)
+		headers = utl.MergeMaps(mg_headers, headers)
 	}
 
 	// Set up new HTTP client
@@ -335,7 +336,7 @@ func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params
 	case "DELETE":
 		req, err = http.NewRequest("DELETE", url, nil)
 	default:
-		die(trace() + "Error: Unsupported HTTP method\n")
+		utl.Die(utl.Trace() + "Error: Unsupported HTTP method\n")
 	}
 	if err != nil { panic(err.Error()) }
 
@@ -356,11 +357,11 @@ func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params
 		print("==== REQUEST =================================\n")
 		print("GET " + url + "\n")
 		print("HEADERS:\n")
-		PrintJson(req.Header); print("\n") 
+		utl.PrintJson(req.Header); print("\n") 
 		print("PARAMS:\n")
-		PrintJson(q); print("\n") 
+		utl.PrintJson(q); print("\n") 
 		// print("REQUEST_PAYLOAD:\n")
-		// PrintJson(BODY); print("\n") 
+		// utl.PrintJson(BODY); print("\n") 
 	}
 	r, err := client.Do(req)
 	if err != nil { panic(err.Error()) }
@@ -397,7 +398,7 @@ func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params
 		print("==== RESPONSE ================================\n")
 	    print("STATUS: %d %s\n", r.StatusCode, http.StatusText(r.StatusCode)) 
 		print("RESULT:\n")
-		PrintJson(result); print("\n") 
+		utl.PrintJson(result); print("\n") 
 		resHeaders, err := httputil.DumpResponse(r, false)
 		if err != nil { panic(err.Error()) }
 		print("HEADERS:\n%s\n", string(resHeaders)) 

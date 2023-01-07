@@ -4,6 +4,10 @@ package main
 
 import "strings"
 
+import (
+	"github.com/git719/utl"
+)
+
 func PrintRoleDefinition(x map[string]interface{}) {
 	// Print role definition object in YAML format
 	if x == nil { return }
@@ -32,7 +36,7 @@ func PrintRoleDefinition(x map[string]interface{}) {
 			for _, i := range scopes {
 				if strings.HasPrefix(i.(string), "/subscriptions") {
 					// Print subscription name as a comment at end of line
-					subId := LastElem(i.(string), "/")
+					subId := utl.LastElem(i.(string), "/")
 					print("    - %s # %s\n", StrVal(i), subNames[subId])
 				} else {
 					print("    - %s\n", StrVal(i))
@@ -54,7 +58,7 @@ func PrintRoleDefinition(x map[string]interface{}) {
 			print("    - actions:\n")      // Note that this one is different, as it starts the YAML array with the dash '-'
 			if perms["actions"] != nil {
 				permsA := perms["actions"].([]interface{})
-				if VarType(permsA)[0] != '[' {           // Open bracket character means it's an array list
+				if utl.VarType(permsA)[0] != '[' {           // Open bracket character means it's an array list
 					print("        <Not an array??>\n")
 				} else {
 					for _, i := range permsA {
@@ -66,7 +70,7 @@ func PrintRoleDefinition(x map[string]interface{}) {
 			print("      notActions:\n")
 			if perms["notActions"] != nil {
 				permsNA := perms["notActions"].([]interface{})
-				if VarType(permsNA)[0] != '[' {
+				if utl.VarType(permsNA)[0] != '[' {
 					print("        <Not an array??>\n")
 				} else {
 					for _, i := range permsNA {
@@ -78,7 +82,7 @@ func PrintRoleDefinition(x map[string]interface{}) {
 			print("      dataActions:\n")
 			if perms["dataActions"] != nil {
 				permsDA := perms["dataActions"].([]interface{})
-				if VarType(permsDA)[0] != '[' {
+				if utl.VarType(permsDA)[0] != '[' {
 					print("        <Not an array??>\n")
 				} else {
 					for _, i := range permsDA {
@@ -90,7 +94,7 @@ func PrintRoleDefinition(x map[string]interface{}) {
 			print("      notDataActions:\n")
 			if perms["notDataActions"] != nil {
 				permsNDA := perms["notDataActions"].([]interface{})
-				if VarType(permsNDA)[0] != '[' {
+				if utl.VarType(permsNDA)[0] != '[' {
 					print("        <Not an array??>\n")
 				} else {
 					for _, i := range permsNDA {
@@ -158,14 +162,14 @@ func GetAzRoleDefinitionAll(verbose bool) (oList []interface{}) {
 			for _, i := range definitions {
 				x := i.(map[string]interface{})
 				uuid := StrVal(x["name"])  // NOTE that 'name' key is the role definition UUID
-				if !ItemInList(uuid, uuids) {
+				if !utl.ItemInList(uuid, uuids) {
 					// Add this role definition to growing list ONLY if it's NOT in it already
 					oList = append(oList, x)
 					uuids = append(uuids, uuid)
 				}
 			}
 		}
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 		calls++
 	}
 	if verbose { print("\n") }  // Use newline now
@@ -182,7 +186,7 @@ func GetAzRoleDefinition(x map[string]interface{}) (y map[string]interface{}) {
 	if xProps == nil { return nil }  // Return nil if properties missing
 		
 	xScopes := xProps["assignableScopes"].([]interface{})
-	if VarType(xScopes)[0] != '[' || len(xScopes) < 1 {
+	if utl.VarType(xScopes)[0] != '[' || len(xScopes) < 1 {
 		// Return nil if assignableScopes not an array, or it's empty
 		return nil
 	}
@@ -210,7 +214,7 @@ func GetAzRoleDefinition(x map[string]interface{}) (y map[string]interface{}) {
 				return nil  
 			}
 		}
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 	}
 	return nil
 }

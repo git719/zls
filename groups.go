@@ -2,6 +2,10 @@
 
 package main
 
+import (
+	"github.com/git719/utl"
+)
+
 func PrintGroup(x map[string]interface{}) {
 	// Print group object in YAML
 	if x == nil { return }
@@ -30,7 +34,7 @@ func PrintGroup(x map[string]interface{}) {
 			print("%-28s %s\n", "owners:", "None")
 		}
 	}
-	ApiErrorCheck(r, trace())
+	ApiErrorCheck(r, utl.Trace())
 
 	url = mg_url + "/beta/groups/" + id + "/members"
 	r = ApiGet(url, mg_headers, nil)
@@ -42,7 +46,7 @@ func PrintGroup(x map[string]interface{}) {
 			for _, i := range members {
 				m := i.(map[string]interface{}) // Assert as JSON object type
 				Type, Name := "-", "-"
-				Type = LastElem(StrVal(m["@odata.type"]), ".")
+				Type = utl.LastElem(StrVal(m["@odata.type"]), ".")
 				switch Type {
 				case "group", "servicePrincipal":
 					Name = StrVal(m["displayName"])
@@ -55,7 +59,7 @@ func PrintGroup(x map[string]interface{}) {
 			print("%-28s %s\n", "members:", "None")
 		}
 	}
-	ApiErrorCheck(r, trace())
+	ApiErrorCheck(r, utl.Trace())
 
 	// Print all groups/roles it is a member of
 	memberOf := GetObjectMemberOfs("g", id) // For this Group object

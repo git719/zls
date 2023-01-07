@@ -4,6 +4,7 @@ package main
 
 import (
 	"strings"
+	"github.com/git719/utl"
 )
 
 func PrintRoleAssignmentReport() {
@@ -17,7 +18,7 @@ func PrintRoleAssignmentReport() {
 	for _, i := range GetAllObjects("a") { // Iterate through all objects
 		x := i.(map[string]interface{}) // Assert JSON object type
 		xProp := x["properties"].(map[string]interface{})
-		Rid := LastElem(StrVal(xProp["roleDefinitionId"]), "/")
+		Rid := utl.LastElem(StrVal(xProp["roleDefinitionId"]), "/")
 		Pid := StrVal(xProp["principalId"])
 		Type := StrVal(xProp["principalType"])
 		pName := "ID-Not-Found"
@@ -56,7 +57,7 @@ func PrintRoleAssignment(x map[string]interface{}) {
 	xProp := x["properties"].(map[string]interface{})
 
 	roleMap := GetIdNameMap("d")  // Get role definitions id:name map
-	roleId := LastElem(StrVal(xProp["roleDefinitionId"]), "/")
+	roleId := utl.LastElem(StrVal(xProp["roleDefinitionId"]), "/")
 	print("  %-17s %s  # roleName = \"%s\"\n", "roleDefinitionId:", roleId, roleMap[roleId])
 
 	var nameMap map[string]string
@@ -111,14 +112,14 @@ func GetAzRoleAssignmentAll() (oList []interface{}) {
 			for _, i := range assignments {
 				x := i.(map[string]interface{}) // Assert as JSON object type
 				uuid := StrVal(x["name"])  // NOTE that 'name' key is the role assignment UUID
-				if !ItemInList(uuid, uuids) {
+				if !utl.ItemInList(uuid, uuids) {
 					// Role assignments DO repeat! Add to growing list ONLY if it's NOT in it already
 					oList = append(oList, x)
 					uuids = append(uuids, uuid)
 				}
 			}
 		}
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 		calls++
 	}
 	print("\n")  // Use newline now
@@ -135,7 +136,7 @@ func GetAzRoleAssignment(x map[string]interface{}) (y map[string]interface{}) {
 	xProps := x["properties"].(map[string]interface{})
 	if xProps == nil { return nil }  // Return nil if properties missing
 
-	xRoleDefinitionId := LastElem(StrVal(xProps["roleDefinitionId"]), "/")
+	xRoleDefinitionId := utl.LastElem(StrVal(xProps["roleDefinitionId"]), "/")
 	xPrincipalId      := StrVal(xProps["principalId"])
 	xScope            := StrVal(xProps["scope"])
 	if xScope == "" { xScope = StrVal(xProps["Scope"]) }  // Account for possibly capitalized key
@@ -156,12 +157,12 @@ func GetAzRoleAssignment(x map[string]interface{}) (y map[string]interface{}) {
 			y = i.(map[string]interface{})
 			yProps := y["properties"].(map[string]interface{})
 			yScope := StrVal(yProps["scope"])
-			yRoleDefinitionId := LastElem(StrVal(yProps["roleDefinitionId"]), "/")
+			yRoleDefinitionId := utl.LastElem(StrVal(yProps["roleDefinitionId"]), "/")
 			if yScope == xScope && yRoleDefinitionId == xRoleDefinitionId {
 				return y  // We found it
 			}
 		}
 	}
-	ApiErrorCheck(r, trace())
+	ApiErrorCheck(r, utl.Trace())
 	return nil
 }

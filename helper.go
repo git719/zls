@@ -9,51 +9,41 @@ import (
 	"path/filepath"
 	"time"
 	"runtime"
-
 	"github.com/google/uuid"
+	"github.com/git719/ezmsal"
+	"github.com/git719/utl"
 )
 
-func exit(code int) {
-	os.Exit(code)       // Syntactic sugar. Easier to type
+func StrVal(x interface{}) string {
+	return utl.StrVal(x)		// Shorthand
 }
 
-func print(format string, args ...interface{}) (n int, err error) {
-	return fmt.Printf(format, args...) // More syntactic sugar
-}
+func SetupVariables() (ezmsal.GlobVarsType) {
+	// Set up variables object
+	z := ezmsal.GlobVarsType{
+		ConfDir:      "",               // Set to your liking, e.g., filepath.Join(os.Getenv("HOME"), "." + prgname)
+		CredsFile:    "",               // Set to something like "credentials.yaml"
+		TokenFile:    "",               // Set to something like "accessTokens.json"
+		TenantId:     "",               // Set the following 5 according to credsFile
+		ClientId:     "",
+		ClientSecret: "",
+		Interactive:  false,
+		Username:     "",
+		AuthorityUrl: "",               // Set to constAuthUrl + tenantID
+		MgToken:      "",               // Below 4 will be set up by SetupApiTokens()
+		MgHeaders:    ezmsal.MapType{},
+		AzToken:      "",
+		AzHeaders:    ezmsal.MapType{},  
+	}
 
-func die(format string, args ...interface{}) {
-	fmt.Printf(format, args...) // Same as print function but does not return
-	os.Exit(1)                  // Always exit with return code 1
-}
-
-func sprint(format string, args ...interface{}) string {
-	return fmt.Sprintf(format, args...)	// More syntactic sugar
-}
-
-func trace() (string) {
-	// Return string showing current "File_path [line number] function_name"
-	// https://stackoverflow.com/questions/25927660/how-to-get-the-current-function-name
-    progCounter, fp, ln, ok := runtime.Caller(1)
-    if !ok { return sprint("%s\n    %s:%d\n", "?", "?", 0) }
-    funcPointer := runtime.FuncForPC(progCounter)
-    if funcPointer == nil { return sprint("%s\n    %s:%d\n", "?", fp, ln) }
-	return sprint("%s\n    %s:%d\n", funcPointer.Name(), fp, ln)
-}
-
-func ValidUuid(s string) bool {
-	_, err := uuid.Parse(s)
-	return err == nil
-}
-
-func SameType(a, b interface{}) bool {
-	// Check if two variables are of the same type
-	a_type := sprint("%T", a)
-	b_type := sprint("%T", b)
-	return a_type == b_type
-}
-
-func VarType(v interface{}) string {
-	return sprint("%T", v)
+	// Set up program configuration directory
+	z.ConfDir = filepath.Join(os.Getenv("HOME"), "." + prgname)
+	if utl.FileNotExist(z.ConfDir) {
+		if err := os.Mkdir(z.ConfDir, 0700); err != nil {
+			panic(err.Error())
+		}
+	}
+	return z	
 }
 
 func GetAzRbacScopes() (scopes []string) {
@@ -94,10 +84,10 @@ func GetAllObjects(t string) (oList []interface{}) {
 
 	localData := filepath.Join(confdir, tenant_id+"_"+oMap[t]+".json") // Define local data store file
 	cacheFileAge := int64(0)
-	if FileUsable(localData) {
-		cacheFileEpoc := int64(FileModTime(localData))
+	if utl.FileUsable(localData) {
+		cacheFileEpoc := int64(utl.FileModTime(localData))
 		cacheFileAge = int64(time.Now().Unix()) - cacheFileEpoc
-		l, _ := LoadFileJson(localData) // Load cache file
+		l, _ := utl.LoadFileJson(localData) // Load cache file
 		if l != nil {
 			oList = l.([]interface{}) // Get cached objects
 			if (t == "d" || t == "a" || t == "s" || t == "m") && cacheFileAge < cachePeriod {
@@ -114,16 +104,16 @@ func GetAllObjects(t string) (oList []interface{}) {
 	case "d":
 		verbose := true
 		oList = GetAzRoleDefinitionAll(verbose)
-		SaveFileJson(oList, localData)  // Cache it to local file
+		utl.SaveFileJson(oList, localData)  // Cache it to local file
 	case "a":
 		oList = GetAzRoleAssignmentAll()
-		SaveFileJson(oList, localData)
+		utl.SaveFileJson(oList, localData)
 	case "s":
 		oList = GetAzSubscriptionAll()
-		SaveFileJson(oList, localData)
+		utl.SaveFileJson(oList, localData)
 	case "m":
 		oList = GetAzManagementGroupAll()
-		SaveFileJson(oList, localData)
+		utl.SaveFileJson(oList, localData)
 	case "rd":
 		// Azure AD Role Definitions are under 'roleManagement/directory' so we're forced to process them
 		// differently than other MS Graph objects. Microsoft, this is not pretty :-(
@@ -131,9 +121,9 @@ func GetAllObjects(t string) (oList []interface{}) {
 		r := ApiGet(url, nil, nil)
 		if r["value"] != nil {
 			oList := r["value"].([]interface{}) // Treat as JSON array type
-			SaveFileJson(oList, localData) // Cache it to local file
+			utl.SaveFileJson(oList, localData) // Cache it to local file
 		}
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 	case "u", "g", "sp", "ap", "ra":
 		// Use this file to keep track of the delta link for doing delta queries
 		// See https://docs.microsoft.com/en-us/graph/delta-query-overview
@@ -142,11 +132,11 @@ func GetAllObjects(t string) (oList []interface{}) {
 
 		var fullQuery bool = true
 		url := mg_url + "/v1.0/" + oMap[t] + "/delta?$select=" // Base URL
-		deltaAge := int64(time.Now().Unix()) - int64(FileModTime(deltaLinkFile))
+		deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
 		// DeltaLink files cannot be older than 30 days (using 27)
-		if (deltaAge < int64(3660 * 24 * 27)) && FileUsable(deltaLinkFile) && len(oList) > 0 {
+		if (deltaAge < int64(3660 * 24 * 27)) && utl.FileUsable(deltaLinkFile) && len(oList) > 0 {
 			fullQuery = false
-			tmpVal, _ := LoadFileJson(deltaLinkFile)
+			tmpVal, _ := utl.LoadFileJson(deltaLinkFile)
 			deltaLinkMap = tmpVal.(map[string]interface{})  // Assert as JSON object
 			url = StrVal(deltaLinkMap["@odata.deltaLink"])  // Delta URL
 		} else {
@@ -175,7 +165,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 		headers := map[string]string{"Prefer": "return=minimal"} // Additional required header
 
 		r := ApiGet(url, headers, nil)
-		ApiErrorCheck(r, trace())
+		ApiErrorCheck(r, utl.Trace())
 		for {
 			// Infinite loop until deltalLink appears (meaning we're done getting current delta set)
 			if r["value"] != nil {
@@ -193,7 +183,7 @@ func GetAllObjects(t string) (oList []interface{}) {
 			if r["@odata.deltaLink"] != nil {
 				// If deltaLink appears it means we're done retrieving initial set and we can break out of for-loop
 				deltaLinkMap = map[string]interface{}{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
-				SaveFileJson(deltaLinkMap, deltaLinkFile) // Save new deltaLink for next call
+				utl.SaveFileJson(deltaLinkMap, deltaLinkFile) // Save new deltaLink for next call
 
 				// print("\nLocal count = %d (before merge/cleanup)\n", len(oList))
 				// print("Delta count = %d\n", len(deltaSet))
@@ -204,11 +194,11 @@ func GetAllObjects(t string) (oList []interface{}) {
 				// print("Local count = %d (after merge/cleanup)\n", len(oList))
 				// print("Azure count = %d\n", azureCount)
 
-				SaveFileJson(oList, localData) // Cache it to local file
+				utl.SaveFileJson(oList, localData) // Cache it to local file
 				break                          // from infinite for-loop
 			}
 			r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil)  // Get next batch
-			ApiErrorCheck(r, trace())
+			ApiErrorCheck(r, utl.Trace())
 			calls++
 		}
 		if fullQuery {
@@ -260,7 +250,7 @@ func GetMatching(t, name string) (oList []interface{}) {
 			x := i.(map[string]interface{}) // Assert JSON object type
 			xProps := x["properties"].(map[string]interface{})
 			if xProps != nil && xProps["roleName"] != nil {
-				if SubString(StrVal(xProps["roleName"]), name) {
+				if utl.SubString(StrVal(xProps["roleName"]), name) {
 					oList = append(oList, x)
 				}
 			}
@@ -272,8 +262,8 @@ func GetMatching(t, name string) (oList []interface{}) {
 			xProps := x["properties"].(map[string]interface{})
 			if xProps != nil && xProps["roleDefinitionId"] != nil {
 				Rid := StrVal(xProps["roleDefinitionId"])
-				roleName := roleMap[LastElem(Rid, "/")]
-				if SubString(roleName, name) {
+				roleName := roleMap[utl.LastElem(Rid, "/")]
+				if utl.SubString(roleName, name) {
 					oList = append(oList, x)
 				}
 			}
@@ -283,7 +273,7 @@ func GetMatching(t, name string) (oList []interface{}) {
 			x := i.(map[string]interface{}) // Assert JSON object type
 			xProps := x["properties"].(map[string]interface{})
 			if xProps != nil && xProps["displayName"] != nil {
-				if SubString(StrVal(xProps["displayName"]), name) {
+				if utl.SubString(StrVal(xProps["displayName"]), name) {
 					oList = append(oList, x)
 				}
 			}
@@ -294,7 +284,7 @@ func GetMatching(t, name string) (oList []interface{}) {
 			// Search relevant attributes
 			searchList := []string{"displayName", "userPrincipalName", "mailNickname", "onPremisesSamAccountName", "onPremisesUserPrincipalName"}
 			for _, i := range searchList {
-				if SubString(StrVal(x[i]), name) {
+				if utl.SubString(StrVal(x[i]), name) {
 					oList = append(oList, x)
 					break // on first match
 				}
@@ -304,7 +294,7 @@ func GetMatching(t, name string) (oList []interface{}) {
 		for _, i := range GetAllObjects(t) {
 			x := i.(map[string]interface{}) // Assert JSON object type
 			if x != nil && x["displayName"] != nil {
-				if SubString(StrVal(x["displayName"]), name) {
+				if utl.SubString(StrVal(x["displayName"]), name) {
 					oList = append(oList, x)
 				}
 			}
@@ -319,7 +309,7 @@ func GetObjectMemberOfs(t, id string) (oList []interface{}) {
 	url := mg_url + "/beta/" + oMap[t] + "/" + id + "/memberof"
 	r := ApiGet(url, mg_headers, nil)
 	if r["value"] != nil { oList = r["value"].([]interface{}) }  // Assert as JSON array type
-	ApiErrorCheck(r, trace())
+	ApiErrorCheck(r, utl.Trace())
 	return oList
 }
 
@@ -328,10 +318,10 @@ func GetObjectFromFile(filePath string) (formatType, t string, obj map[string]in
 
 	// Because JSON is essentially a subset of YAML, we have to check JSON first
 	// As an aside, see https://news.ycombinator.com/item?id=31406473
-	objRaw, _ := LoadFileJson(filePath)  // Ignore the errors
+	objRaw, _ := utl.LoadFileJson(filePath)  // Ignore the errors
 	formatType = "JSON"
 	if objRaw == nil {
-		objRaw, _ = LoadFileYaml(filePath)  // See if it's YAML, ignoring the error
+		objRaw, _ = utl.LoadFileYaml(filePath)  // See if it's YAML, ignoring the error
 		if objRaw == nil { return "", "", nil }  // It's neither, return null values
 		formatType = "YAML"
 	}

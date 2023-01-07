@@ -2,6 +2,10 @@
 
 package main
 
+import (
+	"github.com/git719/utl"
+)
+
 func PrintAdRole(x map[string]interface{}) {
 	// Print active Azure AD role object in YAML format
 	if x == nil { return }
@@ -32,7 +36,7 @@ func PrintAdRole(x map[string]interface{}) {
 			print("%-28s %s\n", "members:", "None")
 		}
 	}
-	ApiErrorCheck(r, trace())
+	ApiErrorCheck(r, utl.Trace())
 }
 
 func PrintAdRoleDef(x map[string]interface{}) {

@@ -10,7 +10,7 @@ import (
 const (
 	// Global constants
 	prgname  = "zls"
-	prgver   = "188"
+	prgver   = "1.8.9"
 	mg_url   = "https://graph.microsoft.com"
 	az_url   = "https://management.azure.com"
 	auth_url = "https://login.microsoftonline.com/"
@@ -79,13 +79,7 @@ func main() {
 		PrintUsage()  // Don't accept less than 1 or more than 4 arguments
 	}
 
-	// Set up program configuration directory
-	confdir = filepath.Join(os.Getenv("HOME"), "."+prgname)
-	if FileNotExist(confdir) {
-		if err := os.Mkdir(confdir, 0700); err != nil {
-			panic(err.Error())
-		}
-	}
+	z := SetupVariables()
 
 	// Process given arguments
 	switch numberOfArguments {
