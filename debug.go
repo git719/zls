@@ -2,44 +2,32 @@
 
 package main
 
-import (
-	"os"
-	"github.com/git719/utl"
-)
+// import (
+// 	"fmt"
+// 	"os"
+// 	"github.com/git719/aza"
+// 	"github.com/git719/utl"
+// )
 
-func TestFunction() {
-	// url := "/providers/Microsoft.Management/getEntities"
-	// url := "/providers/Microsoft.Management/managementGroups"
-	// url := "/providers/Microsoft.Management/managementGroups/" + tenant_id + "/descendants"
-	url := az_url + "/providers/Microsoft.Management/managementGroups/" + tenant_id
-	params := map[string]string{
-		"api-version": "2022-04-01",
-		"$expand":     "children",
-		"$recurse":    "true",
-	}
-	r := ApiGet(url, az_headers, params)
-	ApiErrorCheck(r, utl.Trace())
-	utl.PrintJson(r)
+// func TestFunction() {
+// 	var z aza.AzaBundle
+// 	var oMap MapString
 
-	// Test MergeObjects function
-	// filePath := filepath.Join("/Users/user1/obj.json")
-	// objRaw := LoadFileJson(filePath)
-	// if objRaw == nil {
-	// 	die("Error loading file\n")
-	// }
-	// obj := objRaw.(map[string]interface{})
+// 	// Set up the bundle of variables
+// 	z, oMap = SetupVariables(&z, &oMap)
+// 	fmt.Println(z.ConfDir)
+// 	fmt.Println(z.CredsFile)
+// 	fmt.Println(z.TokenFile)
+// 	fmt.Println(oMap["d"])
+// 	fmt.Println(oMap["m"])
+// 	fmt.Println(oMap["sp"])
+	
+// 	// Setup the API tokens
+// 	z = aza.SetupApiTokens(&z)
 
-	// filePath2 = filepath.Join("/Users/user1/obj2.json")
-	// objRaw2 = LoadFileJson(filePath2)
-	// if objRaw2 == nil {
-	// 	die("Error loading file\n")
-	// }
-	// obj2 := ojbRaw2.(map[string]interface{})
-
-	// PrintJson(obj)
-	// PrintJson(obj2)
-	// x := MergeObjects(obj, obj2)
-	// PrintJson(x)
-
-	os.Exit(0)
-}
+// 	// Get subscription with a specific filter
+// 	subs := GetSubscriptions("as01", z)
+// 	fmt.Println(len(subs))
+// 	utl.PrintJson(subs)
+// 	os.Exit(0)
+// }

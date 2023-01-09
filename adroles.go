@@ -3,10 +3,11 @@
 package main
 
 import (
+	"github.com/git719/aza"
 	"github.com/git719/utl"
 )
 
-func PrintAdRole(x map[string]interface{}) {
+func PrintAdRole(x JsonObject, z aza.AzaBundle) {
 	// Print active Azure AD role object in YAML format
 	if x == nil { return }
 	id := StrVal(x["id"])
@@ -19,15 +20,15 @@ func PrintAdRole(x map[string]interface{}) {
 	}
 
 	// Print members of this role
-	url := mg_url + "/v1.0/directoryRoles/" + id + "/members"
-	r := ApiGet(url, mg_headers, nil)
+	url := aza.ConstMgUrl + "/v1.0/directoryRoles/" + id + "/members"
+	r := ApiGet(url, z.MgHeaders, nil)
 	if r["value"] != nil {
-		members := r["value"].([]interface{}) // Assert as JSON array type
+		members := r["value"].(JsonArray)
 		if len(members) > 0 {
 			print("members:\n")
 			// PrintJson(members) // DEBUG
 			for _, i := range members {
-				m := i.(map[string]interface{}) // Assert as JSON object type
+				m := i.(JsonObject)
 				Upn := StrVal(m["userPrincipalName"])
 				Name := StrVal(m["displayName"])
 				print("  %-40s %s\n", Upn, Name)
@@ -39,7 +40,7 @@ func PrintAdRole(x map[string]interface{}) {
 	ApiErrorCheck(r, utl.Trace())
 }
 
-func PrintAdRoleDef(x map[string]interface{}) {
+func PrintAdRoleDef(x JsonObject, z aza.AzaBundle) {
 	// Print Azure AD role definition object in YAML format
 	if x == nil { return }
 
@@ -52,13 +53,13 @@ func PrintAdRoleDef(x map[string]interface{}) {
 
 	// List permissions
 	if x["rolePermissions"] != nil {
-		rolePerms := x["rolePermissions"].([]interface{}) // Assert to JSON array
+		rolePerms := x["rolePermissions"].(JsonArray)
 		if len(rolePerms) > 0 {
 			// Unclear why rolePermissions is a list instead of the single entry that it usually is
-			perms := rolePerms[0].(map[string]interface{}) // Assert JSON object
-			if perms["allowedResourceActions"] != nil && len(perms["allowedResourceActions"].([]interface{})) > 0 {
+			perms := rolePerms[0].(JsonObject)
+			if perms["allowedResourceActions"] != nil && len(perms["allowedResourceActions"].(JsonArray)) > 0 {
 				print("permissions:\n")
-				for _, i := range perms["allowedResourceActions"].([]interface{}) {
+				for _, i := range perms["allowedResourceActions"].(JsonArray) {
 					print("  %s\n", StrVal(i))
 				}
 			}
