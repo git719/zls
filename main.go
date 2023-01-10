@@ -17,12 +17,8 @@ const (
 )
 
 type MapString   map[string]string
-// JSON handling: See https://eager.io/blog/go-and-json/
-type JsonArray   []interface{}
+type JsonArray   []interface{} // This and below for clearer JSON handling. See https://eager.io/blog/go-and-json/
 type JsonObject  map[string]interface{}
-type JsonNumber  float64
-type JsonString  string
-type JsonBoolean bool
 
 func PrintUsage() {
 	fmt.Printf(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
@@ -149,8 +145,8 @@ func main() {
 		arg1 := os.Args[1] ; arg2 := os.Args[2]
 		z = aza.SetupApiTokens(&z)
 		switch arg1 {
-		// case "-vs":
-		// 	CompareSpecfile(arg2)
+		case "-vs":
+			CompareSpecfile(arg2, z, oMap)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
 			matchingObjects := GetObjects(t, arg2, false, z, oMap)

@@ -22,8 +22,8 @@ func PrintCountStatus(z aza.AzaBundle, oMap MapString) {
 	fmt.Printf("%-38s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
 	// fmt.Printf("%-38s ", "Groups")
 	// fmt.Printf("%-20d %d\n", ObjectCountLocal("g", z, oMap), ObjectCountAzure("g", z, oMap))
-	// fmt.Printf("%-38s ", "Users")
-	// fmt.Printf("%-20d %d\n", ObjectCountLocal("u", z, oMap), ObjectCountAzure("u", z, oMap))
+	fmt.Printf("%-38s ", "Users")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("u", z, oMap), ObjectCountAzure("u", z, oMap))
 	// fmt.Printf("%-38s ", "App Registrations")
 	// fmt.Printf("%-20d %d\n", ObjectCountLocal("ap", z, oMap), ObjectCountAzure("ap", z, oMap))
 	// microsoftSpsLocal, nativeSpsLocal := SpsCountLocal(z.ConfDir, z.TenantId)
@@ -32,10 +32,10 @@ func PrintCountStatus(z aza.AzaBundle, oMap MapString) {
 	// fmt.Printf("%-20d %d\n", microsoftSpsLocal, microsoftSpsAzure)
 	// fmt.Printf("%-38s ", "Service Principals This Tenant")
 	// fmt.Printf("%-20d %d\n", nativeSpsLocal, nativeSpsAzure)
-	// fmt.Printf("%-38s ", "Azure AD Roles Definitions")
-	// fmt.Printf("%-20d %d\n", ObjectCountLocal("rd", z, oMap), ObjectCountAzure("rd", z, oMap))
-	// fmt.Printf("%-38s ", "Azure AD Roles Activated")
-	// fmt.Printf("%-20d %d\n", ObjectCountLocal("ra", z, oMap), ObjectCountAzure("ra", z, oMap))
+	fmt.Printf("%-38s ", "Azure AD Roles Definitions")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("rd", z, oMap), ObjectCountAzure("rd", z, oMap))
+	fmt.Printf("%-38s ", "Azure AD Roles Activated")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("ra", z, oMap), ObjectCountAzure("ra", z, oMap))
 	fmt.Printf("%-38s ", "Management Groups")
 	fmt.Printf("%-20d %d\n", ObjectCountLocal("m", z, oMap), ObjectCountAzure("m", z, oMap))
 	fmt.Printf("%-38s ", "Subscriptions")
@@ -46,8 +46,10 @@ func PrintCountStatus(z aza.AzaBundle, oMap MapString) {
     fmt.Printf("%-20d %d\n", builtinLocal, builtinAzure)
 	fmt.Printf("%-38s ", "RBAC Role Definitions Custom")
     fmt.Printf("%-20d %d\n", customLocal, customAzure)
-	// fmt.Printf("%-38s ", "RBAC Role Assignments")
-	// fmt.Printf("%-20d %d\n", ObjectCountLocal("a", z, oMap), ObjectCountAzure("a", z, oMap))
+	fmt.Printf("%-38s ", "RBAC Role Assignments")
+	assignmentsLocal := len(GetRoleAssignments("", false, false, z, oMap)) // false = prefer local, false = be silent
+	assignmentsAzure := len(GetRoleAssignments("", true, false, z, oMap)) // true = force a call to Azure, false = be silent
+	fmt.Printf("%-20d %d\n", assignmentsLocal, assignmentsAzure)
 }
 
 // func SpsCountLocal(confDir, tenantId string) (microsoft, native int64) {
@@ -111,11 +113,25 @@ func ObjectCountLocal(t string, z aza.AzaBundle, oMap MapString) int64 {
 func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
 	// Returns count of given object type (ARM or MG)
 	switch t {
-	case "d", "a", "s", "m":
+	case "d":
 		// Azure Resource Management (ARM) API does not have a dedicated '$count' object filter,
 		// so we're forced to retrieve all objects then count them
-		allObjects := GetObjects(t, "", true, z, oMap) // true = force a call to Azure
-		return int64(len(allObjects))
+		roleDefinitions := GetRoleDefinitions("", true, false, z, oMap)
+		// true = force querying Azure, false = quietly
+		return int64(len(roleDefinitions))
+	case "a":
+		roleAssignments := GetRoleAssignments("", true, false, z, oMap)
+		return int64(len(roleAssignments))
+	case "s":
+		subscriptions :=  GetSubscriptions("", true, z)
+		return int64(len(subscriptions))
+	case "m":
+		mgGroups := GetMgGroups("", true, z)
+		return int64(len(mgGroups))
+	case "rd":
+		// There is no $count filter option for directory/roleDefinitions so we have to get them all and do a length count
+		adRoleDefinitions := GetAdRoleDefs("", true, z)
+		return int64(len(adRoleDefinitions))
 	case "u", "g", "sp", "ap", "ra":
 		// MS Graph API makes counting much easier with its dedicated '$count' filter
 		z.MgHeaders["ConsistencyLevel"] = "eventual"
@@ -125,15 +141,6 @@ func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
 		if r["value"] != nil {
 			return r["value"].(int64) // Expected result is a single int64 value for the count
 		}		
-	case "rd":
-		// There is no $count filter option for adRoleDefinitions so we have to get them all and do a length count
-		url := aza.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions"
-		r := ApiGet(url, z.MgHeaders, nil)
-		ApiErrorCheck(r, utl.Trace())
-		if r["value"] != nil {
-			adRoleDefinitions := r["value"].([]interface{})
-			return int64(len(adRoleDefinitions))
-		}
 	}
 	return 0
 }
@@ -225,8 +232,8 @@ func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
 // 				// confirmation even needed? Can we just return r["value"][0]
 // 				for _, i := range results {
 // 					x := i.(map[string]interface{})    // Assert as JSON object type
-// 					xProps := x["properties"].(map[string]interface{})
-// 					roleName := StrVal(xProps["roleName"])
+// 					xProp := x["properties"].(map[string]interface{})
+// 					roleName := StrVal(xProp["roleName"])
 // 					if roleName == name { return x }
 // 					// Return first match we find, since roleName are unique across the tenant
 // 				}
@@ -299,12 +306,12 @@ func ApiCall(method, url string, jsonObj JsonObject, headers, params aza.MapStri
 
 	// === MAKE THE CALL ============
 	if verbose {
-		print("==== REQUEST =================================\n")
-		print("GET " + url + "\n")
-		print("HEADERS:\n")
+		fmt.Printf("==== REQUEST =================================\n")
+		fmt.Printf("GET " + url + "\n")
+		fmt.Printf("HEADERS:\n")
 		utl.PrintJson(req.Header); print("\n") 
 		print("PARAMS:\n")
-		utl.PrintJson(q); print("\n") 
+		utl.PrintJson(q); fmt.Println() 
 		// print("REQUEST_PAYLOAD:\n")
 		// utl.PrintJson(BODY); print("\n") 
 	}
@@ -331,13 +338,13 @@ func ApiCall(method, url string, jsonObj JsonObject, headers, params aza.MapStri
 		}
 	}
 	if verbose {
-		print("==== RESPONSE ================================\n")
-	    print("STATUS: %d %s\n", r.StatusCode, http.StatusText(r.StatusCode)) 
-		print("RESULT:\n")
-		utl.PrintJson(result); print("\n") 
+		fmt.Printf("==== RESPONSE ================================\n")
+	    fmt.Printf("STATUS: %d %s\n", r.StatusCode, http.StatusText(r.StatusCode)) 
+		fmt.Printf("RESULT:\n")
+		utl.PrintJson(result); fmt.Println() 
 		resHeaders, err := httputil.DumpResponse(r, false)
 		if err != nil { panic(err.Error()) }
-		print("HEADERS:\n%s\n", string(resHeaders)) 
+		fmt.Printf("HEADERS:\n%s\n", string(resHeaders)) 
 	}
 	return result
 }
@@ -345,6 +352,6 @@ func ApiCall(method, url string, jsonObj JsonObject, headers, params aza.MapStri
 func ApiErrorCheck(r map[string]interface{}, caller string) {
 	if r["error"] != nil {
 		e := r["error"].(map[string]interface{})
-		print(caller + "Error: " + e["message"].(string) + "\n")
+		fmt.Printf(caller + "Error: " + e["message"].(string) + "\n")
 	}
 }
