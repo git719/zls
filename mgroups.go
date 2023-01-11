@@ -20,7 +20,7 @@ func MgType(typeIn string) string {
 	}
 }
 
-func PrintMgGroup(x map[string]interface{}) {
+func PrintMgGroup(x JsonObject) {
 	// Print management group object in YAML
 	if x == nil {
 		return
@@ -31,7 +31,23 @@ func PrintMgGroup(x map[string]interface{}) {
 	fmt.Printf("%-12s %s\n", "type:", MgType(StrVal(x["type"])))
 }
 
-func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list []interface{}) { // GetAzManagementGroupAll
+func GetAzMgGroups(z aza.AzaBundle) (list JsonArray) {
+	// Get ALL managementGroups in current Azure tenant AND save them to local cache file
+	list = nil // We have to zero it out
+	params := aza.MapString{"api-version": "2020-05-01"} // managementGroups
+	url := aza.ConstAzUrl + "/providers/Microsoft.Management/managementGroups"
+	r := ApiGet(url, z.AzHeaders, params)
+	ApiErrorCheck(r, utl.Trace())
+	if r != nil && r["value"] != nil {
+		objects := r["value"].([]interface{})
+		list = append(list, objects...)
+	}
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json")
+	utl.SaveFileJson(list, cacheFile) // Update the local cache
+	return list
+}
+
+func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	// Get all managementGroups that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The force boolean
 	// option will force a call to Azure.
@@ -40,17 +56,7 @@ func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list []interface{}
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json")
 	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
 	if cacheNoGood || force {
-		// Get all managementGroups in current Azure tenant again
-		list = nil // We have to zero it out
-		params := aza.MapString{"api-version": "2020-05-01"} // managementGroups
-		url := aza.ConstAzUrl + "/providers/Microsoft.Management/managementGroups"
-		r := ApiGet(url, z.AzHeaders, params)
-		ApiErrorCheck(r, utl.Trace())
-		if r != nil && r["value"] != nil {
-			objects := r["value"].([]interface{})
-			list = append(list, objects...)
-		}
-		utl.SaveFileJson(list, cacheFile) // Update the local cache
+		list = GetAzMgGroups(z) // Get the entire set from Azure
 	}
 
 	// Do filter matching

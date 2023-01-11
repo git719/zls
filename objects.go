@@ -6,14 +6,8 @@ import (
 	"github.com/git719/utl"
 )
 
-// func PrintAllJson(t string, z aza.AzaBundle, oMap MapString) {
-// 	// List all object of type t in JSON
-// 	all := GetAllObjects(t, z, oMap)
-// 	utl.PrintJson(all)
-// }
-
-func MergeMaps(m1, m2 map[string]string) (result map[string]string) {
-	result = map[string]string{}
+func MergeMaps(m1, m2 MapString) (result MapString) {
+	result = MapString{}
 	for k, v := range m1 {
 		result[k] = v
 	}
@@ -23,7 +17,7 @@ func MergeMaps(m1, m2 map[string]string) (result map[string]string) {
 	return result
 }
 
-func MergeObjects(x, y map[string]interface{}) (obj map[string]interface{}) {
+func MergeObjects(x, y JsonObject) (obj JsonObject) {
 	// Merge JSON object y into x
 	// NOTES:
 	// 1. Non-recursive, only works attributes at first level
@@ -43,7 +37,7 @@ func MergeObjects(x, y map[string]interface{}) (obj map[string]interface{}) {
 	return obj
 }
 
-func SelectObject(id string, objSet []interface{}) (x map[string]interface{}) {
+func SelectObject(id string, objSet JsonArray) (x JsonObject) {
 	// Select JSON object with given ID from slice
 	for _, obj := range objSet {
 		x = obj.(map[string]interface{})
@@ -53,11 +47,11 @@ func SelectObject(id string, objSet []interface{}) (x map[string]interface{}) {
 	return nil
 }
 
-func NormalizeCache(baseSet, deltaSet []interface{}) (oList []interface{}) {
+func NormalizeCache(baseSet, deltaSet JsonArray) (oList JsonArray) {
 	// Build JSON mergeSet from deltaSet, and build list of deleted IDs
 	var deletedIds []string
 	var uniqueIds []string
-	var mergeSet []interface{} = nil
+	var mergeSet JsonArray = nil
 	for _, i := range deltaSet {
 		x := i.(map[string]interface{})
 		id := StrVal(x["id"])
@@ -85,7 +79,7 @@ func NormalizeCache(baseSet, deltaSet []interface{}) (oList []interface{}) {
 	}
 
 	// Merge new entries in deltaSet into baseSet
-	var duplicates []interface{} = nil
+	var duplicates JsonArray = nil
 	var duplicateIds []string = nil
 	for _, obj := range mergeSet {
 		x := obj.(map[string]interface{})

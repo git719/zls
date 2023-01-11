@@ -17,86 +17,6 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintCountStatus(z aza.AzaBundle, oMap MapString) {
-	fmt.Printf("Note: Counting objects residing in Azure can take some time.\n")
-	fmt.Printf("%-38s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
-	// fmt.Printf("%-38s ", "Groups")
-	// fmt.Printf("%-20d %d\n", ObjectCountLocal("g", z, oMap), ObjectCountAzure("g", z, oMap))
-	fmt.Printf("%-38s ", "Users")
-	fmt.Printf("%-20d %d\n", ObjectCountLocal("u", z, oMap), ObjectCountAzure("u", z, oMap))
-	// fmt.Printf("%-38s ", "App Registrations")
-	// fmt.Printf("%-20d %d\n", ObjectCountLocal("ap", z, oMap), ObjectCountAzure("ap", z, oMap))
-	// microsoftSpsLocal, nativeSpsLocal := SpsCountLocal(z.ConfDir, z.TenantId)
-	// microsoftSpsAzure, nativeSpsAzure := SpsCountAzure(z.TenantId, z.TenantId)
-	// fmt.Printf("%-38s ", "Service Principals Microsoft Default")
-	// fmt.Printf("%-20d %d\n", microsoftSpsLocal, microsoftSpsAzure)
-	// fmt.Printf("%-38s ", "Service Principals This Tenant")
-	// fmt.Printf("%-20d %d\n", nativeSpsLocal, nativeSpsAzure)
-	fmt.Printf("%-38s ", "Azure AD Roles Definitions")
-	fmt.Printf("%-20d %d\n", ObjectCountLocal("rd", z, oMap), ObjectCountAzure("rd", z, oMap))
-	fmt.Printf("%-38s ", "Azure AD Roles Activated")
-	fmt.Printf("%-20d %d\n", ObjectCountLocal("ra", z, oMap), ObjectCountAzure("ra", z, oMap))
-	fmt.Printf("%-38s ", "Management Groups")
-	fmt.Printf("%-20d %d\n", ObjectCountLocal("m", z, oMap), ObjectCountAzure("m", z, oMap))
-	fmt.Printf("%-38s ", "Subscriptions")
-	fmt.Printf("%-20d %d\n", ObjectCountLocal("s", z, oMap), ObjectCountAzure("s", z, oMap))
-	builtinLocal, customLocal := RoleDefinitionCountLocal(z)
-	builtinAzure, customAzure := RoleDefinitionCountAzure(z, oMap)
-	fmt.Printf("%-38s ", "RBAC Role Definitions BuiltIn")
-    fmt.Printf("%-20d %d\n", builtinLocal, builtinAzure)
-	fmt.Printf("%-38s ", "RBAC Role Definitions Custom")
-    fmt.Printf("%-20d %d\n", customLocal, customAzure)
-	fmt.Printf("%-38s ", "RBAC Role Assignments")
-	assignmentsLocal := len(GetRoleAssignments("", false, false, z, oMap)) // false = prefer local, false = be silent
-	assignmentsAzure := len(GetRoleAssignments("", true, false, z, oMap)) // true = force a call to Azure, false = be silent
-	fmt.Printf("%-20d %d\n", assignmentsLocal, assignmentsAzure)
-}
-
-// func SpsCountLocal(confDir, tenantId string) (microsoft, native int64) {
-// 	// Dedicated SPs local cache counter able to discern if SP is owned by native tenant or it's a Microsoft default SP 
-// 	var microsoftList []interface{} = nil
-// 	var nativeList []interface{} = nil
-// 	localData := filepath.Join(confDir, tenantId + "_servicePrincipals.json")
-//     if utl.FileUsable(localData) {
-// 		l, _ := utl.LoadFileJson(localData) // Load cache file
-// 		if l != nil {
-// 			sps := l.([]interface{}) // Assert as JSON array type
-// 			for _, i := range sps {
-// 				x := i.(map[string]interface{}) // Assert as JSON object type
-// 				owner := StrVal(x["appOwnerOrganizationId"])
-// 				if owner == tenantId {  // If owned by current tenant ...
-// 					nativeList = append(nativeList, x)
-// 				} else {
-// 					microsoftList = append(microsoftList, x)
-// 				}
-// 			}
-// 			return int64(len(microsoftList)), int64(len(nativeList))
-// 		}
-// 	}
-// 	return 0, 0
-// }
-
-// func SpsCountAzure(confDir, tenantId string) (microsoft, native int64) {
-// 	// Dedicated SPs Azure counter able to discern if SP is owned by native tenant or it's a Microsoft default SP
-// 	// NOTE: Not entirely accurate yet because function GetAllObjects still checks local cache. Need to refactor
-// 	// that function into 2 diff versions GetAllObjectsLocal and GetAllObjectsAzure and have this function the latter.
-// 	var microsoftList []interface{} = nil
-// 	var nativeList []interface{} = nil
-// 	sps := GetAllObjects("sp", confDir, tenantId)
-// 	if sps != nil {
-// 		for _, i := range sps {
-// 			x := i.(map[string]interface{}) // Assert as JSON object type
-// 			owner := StrVal(x["appOwnerOrganizationId"])
-// 			if owner == tenantId {  // If owned by current tenant ...
-// 				nativeList = append(nativeList, x)
-// 			} else {
-// 				microsoftList = append(microsoftList, x)
-// 			}
-// 		}
-// 	}
-// 	return int64(len(microsoftList)), int64(len(nativeList))
-// }
-
 func ObjectCountLocal(t string, z aza.AzaBundle, oMap MapString) int64 {
 	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
@@ -129,7 +49,7 @@ func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
 		mgGroups := GetMgGroups("", true, z)
 		return int64(len(mgGroups))
 	case "rd":
-		// There is no $count filter option for directory/roleDefinitions so we have to get them all and do a length count
+		// There is no $count filter option for directory/roleDefinitions either
 		adRoleDefinitions := GetAdRoleDefs("", true, z)
 		return int64(len(adRoleDefinitions))
 	case "u", "g", "sp", "ap", "ra":

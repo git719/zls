@@ -2,10 +2,9 @@
 
 package main
 
-import "strings"
-
 import (
 	"fmt"
+	"strings"
 	"path/filepath"
 	"github.com/git719/aza"
 	"github.com/git719/utl"
@@ -13,7 +12,9 @@ import (
 
 func PrintRoleDefinition(x JsonObject, z aza.AzaBundle, oMap MapString) {
 	// Print role definition object in YAML format
-	if x == nil { return }
+	if x == nil {
+		return
+	}
 	if x["name"] != nil {
 		fmt.Printf("id: %s\n", StrVal(x["name"]))
 	}
@@ -114,85 +115,92 @@ func PrintRoleDefinition(x JsonObject, z aza.AzaBundle, oMap MapString) {
 	}
 }
 
-// Notes on Azure RBAC role definitions and the API:
-// As of api-version 2022-04-01, the RBAC API $filter=AtScopeAndBelow() does not appear to work as
-// documented at https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions-list.
-// This means that anyone searching for a comprehensive list of ALL role definitions within an Azure tenant
-// is forced to do this in a piecemeal, cumulative fashion. One must build a list of all scopes to search under,
-// then proceed through each of those subscope within the hierarchy. This gradually builds a list of all
-// BuiltIn and Custom definitions. The RBAC hierarchy is something like:
-//   PATH               EXAMPLE
-//   Tenant Root Group  /providers/Microsoft.Management/managementGroups/{tenantId}
-//   Management Group   /providers/Microsoft.Management/managementGroups/{groupId1}
-//   Subscription       /subscriptions/{subscriptionId1}
-// 	 Resource Group     /subscriptions/{subscriptionId1}/resourceGroups/{myResourceGroup1}
-// 	 Resource           /subscriptions/{subscriptionId1}/resourceGroups/{myResourceGroup1}/providers/Microsoft.Web/sites/mySite1
-//
-// Microsoft Azure BuiltIn roles are defined universally, at scope "/", so they are retrieved when the call
-// is made to the Tenant Root Group scope. That means the bulk of calls is for Custom role types.
-//
-// The best practice to follow is to define ALL custom roles as universally as possible, at the highest
-// scope, the Tenant Root Group scope. That way, they are always "visible" and therefore consumable
-// anywhere within the tenant. That is essentially how Azure BuiltIn roles are defined, universally.
-//
-// Note that as of 2022-12-30, Microsoft Azure still has a limitation whereby any custom, role having
-// any DataAction or NotDataAction CANNOT be defined at any MG scope level, and that prevents this
-// good practice. Microsoft is actively working to lift this restriction, see: 
-// https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles
-//
-// There may be customers out there who at some point decided to define some of their custom roles within some
-// of the hidden subscopes, and that's the reason why this utility follows this search algorithm to gather
-// the full list of roles definitions. Note however, that this utility ONLY searches as deep as subscriptions,
-// so if there are role definitions hidden within Resource Groups or individual resoures it may MISS them.
+func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list JsonArray) {
+	// Get ALL roleDefinitions in current Azure tenant AND save them to local cache file
+	// Option to be verbose (true) or quiet (false), since it can take a while. 
+	list = nil // We have to zero it out
+	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role definitions 
+	var uuids []string // Keep track of each unique objects to whittle out inherited repeats
+	calls := 1 // Track number of API calls below
+	params := aza.MapString{"api-version": "2022-04-01"}  // roleDefinitions
+	for _, scope := range scopes {
+		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions"
+		r := ApiGet(url, z.AzHeaders, params)
+		ApiErrorCheck(r, utl.Trace())
+		if r["value"] != nil {
+			definitions := r["value"].([]interface{})
+			if verbose {
+				// Using global var rUp to overwrite last line. Defer newline until done
+				fmt.Printf("%s(API calls = %d) %d definitions in set %d", rUp, calls, len(definitions), calls)
+			}
+			for _, i := range definitions {
+				x := i.(map[string]interface{})
+				uuid := StrVal(x["name"])  // NOTE that 'name' key is the role definition Object Id
+				if !utl.ItemInList(uuid, uuids) {
+					// Add this role definition to growing list ONLY if it's NOT in it already
+					list = append(list, x)
+					uuids = append(uuids, uuid)
+				}
+			}
+		}
+		calls++
+	}
+	if verbose {
+		fmt.Printf("\n") // Use newline now
+	}
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json")
+	utl.SaveFileJson(list, cacheFile) // Update the local cache
+	return list
+    // -------------------------------------------------------------------------------------------------------
+	// Important notes on Azure RBAC role definitions and the REST API: As of api-version 2022-04-01,
+	// the RBAC API $filter=AtScopeAndBelow() does not appear to work as documented at:
+	// https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions-list.
+	// This means that anyone searching for a comprehensive list of ALL role definitions within an Azure tenant
+	// is forced to do this in a piecemeal, cumulative fashion, by setting up a list of all scopes to search under,
+	// then proceed through each of those subscope within the hierarchy. This gradually builds a list of all
+	// BuiltIn and Custom definitions. The RBAC hierarchy is something like:
+	//   PATH               EXAMPLE
+	//   Tenant Root Group  /providers/Microsoft.Management/managementGroups/{tenantId}
+	//   Management Group   /providers/Microsoft.Management/managementGroups/{groupId1}
+	//   Subscription       /subscriptions/{subscriptionId1}
+	// 	 Resource Group     /subscriptions/{subscriptionId1}/resourceGroups/{myResourceGroup1}
+	// 	 Resource           /subscriptions/{subscriptionId1}/resourceGroups/{myResourceGroup1}/providers/Microsoft.Web/sites/mySite1
+
+	// Microsoft Azure BuiltIn roles are defined universally, at scope "/", so they are retrieved when the call
+	// is made to the Tenant Root Group scope. That means the bulk of calls is for Custom role types.
+
+	// The best practice for shops to follow is to define ALL its custom roles as universally as possible, at
+	// the highest scope, the Tenant Root Group scope. That way they are "visible" and therefore consumable
+	// anywhere within the tenant. That is essentially how Azure BuiltIn roles are defined, but more universally.
+
+	// Note also that as of 2022-12-30, Microsoft Azure still has a limitation whereby any custom, role having
+	// any DataAction or NotDataAction CANNOT be defined at any MG scope level, and that prevents this
+	// good practice. Microsoft is actively working to lift this restriction, see: 
+	// https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles
+
+	// There may be customers out there who at some point decided to define some of their custom roles within some
+	// of the hidden subscopes, and that's the reason why this utility follows this search algorithm to gather
+	// the full list of roles definitions. Note however, that this utility ONLY searches as deep as subscriptions,
+	// so if there are role definitions hidden within Resource Groups or individual resoures it will MISS them.
+}
 
 func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
-	// Get all roleDefinitions that match on provided filter. An empty "" filter means return
-	// all of them. It always uses local cache if it's within the cache retention period. The
-	// force boolean option will force a call to Azure.
+	// Get all roleDefinitions that match on provided filter. An empty "" filter means return all of them.
+	// It always uses local cache if it's within the cache retention period. The force boolean option forces
+	// a call to Azure. The verbose option details the progress. 
 	list = nil
 	cachePeriod := int64(3660 * 24 * 7) // 1 week cache retention period 
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json")
 	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
 	if cacheNoGood || force {
-		// Get all roleDefinitions in current Azure tenant again
-		list = nil // We have to zero it out
-		scopes := GetAzRbacScopes(z, oMap) // Get all RBAC hierarchy scopes to search for all role definitions 
-		var uuids []string // Keep track of each unique objects to whittle out inherited repeats
-		calls := 1 // Track number of API calls below
-		params := aza.MapString{"api-version": "2022-04-01"}  // roleDefinitions
-		for _, scope := range scopes {
-			url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions"
-			r := ApiGet(url, z.AzHeaders, params)
-			ApiErrorCheck(r, utl.Trace())
-			if r["value"] != nil {
-				definitions := r["value"].([]interface{})
-				if verbose {
-					// Using global var rUp to overwrite last line. Defer newline until done
-					fmt.Printf("%s(API calls = %d) %d definitions in set %d", rUp, calls, len(definitions), calls)
-				}
-				for _, i := range definitions {
-					x := i.(map[string]interface{})
-					uuid := StrVal(x["name"])  // NOTE that 'name' key is the role definition Object Id
-					if !utl.ItemInList(uuid, uuids) {
-						// Add this role definition to growing list ONLY if it's NOT in it already
-						list = append(list, x)
-						uuids = append(uuids, uuid)
-					}
-				}
-			}
-			calls++
-		}
-		if verbose {
-			fmt.Printf("\n") // Use newline now
-		}
-		utl.SaveFileJson(list, cacheFile) // Update the local cache
+		GetAzRoleDefinitions(verbose, z) // Get the entire set from Azure
 	}
 
 	// Do filter matching
 	if filter == "" {
 		return list
 	}
-	var matchingList []interface{} = nil
+	var matchingList JsonArray = nil
 	for _, i := range list { // Parse every object
 		x := i.(map[string]interface{})
 		// Match against relevant roleDefinitions attributes
@@ -207,8 +215,8 @@ func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle, oMa
 
 func RoleDefinitionCountLocal(z aza.AzaBundle) (builtin, custom int64) {
 	// Dedicated role definition local cache counter able to discern if role is custom to native tenant or it's an Azure BuilIn role
-	var customList []interface{} = nil
-	var builtinList []interface{} = nil
+	var customList JsonArray = nil
+	var builtinList JsonArray = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json")
     if utl.FileUsable(cacheFile) {
 		rawList, _:= utl.LoadFileJson(cacheFile)

@@ -8,6 +8,41 @@ import (
 	"github.com/git719/utl"
 )
 
+func PrintCountStatus(z aza.AzaBundle, oMap MapString) {
+	fmt.Printf("Note: Counting objects residing in Azure can take some time.\n")
+	fmt.Printf("%-38s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
+	fmt.Printf("%-38s ", "Groups")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("g", z, oMap), ObjectCountAzure("g", z, oMap))
+	fmt.Printf("%-38s ", "Users")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("u", z, oMap), ObjectCountAzure("u", z, oMap))
+	fmt.Printf("%-38s ", "App Registrations")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("ap", z, oMap), ObjectCountAzure("ap", z, oMap))
+	microsoftSpsLocal, nativeSpsLocal := SpsCountLocal(z)
+	microsoftSpsAzure, nativeSpsAzure := SpsCountAzure(z, oMap)
+	fmt.Printf("%-38s ", "Service Principals Microsoft Default")
+	fmt.Printf("%-20d %d\n", microsoftSpsLocal, microsoftSpsAzure)
+	fmt.Printf("%-38s ", "Service Principals This Tenant")
+	fmt.Printf("%-20d %d\n", nativeSpsLocal, nativeSpsAzure)
+	fmt.Printf("%-38s ", "Azure AD Roles Definitions")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("rd", z, oMap), ObjectCountAzure("rd", z, oMap))
+	fmt.Printf("%-38s ", "Azure AD Roles Activated")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("ra", z, oMap), ObjectCountAzure("ra", z, oMap))
+	fmt.Printf("%-38s ", "Management Groups")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("m", z, oMap), ObjectCountAzure("m", z, oMap))
+	fmt.Printf("%-38s ", "Subscriptions")
+	fmt.Printf("%-20d %d\n", ObjectCountLocal("s", z, oMap), ObjectCountAzure("s", z, oMap))
+	builtinLocal, customLocal := RoleDefinitionCountLocal(z)
+	builtinAzure, customAzure := RoleDefinitionCountAzure(z, oMap)
+	fmt.Printf("%-38s ", "RBAC Role Definitions BuiltIn")
+    fmt.Printf("%-20d %d\n", builtinLocal, builtinAzure)
+	fmt.Printf("%-38s ", "RBAC Role Definitions Custom")
+    fmt.Printf("%-20d %d\n", customLocal, customAzure)
+	fmt.Printf("%-38s ", "RBAC Role Assignments")
+	assignmentsLocal := len(GetRoleAssignments("", false, false, z, oMap)) // false = prefer local, false = be silent
+	assignmentsAzure := len(GetRoleAssignments("", true, false, z, oMap)) // true = force a call to Azure, false = be silent
+	fmt.Printf("%-20d %d\n", assignmentsLocal, assignmentsAzure)
+}
+
 func PrintTersely(t string, x JsonObject) {
 	// List this single object of type 't' tersely (minimal attributes)
 	switch t {
@@ -66,12 +101,12 @@ func PrintObject(t string, x JsonObject, z aza.AzaBundle, oMap MapString) {
 		PrintMgGroup(x)
 	case "u":
 		PrintUser(x, z, oMap)
-	// case "g":
-	// 	PrintGroup(x)
-	// case "sp":
-	// 	PrintSP(x)
-	// case "ap":
-	// 	PrintApp(x, z)
+	case "g":
+		PrintGroup(x, z, oMap)
+	case "sp":
+		PrintSp(x, z, oMap)
+	case "ap":
+		PrintApp(x, z, oMap)
 	case "ra":
 		PrintAdRole(x, z) // Active AD role
 	case "rd":
@@ -90,6 +125,6 @@ func PrintMemberOfs(t string, memberOf JsonArray) {
 			fmt.Printf("  %-50s %s (%s)\n", StrVal(x["displayName"]), StrVal(x["id"]), Type)
 		}
 	} else {
-		fmt.Printf("%-21s %s\n", "memberof:", "None")
+		fmt.Printf("%s: %s\n", "memberof", "None")
 	}
 }

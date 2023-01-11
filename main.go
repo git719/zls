@@ -128,12 +128,12 @@ func main() {
 				x := i.(map[string]interface{})
 				PrintTersely(t, x)
 			}
-		// case "-ar":
-		// 	PrintRoleAssignmentReport(z)
+		case "-ar":
+			PrintRoleAssignmentReport(z, oMap)
 		case "-mt":
 			PrintMgTree(z)
-		// case "-pags":
-		// 	PrintPAGs(z)
+		case "-pags":
+			PrintPags(z, oMap)
 		case "-st":
 			PrintCountStatus(z, oMap)
 	case "-z":
