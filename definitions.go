@@ -11,7 +11,7 @@ import (
 )
 
 func PrintRoleDefinition(x JsonObject, z aza.AzaBundle, oMap MapString) {
-	// Print role definition object in YAML format
+	// Print role definition object in YAML-like format
 	if x == nil {
 		return
 	}
@@ -120,7 +120,7 @@ func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list JsonArray) {
 	// Option to be verbose (true) or quiet (false), since it can take a while. 
 	list = nil // We have to zero it out
 	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role definitions 
-	var uuids []string // Keep track of each unique objects to whittle out inherited repeats
+	var uuids []string // Keep track of each unique objects to eliminate inherited repeats
 	calls := 1 // Track number of API calls below
 	params := aza.MapString{"api-version": "2022-04-01"}  // roleDefinitions
 	for _, scope := range scopes {

@@ -21,7 +21,7 @@ func MgType(typeIn string) string {
 }
 
 func PrintMgGroup(x JsonObject) {
-	// Print management group object in YAML
+	// Print management group object in YAML-like
 	if x == nil {
 		return
 	}

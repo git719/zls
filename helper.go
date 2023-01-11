@@ -36,11 +36,10 @@ func GetAzRbacScopes(z aza.AzaBundle) (scopes []string) {
 }
 
 func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedList JsonArray) {
-	// Return locally cached list of objects if it exists *and* it is within the specified cachePeriod 
-	cacheFileAge := int64(0)
+	// Return locally cached list of objects if it exists *and* it is within the specified cachePeriod in seconds 
 	if utl.FileUsable(cacheFile) {
 		cacheFileEpoc := int64(utl.FileModTime(cacheFile))
-		cacheFileAge = int64(time.Now().Unix()) - cacheFileEpoc
+		cacheFileAge := int64(time.Now().Unix()) - cacheFileEpoc
 		rawList, _ := utl.LoadFileJson(cacheFile)
 		if rawList != nil {
 			cachedList = rawList.([]interface{})
@@ -50,6 +49,63 @@ func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedLi
 		}
 	}
 	return true, nil // Cache is not usable, returning nil
+}
+
+func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
+	// Generic function to get objects of type t whose attributes match on filter. If filter is
+	// the "" empty string, then return ALL of the objects of this type.
+	switch t {
+	case "d":
+		// RBAC role definitions and other objects that do not have a uniformed way of retrieving all have a unique Get* function
+		return GetRoleDefinitions(filter, force, true, z, oMap) // true = verbose, to print progress while getting
+	case "a":
+		return GetRoleAssignments(filter, force, true, z, oMap) // true = verbose, to print progress while getting
+	case "s":
+		return GetSubscriptions(filter, force, z)
+	case "m":
+		return GetMgGroups(filter, force, z)
+	case "rd":
+		return GetAdRoleDefs(filter, force, z)
+	case "u":
+		return GetUsers(filter, force, z)
+	case "g", "sp", "ap", "ra":
+		// These MS Graph objects have a more uniform way of retrieving the entire set
+		cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
+		cacheNoGood, list := CheckLocalCache(cacheFile, 3660) // cachePeriod = 1hr = 3600sec
+		if cacheNoGood || force {
+			// If local cache file age is within an our, use the local cache. If it is older
+			// than 1 hour THEN we look at doing a DELTA or FULL query within GetAzObjects() function
+			list = GetAzObjects(t, true, z, oMap) // Get the entire set from Azure, and show progress (verbose = true)
+		}
+
+		// Do filter matching
+		if filter == "" {
+			return list
+		}
+		var matchingList JsonArray = nil
+		searchList := []string{"id", "displayName", "userPrincipalName", "onPremisesSamAccountName", "onPremisesUserPrincipalName", "onPremisesDomainName"}
+		switch t {
+		case "g":
+			searchList = []string{"id", "displayName", "description", "description"}
+		case "sp":
+			searchList = []string{"id", "displayName", "appId"}
+		case "ap":
+			searchList = []string{"id", "displayName", "appId"}
+		case "ra":
+			searchList = []string{"id", "displayName", "description"}
+		}
+		for _, i := range list { // Parse every object
+			x := i.(map[string]interface{})
+			// Match against relevant attributes
+			for _, i := range searchList {
+				if utl.SubString(StrVal(x[i]), filter) {
+					matchingList = append(matchingList, x)
+				}
+			}
+		}
+		return matchingList	
+	}
+	return nil
 }
 
 func GetAzObjects(t string, verbose bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
@@ -62,7 +118,11 @@ func GetAzObjects(t string, verbose bool, z aza.AzaBundle, oMap MapString) (list
 	url := aza.ConstMgUrl + "/v1.0/" + oMap[t] + "/delta?$select="
 	// Above is the Base URL, then below, based on object type, we specify the 'select' attributes
 	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
-	if (deltaAge < int64(3660 * 24 * 27)) && utl.FileUsable(deltaLinkFile) {
+
+	// We have to check the base set again here to avoid running a delta query on an empty set
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
+	listIsEmpty, list := CheckLocalCache(cacheFile, 3600) // cachePeriod = 1hr = 3600sec
+	if  utl.FileUsable(deltaLinkFile) && deltaAge < (3660 * 24 * 27) && listIsEmpty == false {
 		// DeltaLink files also cannot be older than 30 days (using 27 days)
 		tmpVal, _ := utl.LoadFileJson(deltaLinkFile)
 		deltaLinkMap = tmpVal.(map[string]interface{})
@@ -122,65 +182,42 @@ func GetAzObjects(t string, verbose bool, z aza.AzaBundle, oMap MapString) (list
 	return list
 }
 
-func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
-	// Generic function to get objects of type t whose attributes match on filter. If filter is
-	// the "" empty string, then return ALL of the objects of this type.
-	
-	// First, handle getting those objecst that do not have a uniformed way of retrieving them by
-	// using a unique function for each.
-	list = nil
-	switch t {
-	case "d":
-		return GetRoleDefinitions(filter, force, true, z, oMap) // true = verbose, to print progress while getting
-	case "a":
-		return GetRoleAssignments(filter, force, true, z, oMap) // true = verbose, to print progress while getting
-	case "s":
-		return GetSubscriptions(filter, force, z)
-	case "m":
-		return GetMgGroups(filter, force, z)
-	case "rd":
-		return GetAdRoleDefs(filter, force, z)
-	}
-
-	// Second, handle getting MS Graph objects, which can be retrieved more uniformly
-	if t != "u" && t != "g" && t != "sp" && t != "ap" && t != "ra" {
-		return nil // Unsupported type
-	}
-	cachePeriod := int64(3660 * 1 * 1) // 1 HOUR cache period
-	// Using a short 1 HOUR cache period for the MS Graph objects to SPEED up queries. For anything older than
-	// an hour things will still be semi-fast because we can still do DELTA query.
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
-	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
-	if cacheNoGood || force {
-		list = GetAzObjects(t, true, z, oMap) // Get the entire set from Azure, and show progress (verbose = true)
-	}
-
-	// Do filter matching
-	if filter == "" {
-		return list
-	}
-	var matchingList JsonArray = nil
-	searchList := []string{"id", "displayName", "userPrincipalName", "onPremisesSamAccountName", "onPremisesUserPrincipalName", "onPremisesDomainName"}
-	switch t {
-	case "g":
-		searchList = []string{"id", "displayName", "description", "description"}
-	case "sp":
-		searchList = []string{"id", "displayName", "appId"}
-	case "ap":
-		searchList = []string{"id", "displayName", "appId"}
-	case "ra":
-		searchList = []string{"id", "displayName", "description"}
-	}
-	for _, i := range list { // Parse every object
-		x := i.(map[string]interface{})
-		// Match against relevant attributes
-		for _, i := range searchList {
-			if utl.SubString(StrVal(x[i]), filter) {
-				matchingList = append(matchingList, x)
+func GetAzObjectsLooper(url, cacheFile, deltaLinkFile string, headers aza.MapString, verbose bool) (list JsonArray) {
+	// Generic Azure object retriever function
+	var deltaSet JsonArray = nil // Assume zero new delta objects
+	calls := 1 // Track number of API calls
+	r := ApiGet(url, headers, nil)
+	ApiErrorCheck(r, utl.Trace())
+	for {
+		// Infinite for-loop until deltalLink appears (meaning we're done getting current delta set)
+		if r["value"] != nil {
+			thisBatch := r["value"].([]interface{})
+			if len(thisBatch) > 0 {
+				deltaSet = append(deltaSet, thisBatch...) // Continue growing deltaSet
 			}
 		}
+
+		if verbose {
+			// Progress count indicator. Using global var rUp to overwrite last line. Defer newline until done
+			fmt.Printf("%s(API calls = %d) %d objects in set %d", rUp, calls, len(deltaSet), calls)
+		}
+
+		if r["@odata.deltaLink"] != nil {
+			// BREAK infinite for-loop when deltaLink appears
+			deltaLinkMap := JsonObject{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
+			utl.SaveFileJson(deltaLinkMap, deltaLinkFile) // Save new deltaLink for future call
+			list = NormalizeCache(list, deltaSet) // New objects returned, run our MERGE LOGIC
+			utl.SaveFileJson(list, cacheFile) // Update the local cache
+			break
+		}
+		r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil)  // Get next batch
+		ApiErrorCheck(r, utl.Trace())
+		calls++
 	}
-	return matchingList	
+	if verbose {
+		fmt.Printf("\n")
+	}
+	return list
 }
 
 func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap MapString) (idNameMap map[string]string) {

@@ -65,10 +65,9 @@ func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
 	return 0
 }
 
-// func GetAzObjectById(t, id string, z aza.AzaBundle, oMap MapString) (x JsonObject) {
-// 	// Retrieve Azure object by Object Id
-// 	x = nil
-// 	switch t {
+func GetObjectById(t, id string, z aza.AzaBundle) (x JsonObject) {
+	// Retrieve Azure object by Object Id
+	switch t {
 // 	case "d", "a":
 // 		scopes := GetAzRbacScopes(z.ConfDir, z.TenantId)  // Look for objects under all the RBAC hierarchy scopes
 // 		// Add null string below to represent the root "/" scope, else we miss any role assignments for it
@@ -92,12 +91,15 @@ func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
 // 		r := ApiGet(url, z.AzHeaders, params)
 // 		ApiErrorCheck(r, utl.Trace())
 // 		x = r
-// 	case "u", "g", "ra":
-// 		url := aza.ConstMgUrl + "/v1.0/" + oMap[t] + "/" + id
-// 		r := ApiGet(url, z.MgHeaders, nil)
-// 		ApiErrorCheck(r, utl.Trace())
-// 		x = r
-// 	case "ap", "sp":
+	case "u":
+		return GetAzUserById(id, z.MgHeaders)
+
+	// case "g":
+	// 	return GetAzGroupById(id, z.MgHeaders)
+	// case "ra":
+	// 	return GetAdRoleDefById(id, z.MgHeaders)
+
+		// 	case "ap", "sp":
 // 		url := aza.ConstMgUrl + "/v1.0/" + oMap[t]
 // 		r := ApiGet(url + "/" + id, z.MgHeaders, nil)  // First search is for direct Object Id
 // 		if r != nil && r["error"] != nil {
@@ -126,9 +128,9 @@ func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
 // 		r := ApiGet(url, z.MgHeaders, nil)
 // 		ApiErrorCheck(r, utl.Trace())
 // 		x = r
-// 	}
-// 	return x
-// }
+	}
+	return nil
+}
 
 // func GetAzObjectByName(t, name string, z aza.AzaBundle, oMap MapString) (x map[string]interface{}) {
 // 	// FUTURE, not yet in use

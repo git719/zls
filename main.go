@@ -90,6 +90,7 @@ func SetupVariables(z *aza.AzaBundle, oMap *MapString) (aza.AzaBundle, MapString
 }
 
 func main() {
+	//TestFunction()
 	numberOfArguments := len(os.Args[1:]) // Not including the program itself
 	if numberOfArguments < 1 || numberOfArguments > 4 {
 		PrintUsage() // Don't accept less than 1 or more than 4 arguments
@@ -136,7 +137,7 @@ func main() {
 			PrintPags(z, oMap)
 		case "-st":
 			PrintCountStatus(z, oMap)
-	case "-z":
+		case "-z":
 			aza.DumpVariables(z)
 		default:
 			PrintUsage()
@@ -149,39 +150,34 @@ func main() {
 			CompareSpecfile(arg2, z, oMap)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
-			matchingObjects := GetObjects(t, arg2, false, z, oMap)
-			if len(matchingObjects) == 1 {
-				utl.PrintJson(matchingObjects[0]) // Print single matching object in JSON
-			} else if len(matchingObjects) > 1 {
-				utl.PrintJson(matchingObjects) // Print all matching objects in JSON
+			if utl.ValidUuid(arg2) {
+				x := GetObjectById(t, arg2, z)
+				utl.PrintJson(x)
+			} else {
+				matchingObjects := GetObjects(t, arg2, false, z, oMap)
+				if len(matchingObjects) == 1 {
+					utl.PrintJson(matchingObjects[0]) // Print single matching object in JSON
+				} else if len(matchingObjects) > 1 {
+					utl.PrintJson(matchingObjects) // Print all matching objects in JSON
+				}
 			}
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd":
 			t := arg1[1:] // Single out the object type
-			matchingObjects := GetObjects(t, arg2, false, z, oMap)
-			if len(matchingObjects) == 1 {
-				x := matchingObjects[0].(map[string]interface{})
-				PrintObject(t, x, z, oMap) // Print single matching object in YAML
-			} else if len(matchingObjects) > 1 {
-				for _, i := range matchingObjects { // Print all matching object teresely
-					x := i.(map[string]interface{})
-					PrintTersely(t, x)
+			if utl.ValidUuid(arg2) {
+				x := GetObjectById(t, arg2, z)
+				PrintObject(t, x, z, oMap) // Print in YAML-like
+			} else {
+				matchingObjects := GetObjects(t, arg2, false, z, oMap)
+				if len(matchingObjects) == 1 {
+					x := matchingObjects[0].(map[string]interface{})
+					PrintObject(t, x, z, oMap) // Print single matching object in YAML-like
+				} else if len(matchingObjects) > 1 {
+					for _, i := range matchingObjects { // Print all matching object teresely
+						x := i.(map[string]interface{})
+						PrintTersely(t, x)
+					}
 				}
 			}
-			// if utl.ValidUuid(arg2) {
-			// 	x := GetAzObjectById(t, arg2, z, oMap) // Get single object by ID
-			// 	PrintObject(t, x, z)             // Print in YAML
-			// } else {
-			// 	oList := GetMatching(t, arg2) // Get all matching objects
-			// 	if len(oList) > 1 {           // Print all matching objects tersely
-			// 		for _, i := range oList {
-			// 			x := i.(JsonObject)
-			// 			PrintTersely(t, x)
-			// 		}
-			// 	} else if len(oList) > 0 {    // Print single matching object in YAML
-			// 		x := oList[0].(JsonObject)
-			// 		PrintObject(t, x, z)
-			// 	}
-			// }
 		default:
 			PrintUsage()
 		}

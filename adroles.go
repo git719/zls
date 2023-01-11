@@ -10,7 +10,7 @@ import (
 )
 
 func PrintAdRole(x JsonObject, z aza.AzaBundle) {
-	// Print active Azure AD role object in YAML format
+	// Print active Azure AD role object in YAML-like format
 	if x == nil { return }
 	id := StrVal(x["id"])
 
@@ -45,7 +45,7 @@ func PrintAdRole(x JsonObject, z aza.AzaBundle) {
 }
 
 func PrintAdRoleDef(x JsonObject) {
-	// Print Azure AD role definition object in YAML format
+	// Print Azure AD role definition object in YAML-like format
 	if x == nil { return }
 
 	// Print the most important attributes first

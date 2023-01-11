@@ -10,7 +10,7 @@ import (
 )
 
 func PrintSubscription(x JsonObject) {
-	// Print subscription object in YAML
+	// Print subscription object in YAML-like
 	if x == nil { return }
 	list := []string{"displayName", "subscriptionId", "state", "tenantId"}
 	for _, i := range list {

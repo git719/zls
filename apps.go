@@ -9,7 +9,7 @@ import (
 )
 
 func PrintApp(x JsonObject, z aza.AzaBundle, oMap MapString) {
-	// Print application object in YAML format
+	// Print application object in YAML-like format
 	if x == nil {
 		return
 	}
