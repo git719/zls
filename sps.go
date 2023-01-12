@@ -11,7 +11,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintSp(x JsonObject, z aza.AzaBundle, oMap MapString) {
+func PrintSp(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 	// Print service principal object in YAML-like format
 	if x == nil {
 		return

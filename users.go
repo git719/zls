@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintUser(x JsonObject, z aza.AzaBundle, oMap MapString) {
+func PrintUser(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 	// Print user object in YAML-like format
 	if x == nil {
 		return

@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintGroup(x JsonObject, z aza.AzaBundle, oMap MapString) {
+func PrintGroup(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 	// Print group object in YAML-like format
 	if x == nil {
 		return

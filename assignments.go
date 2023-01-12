@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintRoleAssignment(x JsonObject, z aza.AzaBundle, oMap MapString) {
+func PrintRoleAssignment(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 	// Print role definition object in YAML-like
 	if x == nil {
 		return
@@ -63,7 +63,7 @@ func PrintRoleAssignment(x JsonObject, z aza.AzaBundle, oMap MapString) {
 	}
 }
 
-func PrintRoleAssignmentReport(z aza.AzaBundle, oMap MapString)  {
+func PrintRoleAssignmentReport(z aza.AzaBundle, oMap map[string]string)  {
 	// Print a human-readable report of all role assignments
 	roleMap := GetIdNameMap("d", "", false, z, oMap) // Get all role id/names pairs
 	subMap := GetIdNameMap("s", "", false, z, oMap) // Get all subscriptions id/names pairs
@@ -101,7 +101,7 @@ func PrintRoleAssignmentReport(z aza.AzaBundle, oMap MapString)  {
 	}
 }
 
-func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
+func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
 	// Get all roleAssignments that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The
 	// force boolean option will force a call to Azure.

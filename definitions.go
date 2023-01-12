@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintRoleDefinition(x JsonObject, z aza.AzaBundle, oMap MapString) {
+func PrintRoleDefinition(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 	// Print role definition object in YAML-like format
 	if x == nil {
 		return
@@ -115,7 +115,7 @@ func PrintRoleDefinition(x JsonObject, z aza.AzaBundle, oMap MapString) {
 	}
 }
 
-func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
+func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
 	// Get all roleDefinitions that match on provided filter. An empty "" filter means return all of them.
 	// It always uses local cache if it's within the cache retention period. The force boolean option forces
 	// a call to Azure. The verbose option details the progress. 
@@ -237,7 +237,7 @@ func RoleDefinitionCountLocal(z aza.AzaBundle) (builtin, custom int64) {
 	return 0, 0
 }
 
-func RoleDefinitionCountAzure(z aza.AzaBundle, oMap MapString) (builtin, custom int64) {
+func RoleDefinitionCountAzure(z aza.AzaBundle, oMap map[string]string) (builtin, custom int64) {
 	// Dedicated role definition Azure counter able to discern if role is custom to native tenant or it's an Azure BuilIn role
 	var customList []interface{} = nil
 	var builtinList []interface{} = nil

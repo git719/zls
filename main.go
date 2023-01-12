@@ -16,7 +16,6 @@ const (
 	rUp     = "\x1B[2K\r" // See https://stackoverflow.com/questions/1508490/erase-the-current-printed-console-line
 )
 
-type MapString   map[string]string
 type JsonArray   []interface{} // This and below for clearer JSON handling. See https://eager.io/blog/go-and-json/
 type JsonObject  map[string]interface{}
 
@@ -47,7 +46,7 @@ func PrintUsage() {
 	os.Exit(0)
 }
 
-func SetupVariables(z *aza.AzaBundle, oMap *MapString) (aza.AzaBundle, MapString) {
+func SetupVariables(z *aza.AzaBundle, oMap *map[string]string) (aza.AzaBundle, map[string]string) {
 	// Set up variable object struct
 	*z = aza.AzaBundle{
 		ConfDir:      "",
@@ -73,7 +72,7 @@ func SetupVariables(z *aza.AzaBundle, oMap *MapString) (aza.AzaBundle, MapString
 		}
 	}
 
-	*oMap = MapString{               // Helps generesize many of the functions
+	*oMap = map[string]string{ // Helps generesize many of the functions
 		"d":  "roleDefinitions",
 		"a":  "roleAssignments",
 		"s":  "subscriptions",
@@ -95,7 +94,7 @@ func main() {
 	}
 
 	var z aza.AzaBundle
-	var oMap MapString
+	var oMap map[string]string
 	z, oMap = SetupVariables(&z, &oMap)
 
 	switch numberOfArguments {

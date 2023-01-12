@@ -8,7 +8,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintCountStatus(z aza.AzaBundle, oMap MapString) {
+func PrintCountStatus(z aza.AzaBundle, oMap map[string]string) {
 	fmt.Printf("Note: Counting Azure objects can take some time.\n")
 	fmt.Printf("%-38s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
 	fmt.Printf("%-38s %-20d %d\n", "Groups", GroupsCountLocal(z), GroupsCountAzure(z))
@@ -77,7 +77,7 @@ func PrintTersely(t string, object interface{}) {
 	}
 }
 
-func PrintObject(t string, x JsonObject, z aza.AzaBundle, oMap MapString) {
+func PrintObject(t string, x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 	switch t {
 	case "d":
 		PrintRoleDefinition(x, z, oMap)

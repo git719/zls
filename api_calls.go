@@ -17,7 +17,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func ObjectCountLocal(t string, z aza.AzaBundle, oMap MapString) int64 {
+func ObjectCountLocal(t string, z aza.AzaBundle, oMap map[string]string) int64 {
 	var cachedList JsonArray = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
     if utl.FileUsable(cacheFile) {
@@ -30,7 +30,7 @@ func ObjectCountLocal(t string, z aza.AzaBundle, oMap MapString) int64 {
 	return 0
 }
 
-func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
+func ObjectCountAzure(t string, z aza.AzaBundle, oMap map[string]string) int64 {
 	// Returns count of given object type (ARM or MG)
 	switch t {
 	case "d":

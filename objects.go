@@ -6,8 +6,8 @@ import (
 	"github.com/git719/utl"
 )
 
-func MergeMaps(m1, m2 MapString) (result MapString) {
-	result = MapString{}
+func MergeMaps(m1, m2 map[string]string) (result map[string]string) {
+	result = map[string]string{}
 	for k, v := range m1 {
 		result[k] = v
 	}

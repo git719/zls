@@ -51,7 +51,7 @@ func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedLi
 	return true, nil // Cache is not usable, returning nil
 }
 
-func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
+func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
 	// Generic function to get objects of type t whose attributes match on filter. If filter is
 	// the "" empty string, then return ALL of the objects of this type.
 	switch t {
@@ -117,7 +117,7 @@ func GetAzObjectsLooper(url, cacheFile string, headers aza.MapString, verbose bo
 	return list
 }
 
-func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap MapString) (idNameMap map[string]string) {
+func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap map[string]string) (idNameMap map[string]string) {
 	// Return uuid:name map for given object type t
 	idNameMap = make(map[string]string)
 	allObjects := GetObjects(t, "", false, z, oMap) // false = do NOT force a call to Azure
@@ -144,7 +144,7 @@ func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap MapString)
 	return idNameMap
 }
 
-func GetObjectMemberOfs(t, id string, z aza.AzaBundle, oMap MapString) (list JsonArray) {
+func GetObjectMemberOfs(t, id string, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
 	// Get all group/role objects this object of type 't' with 'id' is a memberof
 	list = nil
 	url := aza.ConstMgUrl  + "/beta/" + oMap[t] + "/" + id + "/memberof"
@@ -156,7 +156,7 @@ func GetObjectMemberOfs(t, id string, z aza.AzaBundle, oMap MapString) (list Jso
 	return list
 }
 
-func RemoveCacheFile(t string, z aza.AzaBundle, oMap MapString) {
+func RemoveCacheFile(t string, z aza.AzaBundle, oMap map[string]string) {
 	// Remove cache file for objects of type t, or all of them
 	switch t {
 	case "t": // Token file is a little special: It doesn't use tenant ID
@@ -207,7 +207,7 @@ func GetObjectFromFile(filePath string) (formatType, t string, obj JsonObject) {
     }
 }
 
-func CompareSpecfile(filePath string, z aza.AzaBundle, oMap MapString) {
+func CompareSpecfile(filePath string, z aza.AzaBundle, oMap map[string]string) {
 	if utl.FileNotExist(filePath) || utl.FileSize(filePath) < 1 {
 		utl.Die("File does not exist, or is zero size\n")
 	}
