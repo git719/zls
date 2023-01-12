@@ -56,7 +56,6 @@ func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap MapString) (
 	// the "" empty string, then return ALL of the objects of this type.
 	switch t {
 	case "d":
-		// RBAC role definitions and other objects that do not have a uniformed way of retrieving all have a unique Get* function
 		return GetRoleDefinitions(filter, force, true, z, oMap) // true = verbose, to print progress while getting
 	case "a":
 		return GetRoleAssignments(filter, force, true, z, oMap) // true = verbose, to print progress while getting
@@ -64,146 +63,44 @@ func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap MapString) (
 		return GetSubscriptions(filter, force, z)
 	case "m":
 		return GetMgGroups(filter, force, z)
-	case "rd":
-		return GetAdRoleDefs(filter, force, z)
 	case "u":
 		return GetUsers(filter, force, z)
-	case "g", "sp", "ap", "ra":
-		// These MS Graph objects have a more uniform way of retrieving the entire set
-		cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
-		cacheNoGood, list := CheckLocalCache(cacheFile, 3660) // cachePeriod = 1hr = 3600sec
-		if cacheNoGood || force {
-			// If local cache file age is within an our, use the local cache. If it is older
-			// than 1 hour THEN we look at doing a DELTA or FULL query within GetAzObjects() function
-			list = GetAzObjects(t, true, z, oMap) // Get the entire set from Azure, and show progress (verbose = true)
-		}
-
-		// Do filter matching
-		if filter == "" {
-			return list
-		}
-		var matchingList JsonArray = nil
-		searchList := []string{"id", "displayName", "userPrincipalName", "onPremisesSamAccountName", "onPremisesUserPrincipalName", "onPremisesDomainName"}
-		switch t {
-		case "g":
-			searchList = []string{"id", "displayName", "description", "description"}
-		case "sp":
-			searchList = []string{"id", "displayName", "appId"}
-		case "ap":
-			searchList = []string{"id", "displayName", "appId"}
-		case "ra":
-			searchList = []string{"id", "displayName", "description"}
-		}
-		for _, i := range list { // Parse every object
-			x := i.(map[string]interface{})
-			// Match against relevant attributes
-			for _, i := range searchList {
-				if utl.SubString(StrVal(x[i]), filter) {
-					matchingList = append(matchingList, x)
-				}
-			}
-		}
-		return matchingList	
+	case "g":
+		return GetGroups(filter, force, z)
+	case "sp":
+		return GetSps(filter, force, z)
+	case "ap":
+		return GetApps(filter, force, z)
+	case "ad":
+		return GetAdRoles(filter, force, z)
 	}
 	return nil
 }
 
-func GetAzObjects(t string, verbose bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
-	// Get ALL objects of type t in current Azure tenant AND save them to local cache file.
-	// The verbose option details the progress.
-
-	// First, try doing doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
-	deltaLinkFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + "_deltaLink.json")
-	var deltaLinkMap JsonObject = nil
-	url := aza.ConstMgUrl + "/v1.0/" + oMap[t] + "/delta?$select="
-	// Above is the Base URL, then below, based on object type, we specify the 'select' attributes
-	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
-
-	// We have to check the base set again here to avoid running a delta query on an empty set
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
-	listIsEmpty, list := CheckLocalCache(cacheFile, 3600) // cachePeriod = 1hr = 3600sec
-	if  utl.FileUsable(deltaLinkFile) && deltaAge < (3660 * 24 * 27) && listIsEmpty == false {
-		// DeltaLink files also cannot be older than 30 days (using 27 days)
-		tmpVal, _ := utl.LoadFileJson(deltaLinkFile)
-		deltaLinkMap = tmpVal.(map[string]interface{})
-		url = StrVal(deltaLinkMap["@odata.deltaLink"])  // Delta URL
-	} else {
-		switch t {
-		// Build attribute select URL depending on type. Note, we are retrieving only the attributes we care about
-		// We also add the paging top=x size here.
-		case "u":
-			url += "displayName,mailNickname,userPrincipalName,onPremisesSamAccountName,onPremisesDomainName,onPremisesUserPrincipalName" + "&$top=999"
-		case "g":
-			url += "displayName,mailNickname,description,isAssignableToRole,mailEnabled" + "&$top=999"
-		case "sp":
-			url += "displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId" + "&$top=999"
-		case "ap":
-			url += "displayName,appId,requiredResourceAccess" + "&$top=999"
-		case "ra":
-			url += "displayName,description,roleTemplateId" + "&$top=999"
-		}
-	}
-
-	var deltaSet JsonArray = nil // Assume zero new delta objects
-	calls := 1 // Track number of API calls
-	z.MgHeaders["Prefer"] = "return=minimal" // Tell delta query to only focus on the specified 'select' attributes
-	r := ApiGet(url, z.MgHeaders, nil)
-	ApiErrorCheck(r, utl.Trace())
-	for {
-		// Infinite for-loop until deltalLink appears (meaning we're done getting current delta set)
-		if r["value"] != nil {
-			thisBatch := r["value"].([]interface{})
-			if len(thisBatch) > 0 {
-				deltaSet = append(deltaSet, thisBatch...) // Continue growing deltaSet
-			}
-		}
-
-		if verbose {
-			// Progress count indicator. Using global var rUp to overwrite last line. Defer newline until done
-			fmt.Printf("%s(API calls = %d) %d objects in set %d", rUp, calls, len(deltaSet), calls)
-		}
-
-		if r["@odata.deltaLink"] != nil {
-			// If deltaLink appears it means we're done retrieving initial set and we can break out of for-loop
-			deltaLinkMap = JsonObject{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
-			utl.SaveFileJson(deltaLinkMap, deltaLinkFile) // Save new deltaLink for future call
-			list = NormalizeCache(list, deltaSet) // New objects returned, run our MERGE LOGIC
-			cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
-			utl.SaveFileJson(list, cacheFile) // Update the local cache
-			break // from infinite for-loop
-		}
-		r = ApiGet(StrVal(r["@odata.nextLink"]), z.MgHeaders, nil)  // Get next batch
-		ApiErrorCheck(r, utl.Trace())
-		calls++
-	}
-	if verbose {
-		fmt.Printf("\n")
-	}
-	return list
-}
-
-func GetAzObjectsLooper(url, cacheFile, deltaLinkFile string, headers aza.MapString, verbose bool) (list JsonArray) {
+func GetAzObjectsLooper(url, cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
 	// Generic Azure object retriever function
-	var deltaSet JsonArray = nil // Assume zero new delta objects
+	// This function implements the pattern described at https://docs.microsoft.com/en-us/graph/delta-query-overview
+	
+	var deltaSet JsonArray = nil // Assume zero entries have been updated
 	calls := 1 // Track number of API calls
 	r := ApiGet(url, headers, nil)
 	ApiErrorCheck(r, utl.Trace())
 	for {
 		// Infinite for-loop until deltalLink appears (meaning we're done getting current delta set)
+		var thisBatch JsonArray = nil // Assume zero entries in this batch
 		if r["value"] != nil {
-			thisBatch := r["value"].([]interface{})
+			thisBatch = r["value"].([]interface{})
 			if len(thisBatch) > 0 {
 				deltaSet = append(deltaSet, thisBatch...) // Continue growing deltaSet
 			}
 		}
-
 		if verbose {
 			// Progress count indicator. Using global var rUp to overwrite last line. Defer newline until done
-			fmt.Printf("%s(API calls = %d) %d objects in set %d", rUp, calls, len(deltaSet), calls)
+			fmt.Printf("%s(API calls = %d) %d objects in set %d", rUp, calls, len(thisBatch), calls)
 		}
-
 		if r["@odata.deltaLink"] != nil {
 			// BREAK infinite for-loop when deltaLink appears
+			deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
 			deltaLinkMap := JsonObject{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
 			utl.SaveFileJson(deltaLinkMap, deltaLinkFile) // Save new deltaLink for future call
 			list = NormalizeCache(list, deltaSet) // New objects returned, run our MERGE LOGIC
@@ -238,7 +135,7 @@ func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap MapString)
 			if x["subscriptionId"] != nil && x["displayName"] != nil {
 				idNameMap[StrVal(x["subscriptionId"])] = StrVal(x["displayName"])
 			}
-		case "u", "g", "sp", "ap", "ra", "rd": 	// All MS Graph objects use same Id and displayName attributes
+		case "u", "g", "sp", "ap", "ad": // All MS Graph objects use same Id and displayName attributes
 			if x["id"] != nil && x["displayName"] != nil {
 				idNameMap[StrVal(x["id"])] = StrVal(x["displayName"])
 			}
@@ -264,9 +161,9 @@ func RemoveCacheFile(t string, z aza.AzaBundle, oMap MapString) {
 	switch t {
 	case "t": // Token file is a little special: It doesn't use tenant ID
 		utl.RemoveFile(filepath.Join(z.ConfDir, z.TokenFile))
-	case "d", "a", "s", "m", "u", "g", "sp", "ap", "ra", "rd":
+	case "d", "a", "s", "m", "u", "g", "sp", "ap", "ad":
 		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json"))
-		// Below does not apply to d, a, s, & m, since deltaLink files are only for MS Graph
+		// Types d, a, s, m, & ad do not have deltaLink files, but below won't balk anyway
 		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + "_deltaLink.json"))
 	case "all":
 		for _, i := range oMap {

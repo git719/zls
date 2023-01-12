@@ -115,6 +115,35 @@ func PrintRoleDefinition(x JsonObject, z aza.AzaBundle, oMap MapString) {
 	}
 }
 
+func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
+	// Get all roleDefinitions that match on provided filter. An empty "" filter means return all of them.
+	// It always uses local cache if it's within the cache retention period. The force boolean option forces
+	// a call to Azure. The verbose option details the progress. 
+	list = nil
+	cachePeriod := int64(3660 * 24 * 7) // 1 week cache retention period 
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json")
+	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
+	if cacheNoGood || force {
+		GetAzRoleDefinitions(verbose, z) // Get the entire set from Azure
+	}
+
+	// Do filter matching
+	if filter == "" {
+		return list
+	}
+	var matchingList JsonArray = nil
+	for _, i := range list { // Parse every object
+		x := i.(map[string]interface{})
+		// Match against relevant roleDefinitions attributes
+		xProp := x["properties"].(map[string]interface{})
+		if utl.SubString(StrVal(x["name"]), filter) || utl.SubString(StrVal(xProp["roleName"]), filter) ||
+			utl.SubString(StrVal(x["description"]), filter) {
+			matchingList = append(matchingList, x)
+		}
+	}
+	return matchingList
+}
+
 func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list JsonArray) {
 	// Get ALL roleDefinitions in current Azure tenant AND save them to local cache file
 	// Option to be verbose (true) or quiet (false), since it can take a while. 
@@ -182,35 +211,6 @@ func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list JsonArray) {
 	// of the hidden subscopes, and that's the reason why this utility follows this search algorithm to gather
 	// the full list of roles definitions. Note however, that this utility ONLY searches as deep as subscriptions,
 	// so if there are role definitions hidden within Resource Groups or individual resoures it will MISS them.
-}
-
-func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
-	// Get all roleDefinitions that match on provided filter. An empty "" filter means return all of them.
-	// It always uses local cache if it's within the cache retention period. The force boolean option forces
-	// a call to Azure. The verbose option details the progress. 
-	list = nil
-	cachePeriod := int64(3660 * 24 * 7) // 1 week cache retention period 
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json")
-	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
-	if cacheNoGood || force {
-		GetAzRoleDefinitions(verbose, z) // Get the entire set from Azure
-	}
-
-	// Do filter matching
-	if filter == "" {
-		return list
-	}
-	var matchingList JsonArray = nil
-	for _, i := range list { // Parse every object
-		x := i.(map[string]interface{})
-		// Match against relevant roleDefinitions attributes
-		xProp := x["properties"].(map[string]interface{})
-		if utl.SubString(StrVal(x["name"]), filter) || utl.SubString(StrVal(xProp["roleName"]), filter) ||
-			utl.SubString(StrVal(x["description"]), filter) {
-			matchingList = append(matchingList, x)
-		}
-	}
-	return matchingList
 }
 
 func RoleDefinitionCountLocal(z aza.AzaBundle) (builtin, custom int64) {

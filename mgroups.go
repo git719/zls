@@ -75,7 +75,7 @@ func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	return matchingList
 }
 
-func PrintMgChildren(indent int, children []interface{}) {
+func PrintMgChildren(indent int, children JsonArray) {
 	// Recursively print managementGroups children (MGs and subscriptions) 
 	for _, i := range children {
 		child := i.(map[string]interface{})

@@ -18,7 +18,7 @@ import (
 )
 
 func ObjectCountLocal(t string, z aza.AzaBundle, oMap MapString) int64 {
-	var cachedList []interface{} = nil
+	var cachedList JsonArray = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
     if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
@@ -48,19 +48,6 @@ func ObjectCountAzure(t string, z aza.AzaBundle, oMap MapString) int64 {
 	case "m":
 		mgGroups := GetMgGroups("", true, z)
 		return int64(len(mgGroups))
-	case "rd":
-		// There is no $count filter option for directory/roleDefinitions either
-		adRoleDefinitions := GetAdRoleDefs("", true, z)
-		return int64(len(adRoleDefinitions))
-	case "u", "g", "sp", "ap", "ra":
-		// MS Graph API makes counting much easier with its dedicated '$count' filter
-		z.MgHeaders["ConsistencyLevel"] = "eventual"
-		url := aza.ConstMgUrl + "/v1.0/" + oMap[t] + "/$count"
-		r := ApiGet(url, z.MgHeaders, nil)
-		ApiErrorCheck(r, utl.Trace())
-		if r["value"] != nil {
-			return r["value"].(int64) // Expected result is a single int64 value for the count
-		}		
 	}
 	return 0
 }
@@ -93,87 +80,17 @@ func GetObjectById(t, id string, z aza.AzaBundle) (x JsonObject) {
 // 		x = r
 	case "u":
 		return GetAzUserById(id, z.MgHeaders)
-
-	// case "g":
-	// 	return GetAzGroupById(id, z.MgHeaders)
-	// case "ra":
-	// 	return GetAdRoleDefById(id, z.MgHeaders)
-
-		// 	case "ap", "sp":
-// 		url := aza.ConstMgUrl + "/v1.0/" + oMap[t]
-// 		r := ApiGet(url + "/" + id, z.MgHeaders, nil)  // First search is for direct Object Id
-// 		if r != nil && r["error"] != nil {
-// 			// Also look for this app or SP using its App/Client Id
-// 			params := aza.MapString{"$filter": "appId eq '" + id + "'"}
-// 			r := ApiGet(url, z.MgHeaders, params)
-// 			if r != nil && r["value"] != nil {
-// 				list := r["value"].([]interface{})
-// 				count := len(list)
-// 				if count == 1 {
-// 					x = list[0].(map[string]interface{})  // Return single value found
-// 					return x
-// 				} else if count > 1 {
-// 					print("Found %d entries with this appId\n", count)  // Not sure this would ever happen, but just in case
-// 					return nil
-// 				} else {
-// 					return nil
-// 				}
-// 			}
-// 			//ApiErrorCheck(r, utl.Trace())  // DEBUG
-// 		}
-// 		x = r
-// 	case "rd":
-// 		// Again, AD role definitions are under a different area, until they are activated
-// 		url := aza.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions/" + id
-// 		r := ApiGet(url, z.MgHeaders, nil)
-// 		ApiErrorCheck(r, utl.Trace())
-// 		x = r
+	case "g":
+		return GetAzGroupById(id, z.MgHeaders)
+	case "sp":
+		return GetAzSpById(id, z.MgHeaders)
+	case "ap":
+		return GetAzAppById(id, z.MgHeaders)
+	case "ad":
+		return GetAzAdRoleById(id, z.MgHeaders)
 	}
 	return nil
 }
-
-// func GetAzObjectByName(t, name string, z aza.AzaBundle, oMap MapString) (x map[string]interface{}) {
-// 	// FUTURE, not yet in use
-
-// 	// Retrieve Azure object by displayName, given its type t
-// 	switch t {
-// 	case "a":
-// 		return nil // Role assignments don't have a displayName attribute
-// 	case "d":
-// 		scopes := GetAzRbacScopes(z.ConfDir, z.TenantId)  // Look for objects under all the RBAC hierarchy scopes
-// 		params := map[string]string{
-// 			"api-version": "2022-04-01",  // roleDefinitions
-// 			"$filter":     "roleName eq '" + name + "'",
-// 		}
-// 		for _, scope := range scopes {
-// 			url := az_url + scope + "/providers/Microsoft.Authorization/roleDefinitions"
-// 			r := ApiGet(url, az_headers, params)
-// 			if r != nil && r["value"] != nil {
-// 				results := r["value"].([]interface{})  // Assert as JSON array type
-// 				// NOTE: Would results ever be an array with MORE than 1 element? Is below name
-// 				// confirmation even needed? Can we just return r["value"][0]
-// 				for _, i := range results {
-// 					x := i.(map[string]interface{})    // Assert as JSON object type
-// 					xProp := x["properties"].(map[string]interface{})
-// 					roleName := StrVal(xProp["roleName"])
-// 					if roleName == name { return x }
-// 					// Return first match we find, since roleName are unique across the tenant
-// 				}
-// 			}
-// 			ApiErrorCheck(r, utl.Trace())
-// 		}
-// 	case "s":
-// 		//x = ApiGet(az_url+"/"+oMap[t]+"/"+id + "?api-version=2022-04-01", az_headers, nil)
-// 	case "m":
-// 		//x = ApiGet(az_url+"/providers/Microsoft.Management/managementGroups/"+id + "?api-version=2022-04-01", az_headers, nil)
-// 	case "u", "g", "sp", "ap", "ra":
-// 		//x = ApiGet(mg_url+"/v1.0/"+oMap[t]+"/"+id, mg_headers, nil)
-// 	case "rd":
-// 		// Again, AD role definitions are under a different area, until they are activated
-// 		//x = ApiGet(mg_url+"/v1.0/roleManagement/directory/roleDefinitions/"+id, mg_headers, nil)
-// 	}
-// 	return nil
-// }
 
 func ApiGet(url string, headers, params aza.MapString) (result JsonObject) {
 	// Basic, without debugging

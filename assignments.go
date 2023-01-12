@@ -101,44 +101,6 @@ func PrintRoleAssignmentReport(z aza.AzaBundle, oMap MapString)  {
 	}
 }
 
-func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list JsonArray) {
-	// Get ALL roleAssignments in current Azure tenant AND save them to local cache file
-	// Option to be verbose (true) or quiet (false), since it can take a while. 
-	list = nil // We have to zero it out
-	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments 
-	var uuids []string // Keep track of each unique objects to eliminate inherited repeats
-	calls := 1 // Track number of API calls below
-	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
-	for _, scope := range scopes {
-		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
-		r := ApiGet(url, z.AzHeaders, params)
-		ApiErrorCheck(r, utl.Trace())
-		if r["value"] != nil {
-			assignments := r["value"].([]interface{})
-			if verbose {
-				// Using global var rUp to overwrite last line. Defer newline until done
-				fmt.Printf("%s(API calls = %d) %d assignments in set %d", rUp, calls, len(assignments), calls)
-			}
-			for _, i := range assignments {
-				x := i.(map[string]interface{})
-				uuid := StrVal(x["name"])  // NOTE that 'name' key is the role assignment Object Id
-				if !utl.ItemInList(uuid, uuids) {
-					// Role assignments DO repeat! Add to growing list ONLY if it's NOT in it already
-					list = append(list, x)
-					uuids = append(uuids, uuid)
-				}
-			}
-		}
-		calls++
-	}
-	if verbose {
-		fmt.Printf("\n") // Use newline now
-	}
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json")
-	utl.SaveFileJson(list, cacheFile) // Update the local cache
-	return list
-}
-
 func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMap MapString) (list JsonArray) {
 	// Get all roleAssignments that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The
@@ -176,6 +138,44 @@ func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMa
 		}
 	}
 	return matchingList
+}
+
+func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list JsonArray) {
+	// Get ALL roleAssignments in current Azure tenant AND save them to local cache file
+	// Option to be verbose (true) or quiet (false), since it can take a while. 
+	list = nil // We have to zero it out
+	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments 
+	var uuids []string // Keep track of each unique objects to eliminate inherited repeats
+	calls := 1 // Track number of API calls below
+	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
+	for _, scope := range scopes {
+		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
+		r := ApiGet(url, z.AzHeaders, params)
+		ApiErrorCheck(r, utl.Trace())
+		if r["value"] != nil {
+			assignments := r["value"].([]interface{})
+			if verbose {
+				// Using global var rUp to overwrite last line. Defer newline until done
+				fmt.Printf("%s(API calls = %d) %d assignments in set %d", rUp, calls, len(assignments), calls)
+			}
+			for _, i := range assignments {
+				x := i.(map[string]interface{})
+				uuid := StrVal(x["name"])  // NOTE that 'name' key is the role assignment Object Id
+				if !utl.ItemInList(uuid, uuids) {
+					// Role assignments DO repeat! Add to growing list ONLY if it's NOT in it already
+					list = append(list, x)
+					uuids = append(uuids, uuid)
+				}
+			}
+		}
+		calls++
+	}
+	if verbose {
+		fmt.Printf("\n") // Use newline now
+	}
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json")
+	utl.SaveFileJson(list, cacheFile) // Update the local cache
+	return list
 }
 
 func GetAzRoleAssignment(x JsonObject, z aza.AzaBundle) (y JsonObject) {

@@ -46,6 +46,32 @@ func PrintUser(x JsonObject, z aza.AzaBundle, oMap MapString) {
 	PrintMemberOfs("u", memberOf)
 }
 
+func UsersCountLocal(z aza.AzaBundle) (int64) {
+	// Return number of entries in local cache file
+	var cachedList JsonArray = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_users.json")
+	if utl.FileUsable(cacheFile) {
+		rawList, _ := utl.LoadFileJson(cacheFile)
+		if rawList != nil {
+			cachedList = rawList.([]interface{})
+			return int64(len(cachedList))
+		}
+	}
+	return 0
+}	
+
+func UsersCountAzure(z aza.AzaBundle) (int64) {
+	// Return number of entries in Azure tenant
+	z.MgHeaders["ConsistencyLevel"] = "eventual"
+	url := aza.ConstMgUrl + "/v1.0/users/$count"
+	r := ApiGet(url, z.MgHeaders, nil)
+	ApiErrorCheck(r, utl.Trace())
+	if r["value"] != nil {
+		return r["value"].(int64) // Expected result is a single int64 value for the count
+	}
+	return 0	
+}
+
 func GetUsers(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	// Get all Azure AD users that match on 'filter'. An empty "" filter returns all.
 	// Uses local cache if it's less than 1hr old. The 'force' option forces calling Azure query.
@@ -82,14 +108,16 @@ func GetUsers(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 func GetAzUsers(cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
 	// Get all Azure AD users in current tenant AND save them to local cache file. Show progress if verbose = true.
 	
-	// We will first try doing doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
+	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
 	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
 	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
-	// Base URL below will retrieve only the attributes we care about using 'select'. Also adding 'top' paging option
-	url := aza.ConstMgUrl + "/v1.0/users/delta?$select=displayName,mailNickname,userPrincipalName"
-	url += ",onPremisesSamAccountName,onPremisesDomainName,onPremisesUserPrincipalName" + "&$top=999"
-	headers["Prefer"] = "return=minimal" // Tell delta query to focus only on specific 'select' attributes
-
+	baseUrl := aza.ConstMgUrl + "/v1.0/users"
+	// Get delta updates only when below selection of attributes are modified
+	selection := "?$select=displayName,mailNickname,userPrincipalName,onPremisesSamAccountName,"
+	selection += "onPremisesDomainName,onPremisesUserPrincipalName"
+	url := baseUrl + "/delta" + selection + "&$top=999"
+	headers["Prefer"] = "return=minimal" // This tells API to focus only on specific 'select' attributes
+	
 	// But first, double-check the base set again to avoid running a delta query on an empty set
 	listIsEmpty, list := CheckLocalCache(cacheFile, 3600) // cachePeriod = 1hr = 3600sec
 	if  utl.FileUsable(deltaLinkFile) && deltaAge < (3660 * 24 * 27) && listIsEmpty == false {
@@ -99,19 +127,22 @@ func GetAzUsers(cacheFile string, headers aza.MapString, verbose bool) (list Jso
 		url = StrVal(deltaLinkMap["@odata.deltaLink"]) // Base URL is now the cached Delta Link
 	}
 
-	// Run generic looper function to retrieve all objects from Azure
-	list = GetAzObjectsLooper(url, cacheFile, deltaLinkFile, headers, verbose)
+	// Run generic looper function to retrieve objects from Azure
+	list = GetAzObjectsLooper(url, cacheFile, headers, verbose)
 
 	return list
 }
 
 func GetAzUserById(id string, headers aza.MapString) (list JsonObject) {
 	// Get Azure user by UUID, with extended attributes
-	url := aza.ConstMgUrl + "/v1.0/users/" + id + "?$select=accountEnabled,createdDateTime,creationType,"
-	url += "displayName,id,identities,lastPasswordChangeDateTime,mail,mailNickname,onPremisesDistinguishedName,"
-	url += "onPremisesDomainName,onPremisesExtensionAttributes,onPremisesImmutableId,onPremisesLastSyncDateTime,"
-	url += "onPremisesProvisioningErrors,onPremisesSamAccountName,onPremisesSecurityIdentifier,"
-	url += "onPremisesSyncEnabled,onPremisesUserPrincipalName,otherMails,securityIdentifier,surname,userPrincipalName"
+	baseUrl := aza.ConstMgUrl + "/v1.0/users"
+	selection := "?$select=id,accountEnabled,createdDateTime,creationType,displayName,id,identities,"
+	selection += "lastPasswordChangeDateTime,mail,mailNickname,onPremisesDistinguishedName,"
+	selection += "onPremisesDomainName,onPremisesExtensionAttributes,onPremisesImmutableId,"
+	selection += "onPremisesLastSyncDateTime,onPremisesProvisioningErrors,onPremisesSamAccountName,"
+	selection += "onPremisesSecurityIdentifier,onPremisesSyncEnabled,onPremisesUserPrincipalName,"
+	selection += "otherMails,securityIdentifier,surname,userPrincipalName"
+	url := baseUrl + "/" + id + selection
 	r := ApiGet(url, headers, nil)
 	ApiErrorCheck(r, utl.Trace())
 	return r

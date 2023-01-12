@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"path/filepath"
+	"time"
 	"github.com/git719/aza"
 	"github.com/git719/utl"
 )
@@ -125,47 +126,136 @@ func PrintSp(x JsonObject, z aza.AzaBundle, oMap MapString) {
 	}
 }
 
-func SpsCountLocal(z aza.AzaBundle) (microsoft, native int64) {
-	// Dedicated SPs local cache counter able to discern if SP is owned by native tenant or it's a Microsoft default SP 
-	var microsoftList []interface{} = nil
-	var nativeList []interface{} = nil
-	localData := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
-    if utl.FileUsable(localData) {
-		rawList, _ := utl.LoadFileJson(localData) // Load cache file
+func SpsCountLocal(z aza.AzaBundle) (native, microsoft int64) {
+	// Returns 2 values: Number of native SP entries in local cache file, and
+	// number of microsoft defined SP in local cache file.
+	var microsoftList JsonArray = nil
+	var nativeList JsonArray = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
+    if utl.FileUsable(cacheFile) {
+		rawList, _ := utl.LoadFileJson(cacheFile)
 		if rawList != nil {
-			sps := rawList.([]interface{}) // Assert as JSON array type
-			for _, i := range sps {
-				x := i.(map[string]interface{}) // Assert as JSON object type
-				owner := StrVal(x["appOwnerOrganizationId"])
-				if owner == z.TenantId {  // If owned by current tenant ...
+			cachedList := rawList.([]interface{})
+			for _, i := range cachedList {
+				x := i.(map[string]interface{})
+				if StrVal(x["appOwnerOrganizationId"]) == z.TenantId {  // If owned by current tenant ...
 					nativeList = append(nativeList, x)
 				} else {
 					microsoftList = append(microsoftList, x)
 				}
 			}
-			return int64(len(microsoftList)), int64(len(nativeList))
+			return int64(len(nativeList)), int64(len(microsoftList))
 		}
 	}
 	return 0, 0
 }
 
-func SpsCountAzure(z aza.AzaBundle, oMap MapString) (microsoft, native int64) {
-	// Dedicated SPs Azure counter able to discern if SP is owned by native tenant or it's a Microsoft default SP
-	// NOTE: Not entirely accurate yet because function GetAllObjects still checks local cache. Need to refactor
-	// that function into 2 diff versions GetAllObjectsLocal and GetAllObjectsAzure and have this function the latter.
-	var microsoftList []interface{} = nil
-	var nativeList []interface{} = nil
-	sps := GetAzObjects("sp", false, z, oMap) // false = be silent
+func SpsCountAzure(z aza.AzaBundle) (native, microsoft int64) {
+	// Returns 2 values: Number of native SP entries in Azure tenant, and
+	// number of microsoft defined SP in Azure tenant
+	var microsoftList JsonArray = nil
+	var nativeList JsonArray = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
+	sps := GetAzSps(cacheFile, z.MgHeaders, false) // Get all from Azure but do not show progress (verbose = false)
+	// Note that this call will actually update/refresh the local cache
 	if sps != nil {
 		for _, i := range sps {
-			x := i.(map[string]interface{}) // Assert as JSON object type
-			owner := StrVal(x["appOwnerOrganizationId"])
-			if owner == z.TenantId {  // If owned by current tenant ...
+			x := i.(map[string]interface{})
+			if StrVal(x["appOwnerOrganizationId"]) == z.TenantId {  // If owned by current tenant ...
 				nativeList = append(nativeList, x)
 			} else {
 				microsoftList = append(microsoftList, x)
 			}
 		}
 	}
-	return int64(len(microsoftList)), int64(len(nativeList))
+	return int64(len(nativeList)), int64(len(microsoftList))
+}
+
+func GetSps(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
+	// Get all Azure AD service principal whose searchAttributes match on 'filter'. An empty "" filter returns all.
+	// Uses local cache if it's less than 1hr old. The 'force' option forces calling Azure query.
+	list = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
+	cacheNoGood, list := CheckLocalCache(cacheFile, 3660) // cachePeriod = 1hr = 3600sec
+	if cacheNoGood || force {
+		list = GetAzSps(cacheFile, z.MgHeaders, true) // Get all from Azure and show progress (verbose = true)
+	}
+	
+	// Do filter matching
+	if filter == "" {
+		return list
+	}
+	var matchingList JsonArray = nil
+	searchAttributes := []string{"id", "displayName", "appId"}
+	var ids []string // Keep track of each unique objects to eliminate repeats
+	for _, i := range list {
+		x := i.(map[string]interface{})
+		id := StrVal(x["id"])
+		for _, i := range searchAttributes {
+			if utl.SubString(StrVal(x[i]), filter) && !utl.ItemInList(id, ids) {
+				matchingList = append(matchingList, x)
+				ids = append(ids, id)
+			}
+		}
+	}
+	return matchingList	
+}
+
+func GetAzSps(cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
+	// Get all Azure AD service principal in current tenant AND save them to local cache file. Show progress if verbose = true.
+	
+	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
+	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
+	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
+	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
+    // Get delta updates only when below selection of attributes are modified
+	selection := "?$select=displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId"
+	url := baseUrl + "/delta" + selection + "&$top=999"
+	headers["Prefer"] = "return=minimal" // This tells API to focus only on specific 'select' attributes
+
+	// But first, double-check the base set again to avoid running a delta query on an empty set
+	listIsEmpty, list := CheckLocalCache(cacheFile, 3600) // cachePeriod = 1hr = 3600sec
+	if  utl.FileUsable(deltaLinkFile) && deltaAge < (3660 * 24 * 27) && listIsEmpty == false {
+		// Note that deltaLink file age has to be within 30 days (we do 27)
+		tmpVal, _ := utl.LoadFileJson(deltaLinkFile)
+		deltaLinkMap := tmpVal.(map[string]interface{})
+		url = StrVal(deltaLinkMap["@odata.deltaLink"]) // Base URL is now the cached Delta Link
+	}
+
+	// Run generic looper function to retrieve all objects from Azure
+	list = GetAzObjectsLooper(url, cacheFile, headers, verbose)
+
+	return list
+}
+
+func GetAzSpById(id string, headers aza.MapString) (list JsonObject) {
+	// Get Azure AD service principal by its Object UUID or by its appId, with extended attributes
+	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
+	selection := "?$select=id,displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId,"
+	selection += "appRoleAssignmentRequired,appRoles,disabledByMicrosoftStatus,addIns,alternativeNames,"
+	selection += "appDisplayName,homepage,id,info,logoutUrl,notes,oauth2PermissionScopes,replyUrls,"
+	selection += "resourceSpecificApplicationPermissions,servicePrincipalNames,tags"
+	url := baseUrl + "/" + id + selection // First search is for direct Object Id
+	r := ApiGet(url, headers, nil)
+    if r != nil && r["error"] != nil {
+		// Second search is for this SP's application Client Id
+		url = baseUrl + selection
+		params := aza.MapString{"$filter": "appId eq '" + id + "'"}
+		r := ApiGet(url, headers, params)
+		ApiErrorCheck(r, utl.Trace())
+		if r != nil && r["value"] != nil {
+			list := r["value"].([]interface{})
+			count := len(list)
+			if count == 1 {
+				return list[0].(map[string]interface{})  // Return single value found
+			} else if count > 1 {
+				// Not sure this would ever happen, but just in case
+				fmt.Printf("Found %d entries with this appId\n", count)
+				return nil
+			} else {
+				return nil
+			}
+		}
+	}
+	return r
 }

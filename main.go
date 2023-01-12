@@ -12,7 +12,7 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.8.9"
+	prgver  = "1.9.0"
 	rUp     = "\x1B[2K\r" // See https://stackoverflow.com/questions/1508490/erase-the-current-printed-console-line
 )
 
@@ -30,8 +30,7 @@ func PrintUsage() {
 		"    Where 'X' can be any of these object types:\n" +
 		"      d  = RBAC Role Definitions   a  = RBAC Role Assignments   s  = Azure Subscriptions  \n" +
 		"      m  = Management Groups       u  = Azure AD Users          g  = Azure AD Groups      \n" +
-		"      sp = Service Principals      ap = Applications            ra = Azure AD Roles Active\n" +
-		"      rd = Azure AD Roles Defs\n" +
+		"      sp = Service Principals      ap = Applications            ad = Azure AD Roles\n" +
 		"\n" +
 		"    -xx                               Delete ALL cache local files\n" +
 		"    -ar                               List all RBAC role assignments with resolved names\n" +
@@ -83,8 +82,7 @@ func SetupVariables(z *aza.AzaBundle, oMap *MapString) (aza.AzaBundle, MapString
 		"g":  "groups",
 		"sp": "servicePrincipals",
 		"ap": "applications",
-		"ra": "directoryRoles",
-		"rd": "adRoleDef",          // Treated differently in each function. Yeah, this is ugly :-(
+		"ad": "directoryRoles",
 	}	
 	return *z, *oMap
 }
@@ -114,15 +112,15 @@ func main() {
 		switch arg1 {
 		case "-xx":
 			RemoveCacheFile("all", z, oMap)
-		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-rax", "-rdx":
+		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-adx":
 			t := arg1[1 : len(arg1)-1]  // Single out the object type
 			RemoveCacheFile(t, z, oMap)
-		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
+		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1]
 			allObjects := GetObjects(t, "", false, z, oMap) // Get all objects
 			// Above false means = do not force Azure call, ok to use cache
 			utl.PrintJson(allObjects) // Print the entire set in JSON
-		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd":
+		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
 			t := arg1[1:] // Single out the object type
 			allObjects := GetObjects(t, "", false, z, oMap) // Get all objects
 			for _, i := range allObjects { // Print set tersely
@@ -134,7 +132,7 @@ func main() {
 		case "-mt":
 			PrintMgTree(z)
 		case "-pags":
-			PrintPags(z, oMap)
+			PrintPags(z)
 		case "-st":
 			PrintCountStatus(z, oMap)
 		case "-z":
@@ -148,9 +146,9 @@ func main() {
 		switch arg1 {
 		case "-vs":
 			CompareSpecfile(arg2, z, oMap)
-		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-raj", "-rdj":
+		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
-			if utl.ValidUuid(arg2) {
+			if utl.ValidUuid(arg2) { // Search/print single object, if it's valid UUID
 				x := GetObjectById(t, arg2, z)
 				utl.PrintJson(x)
 			} else {
@@ -161,9 +159,9 @@ func main() {
 					utl.PrintJson(matchingObjects) // Print all matching objects in JSON
 				}
 			}
-		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ra", "-rd":
+		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
 			t := arg1[1:] // Single out the object type
-			if utl.ValidUuid(arg2) {
+			if utl.ValidUuid(arg2) { // Search/print single object, if it's valid UUID
 				x := GetObjectById(t, arg2, z)
 				PrintObject(t, x, z, oMap) // Print in YAML-like
 			} else {

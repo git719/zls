@@ -4,6 +4,8 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
+	"time"
 	"github.com/git719/aza"
 	"github.com/git719/utl"
 )
@@ -132,4 +134,121 @@ func PrintApp(x JsonObject, z aza.AzaBundle, oMap MapString) {
 			}
 		}
 	}
+}
+
+func AppsCountLocal(z aza.AzaBundle) (int64) {
+	// Return number of entries in local cache file
+	var cachedList JsonArray = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_applications.json")
+	if utl.FileUsable(cacheFile) {
+		rawList, _ := utl.LoadFileJson(cacheFile)
+		if rawList != nil {
+			cachedList = rawList.([]interface{})
+			return int64(len(cachedList))
+		}
+	}
+	return 0
+}	
+
+func AppsCountAzure(z aza.AzaBundle) (int64) {
+	// Return number of entries in Azure tenant
+	z.MgHeaders["ConsistencyLevel"] = "eventual"
+	url := aza.ConstMgUrl + "/v1.0/applications/$count"
+	r := ApiGet(url, z.MgHeaders, nil)
+	ApiErrorCheck(r, utl.Trace())
+	if r["value"] != nil {
+		return r["value"].(int64) // Expected result is a single int64 value for the count
+	}
+	return 0	
+}
+
+func GetApps(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
+	// Get all Azure AD applications whose searchAttributes match on 'filter'. An empty "" filter returns all.
+	// Uses local cache if it's less than 1hr old. The 'force' option forces calling Azure query.
+	list = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_applications.json")
+	cacheNoGood, list := CheckLocalCache(cacheFile, 3660) // cachePeriod = 1hr = 3600sec
+	if cacheNoGood || force {
+		list = GetAzApps(cacheFile, z.MgHeaders, true) // Get all from Azure and show progress (verbose = true)
+	}
+	
+	// Do filter matching
+	if filter == "" {
+		return list
+	}
+	var matchingList JsonArray = nil
+	searchAttributes := []string{"id", "displayName", "appId"}
+	var ids []string // Keep track of each unique objects to eliminate repeats
+	for _, i := range list {
+		x := i.(map[string]interface{})
+		id := StrVal(x["id"])
+		for _, i := range searchAttributes {
+			if utl.SubString(StrVal(x[i]), filter) && !utl.ItemInList(id, ids) {
+				matchingList = append(matchingList, x)
+				ids = append(ids, id)
+			}
+		}
+	}
+	return matchingList	
+}
+
+func GetAzApps(cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
+	// Get all Azure AD service principal in current tenant AND save them to local cache file. Show progress if verbose = true.
+	
+	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
+	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
+	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
+	baseUrl := aza.ConstMgUrl + "/v1.0/applications"
+    // Get delta updates only when below selection of attributes are modified
+	selection := "?$select=displayName,appId,requiredResourceAccess"
+	url := baseUrl + "/delta" + selection + "&$top=999"
+	headers["Prefer"] = "return=minimal" // This tells API to focus only on specific 'select' attributes
+
+	// But first, double-check the base set again to avoid running a delta query on an empty set
+	listIsEmpty, list := CheckLocalCache(cacheFile, 3600) // cachePeriod = 1hr = 3600sec
+	if  utl.FileUsable(deltaLinkFile) && deltaAge < (3660 * 24 * 27) && listIsEmpty == false {
+		// Note that deltaLink file age has to be within 30 days (we do 27)
+		tmpVal, _ := utl.LoadFileJson(deltaLinkFile)
+		deltaLinkMap := tmpVal.(map[string]interface{})
+		url = StrVal(deltaLinkMap["@odata.deltaLink"]) // Base URL is now the cached Delta Link
+	}
+
+	// Run generic looper function to retrieve all objects from Azure
+	list = GetAzObjectsLooper(url, cacheFile, headers, verbose)
+
+	return list
+}
+
+func GetAzAppById(id string, headers aza.MapString) (list JsonObject) {
+	// Get Azure AD application by its Object UUID or by its appId, with extended attributes
+	baseUrl := aza.ConstMgUrl + "/v1.0/applications"
+	selection := "?$select=id,addIns,api,appId,applicationTemplateId,appRoles,certification,createdDateTime,"
+	selection += "deletedDateTime,disabledByMicrosoftStatus,displayName,groupMembershipClaims,id,identifierUris,"
+	selection += "info,isDeviceOnlyAuthSupported,isFallbackPublicClient,keyCredentials,logo,notes,"
+	selection += "oauth2RequiredPostResponse,optionalClaims,parentalControlSettings,passwordCredentials,"
+	selection += "publicClient,publisherDomain,requiredResourceAccess,serviceManagementReference,"
+	selection += "signInAudience,spa,tags,tokenEncryptionKeyId,verifiedPublisher,web"
+	url := baseUrl + "/" + id + selection // First search is for direct Object Id
+	r := ApiGet(url, headers, nil)
+    if r != nil && r["error"] != nil {
+		// Second search is for this app's application Client Id
+		url = baseUrl + selection
+		params := aza.MapString{"$filter": "appId eq '" + id + "'"}
+		r := ApiGet(url, headers, params)
+		ApiErrorCheck(r, utl.Trace())
+		if r != nil && r["value"] != nil {
+			list := r["value"].([]interface{})
+			count := len(list)
+			if count == 1 {
+				return list[0].(map[string]interface{})  // Return single value found
+			} else if count > 1 {
+				// Not sure this would ever happen, but just in case
+				fmt.Printf("Found %d entries with this appId\n", count)
+				return nil
+			} else {
+				return nil
+			}
+		}
+	}
+	return r
 }
