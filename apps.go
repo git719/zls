@@ -219,7 +219,7 @@ func GetAzApps(cacheFile string, headers aza.MapString, verbose bool) (list Json
 	return list
 }
 
-func GetAzAppById(id string, headers aza.MapString) (list JsonObject) {
+func GetAzAppById(id string, headers aza.MapString) (JsonObject) {
 	// Get Azure AD application by its Object UUID or by its appId, with extended attributes
 	baseUrl := aza.ConstMgUrl + "/v1.0/applications"
 	selection := "?$select=id,addIns,api,appId,applicationTemplateId,appRoles,certification,createdDateTime,"

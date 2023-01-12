@@ -35,8 +35,9 @@ func PrintCountStatus(z aza.AzaBundle, oMap MapString) {
 	fmt.Printf("%-38s %-20d %d\n", "RBAC Role Assignments", assignmentsLocal, assignmentsAzure)
 }
 
-func PrintTersely(t string, x JsonObject) {
-	// List this single object of type 't' tersely (minimal attributes)
+func PrintTersely(t string, object interface{}) {
+	// Print this single object of type 't' tersely (minimal attributes)
+	x := object.(map[string]interface{}) // Assert as JSON object
 	switch t {
 	case "d":
 		xProp := x["properties"].(map[string]interface{})

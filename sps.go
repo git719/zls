@@ -228,7 +228,7 @@ func GetAzSps(cacheFile string, headers aza.MapString, verbose bool) (list JsonA
 	return list
 }
 
-func GetAzSpById(id string, headers aza.MapString) (list JsonObject) {
+func GetAzSpById(id string, headers aza.MapString) (JsonObject) {
 	// Get Azure AD service principal by its Object UUID or by its appId, with extended attributes
 	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
 	selection := "?$select=id,displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId,"

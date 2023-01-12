@@ -52,7 +52,7 @@ func PrintAdRole(x JsonObject, z aza.AzaBundle) {
 			fmt.Printf("%s: %s\n", "members", "None")
 		}
 	} else {
-		fmt.Printf("members: (Can't find members for this templateId)\n")
+		fmt.Printf("members: Cannot find members for this AD role templateId ==> %s\n", StrVal(x["templateId"]))
 	}
 }
 
@@ -115,21 +115,23 @@ func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 }
 
 func GetAzAdRoles(cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
-	// Get all Azure AD role definitions in current tenant AND save them to local cache file. Show progress if verbose = true.
+	// Get all Azure AD role definitions in current tenant AND save them to local cache file.
+	// Usually a short list, so verbose is ignored, and not used.
 	// See https://learn.microsoft.com/en-us/graph/api/rbacapplication-list-roledefinitions
 
-	// There's not delta options for this, as it appears to be a relatively short list
+	// There's no API delta options for this object (too short a list?), so just one call
 	url := aza.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions"
 	r := ApiGet(url, headers, nil)
 	ApiErrorCheck(r, utl.Trace())
-	if r["value"] != nil {
-		list := r["value"].([]interface{})
-		utl.SaveFileJson(list, cacheFile) // Update the local cache
+	if r["value"] == nil {
+		return nil
 	}
+	list = r["value"].([]interface{})
+	utl.SaveFileJson(list, cacheFile) // Update the local cache
 	return list
 }
 
-func GetAzAdRoleById(id string, headers aza.MapString) (list JsonObject) {
+func GetAzAdRoleById(id string, headers aza.MapString) (JsonObject) {
 	// Get Azure AD role definition by UUID, with extended attributes
 	// Note that role definitions are under a different area, until they are activated
 	baseUrl := aza.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions"

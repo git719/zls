@@ -113,19 +113,17 @@ func main() {
 		case "-xx":
 			RemoveCacheFile("all", z, oMap)
 		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-adx":
-			t := arg1[1 : len(arg1)-1]  // Single out the object type
+			t := arg1[1 : len(arg1)-1] // Single out the object type
 			RemoveCacheFile(t, z, oMap)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1]
-			allObjects := GetObjects(t, "", false, z, oMap) // Get all objects
-			// Above false means = do not force Azure call, ok to use cache
-			utl.PrintJson(allObjects) // Print the entire set in JSON
+			all := GetObjects(t, "", false, z, oMap) // false means do not force Azure call, ok to use cache
+			utl.PrintJson(all) // Print entire set in JSON
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
-			t := arg1[1:] // Single out the object type
-			allObjects := GetObjects(t, "", false, z, oMap) // Get all objects
-			for _, i := range allObjects { // Print set tersely
-				x := i.(map[string]interface{})
-				PrintTersely(t, x)
+			t := arg1[1:]
+			all := GetObjects(t, "", false, z, oMap)
+			for _, i := range all { // Print entire set tersely
+				PrintTersely(t, i)
 			}
 		case "-ar":
 			PrintRoleAssignmentReport(z, oMap)

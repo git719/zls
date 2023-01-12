@@ -159,7 +159,7 @@ func GetAzGroups(cacheFile string, headers aza.MapString, verbose bool) (list Js
 	return list
 }
 
-func GetAzGroupById(id string, headers aza.MapString) (list JsonObject) {
+func GetAzGroupById(id string, headers aza.MapString) (JsonObject) {
 	// Get Azure AD group by UUID, with extended attributes
 	baseUrl := aza.ConstMgUrl + "/v1.0/groups"
 	selection := "?$select=id,createdDateTime,description,displayName,groupTypes,id,isAssignableToRole,"

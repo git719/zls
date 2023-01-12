@@ -133,7 +133,7 @@ func GetAzUsers(cacheFile string, headers aza.MapString, verbose bool) (list Jso
 	return list
 }
 
-func GetAzUserById(id string, headers aza.MapString) (list JsonObject) {
+func GetAzUserById(id string, headers aza.MapString) (JsonObject) {
 	// Get Azure user by UUID, with extended attributes
 	baseUrl := aza.ConstMgUrl + "/v1.0/users"
 	selection := "?$select=id,accountEnabled,createdDateTime,creationType,displayName,id,identities,"
