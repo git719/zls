@@ -15,27 +15,30 @@ func PrintAdRole(x JsonObject, z aza.AzaBundle) {
 		return
 	}
 	// Print the most important attributes first
-	list := []string{"id", "displayName", "description", "isBuiltIn", "isEnabled", "templateId"}
+	list := []string{"id", "displayName", "description"}
 	for _, i := range list {
 		v := StrVal(x[i])
 		if v != "" { // Only print non-null attributes
 			fmt.Printf("%s: %s\n", i, v)
 		}
 	}
-	// List permissions
-	if x["rolePermissions"] != nil {
-		rolePerms := x["rolePermissions"].([]interface{})
-		if len(rolePerms) > 0 {
-			// Unclear why rolePermissions is a list instead of the single entry that it usually is
-			perms := rolePerms[0].(map[string]interface{})
-			if perms["allowedResourceActions"] != nil && len(perms["allowedResourceActions"].([]interface{})) > 0 {
-				fmt.Printf("permissions:\n")
-				for _, i := range perms["allowedResourceActions"].([]interface{}) {
-					fmt.Printf("  %s\n", StrVal(i))
-				}
-			}
-		} 
-	}
+	
+	// Commenting this out for now. Too chatty. User can run -adj JSON to get the full list of perms.
+	// // List permissions
+	// if x["rolePermissions"] != nil {
+	// 	rolePerms := x["rolePermissions"].([]interface{})
+	// 	if len(rolePerms) > 0 {
+	// 		// Unclear why rolePermissions is a list instead of the single entry that it usually is
+	// 		perms := rolePerms[0].(map[string]interface{})
+	// 		if perms["allowedResourceActions"] != nil && len(perms["allowedResourceActions"].([]interface{})) > 0 {
+	// 			fmt.Printf("permissions:\n")
+	// 			for _, i := range perms["allowedResourceActions"].([]interface{}) {
+	// 				fmt.Printf("  %s\n", StrVal(i))
+	// 			}
+	// 		}
+	// 	} 
+	// }
+
 	// Print members of this role
 	// See https://github.com/microsoftgraph/microsoft-graph-docs/blob/main/api-reference/v1.0/api/directoryrole-list-members.md
 	url := aza.ConstMgUrl + "/v1.0/directoryRoles(roleTemplateId='" + StrVal(x["templateId"]) + "')/members"
@@ -52,12 +55,12 @@ func PrintAdRole(x JsonObject, z aza.AzaBundle) {
 			fmt.Printf("%s: %s\n", "members", "None")
 		}
 	} else {
-		fmt.Printf("members: Cannot find members for this AD role templateId ==> %s\n", StrVal(x["templateId"]))
+		fmt.Printf("members:\n  No members in this role (templateId = %s). Maybe not yet activated?\n", StrVal(x["templateId"]))
 	}
 }
 
 func AdRolesCountLocal(z aza.AzaBundle) (int64) {
-	// Return number of entries in local cache file
+	// Return count of Azure AD directory role entries in local cache file
 	var cachedList JsonArray = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_directoryRoles.json")
 	if utl.FileUsable(cacheFile) {
@@ -71,17 +74,20 @@ func AdRolesCountLocal(z aza.AzaBundle) (int64) {
 }	
 
 func AdRolesCountAzure(z aza.AzaBundle) (int64) {
-	// Return number of entries in Azure tenant.
-	// Unfortunately, there is no API $count option, to so something like:
-	//   z.MgHeaders["ConsistencyLevel"] = "eventual"
-	//   url := aza.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions/$count"
-	//   r := ApiGet(url, z.MgHeaders, nil)
-	//   ApiErrorCheck(r, utl.Trace())
-	//   if r["value"] != nil {
-	// 	     return r["value"].(int64)
-	//   }
-	// So we'll just use the local count:
-	return AdRolesCountLocal(z)
+	// Return count of Azure AD directory role entries in current tenant
+	// Note that endpoint "/v1.0/directoryRoles" is for Activated AD roles, so it wont give us
+	// the full count of all AD roles. Also, the actual role definitions, with what permissions
+	// each has is at endpoint "/v1.0/roleManagement/directory/roleDefinitions", but because
+	// we only care about their count it is easier to just call end point
+	// "/v1.0/directoryRoleTemplates" which is a quicker API call and has the accurate count.
+	// It's not clear why MSFT makes this so darn confusing.
+	url := aza.ConstMgUrl + "/v1.0/directoryRoleTemplates"
+    r := ApiGet(url, z.MgHeaders, nil)
+	ApiErrorCheck(r, utl.Trace())
+	if r["value"] != nil {
+		return int64(len(r["value"].([]interface{})))
+	}
+    return 0
 }
 
 func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
@@ -114,7 +120,7 @@ func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	return matchingList	
 }
 
-func GetAzAdRoles(cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
+func GetAzAdRoles(cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
 	// Get all Azure AD role definitions in current tenant AND save them to local cache file.
 	// Usually a short list, so verbose is ignored, and not used.
 	// See https://learn.microsoft.com/en-us/graph/api/rbacapplication-list-roledefinitions

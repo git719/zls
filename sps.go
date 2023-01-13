@@ -19,7 +19,7 @@ func PrintSp(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 	id := StrVal(x["id"])
 
 	// Print the most important attributes
-	list := []string{"displayName", "id", "appId", "accountEnabled", "servicePrincipalType"}
+	list := []string{"displayName", "id", "appId", "accountEnabled", "servicePrincipalType", "appOwnerOrganizationId"}
 	for _, i := range list {
 		v := StrVal(x[i])
 		if v != "" {
@@ -127,10 +127,9 @@ func PrintSp(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 }
 
 func SpsCountLocal(z aza.AzaBundle) (native, microsoft int64) {
-	// Returns 2 values: Number of native SP entries in local cache file, and
-	// number of microsoft defined SP in local cache file.
-	var microsoftList JsonArray = nil
+	// Retrieves counts of all SPs in local cache, 2 values: Native ones to this tenant, and all others
 	var nativeList JsonArray = nil
+	var microsoftList JsonArray = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
     if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
@@ -151,24 +150,34 @@ func SpsCountLocal(z aza.AzaBundle) (native, microsoft int64) {
 }
 
 func SpsCountAzure(z aza.AzaBundle) (native, microsoft int64) {
-	// Returns 2 values: Number of native SP entries in Azure tenant, and
-	// number of microsoft defined SP in Azure tenant
-	var microsoftList JsonArray = nil
-	var nativeList JsonArray = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
-	sps := GetAzSps(cacheFile, z.MgHeaders, false) // Get all from Azure but do not show progress (verbose = false)
-	// Note that this call will actually update/refresh the local cache
-	if sps != nil {
-		for _, i := range sps {
-			x := i.(map[string]interface{})
-			if StrVal(x["appOwnerOrganizationId"]) == z.TenantId {  // If owned by current tenant ...
-				nativeList = append(nativeList, x)
-			} else {
-				microsoftList = append(microsoftList, x)
-			}
-		}
+	// Retrieves counts of all SPs in this Azure tenant, 2 values: Native ones to this tenant, and all others
+	
+	// First, get total number of SPs in tenant
+    var all int64 = 0
+	z.MgHeaders["ConsistencyLevel"] = "eventual"
+	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
+	url := baseUrl + "/$count"
+	r := ApiGet(url, z.MgHeaders, nil)
+	ApiErrorCheck(r, utl.Trace())
+	if r["value"] == nil {
+		return 0, 0 // Something went wrong, so return zero for both
 	}
-	return int64(len(nativeList)), int64(len(microsoftList))
+	all = r["value"].(int64)
+
+	// Now get count of SPs registered and native to only this tenant
+	params := aza.MapString{"$filter": "appOwnerOrganizationId eq " + z.TenantId}
+	params["$count"] = "true"
+	url = baseUrl
+	r = ApiGet(url, z.MgHeaders, params)
+	ApiErrorCheck(r, utl.Trace())
+	if r["value"] == nil {
+		return 0, all // Something went wrong with native count, retun all as Microsoft ones
+	}
+
+	native = int64(r["@odata.count"].(float64))
+	microsoft = all - native
+
+	return native, microsoft
 }
 
 func GetSps(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
@@ -201,7 +210,7 @@ func GetSps(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	return matchingList	
 }
 
-func GetAzSps(cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
+func GetAzSps(cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
 	// Get all Azure AD service principal in current tenant AND save them to local cache file. Show progress if verbose = true.
 	
 	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
@@ -209,7 +218,7 @@ func GetAzSps(cacheFile string, headers aza.MapString, verbose bool) (list JsonA
 	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
 	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
     // Get delta updates only when below selection of attributes are modified
-	selection := "?$select=displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId"
+	selection := "?$id,select=displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId"
 	url := baseUrl + "/delta" + selection + "&$top=999"
 	headers["Prefer"] = "return=minimal" // This tells API to focus only on specific 'select' attributes
 

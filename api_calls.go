@@ -52,7 +52,7 @@ func ObjectCountAzure(t string, z aza.AzaBundle, oMap map[string]string) int64 {
 	return 0
 }
 
-func GetObjectById(t, id string, z aza.AzaBundle) (x JsonObject) {
+func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
 	// Retrieve Azure object by Object Id
 	switch t {
 // 	case "d", "a":
@@ -66,18 +66,10 @@ func GetObjectById(t, id string, z aza.AzaBundle) (x JsonObject) {
 // 			if r != nil && r["id"] != nil { return r }  // Returns as soon as we find a match
 // 			//ApiErrorCheck(r, utl.Trace()) // # DEBUG
 // 		}
-// 	case "s":
-// 		params := aza.MapString{"api-version": "2022-09-01"}  // subscriptions
-// 		url := aza.ConstAzUrl + "/subscriptions/" + id
-// 		r := ApiGet(url, z.AzHeaders, params)
-// 		ApiErrorCheck(r, utl.Trace())
-// 		x = r
-// 	case "m":
-// 		params := aza.MapString{"api-version": "2022-04-01"} // managementGroups
-// 		url := aza.ConstAzUrl + "/providers/Microsoft.Management/managementGroups/" + id
-// 		r := ApiGet(url, z.AzHeaders, params)
-// 		ApiErrorCheck(r, utl.Trace())
-// 		x = r
+	case "a":
+		return GetAzRoleAssignmentById(id, z)
+	case "s":
+		return GetAzSubscriptionById(id, z.AzHeaders)
 	case "u":
 		return GetAzUserById(id, z.MgHeaders)
 	case "g":
@@ -92,17 +84,17 @@ func GetObjectById(t, id string, z aza.AzaBundle) (x JsonObject) {
 	return nil
 }
 
-func ApiGet(url string, headers, params aza.MapString) (result JsonObject) {
+func ApiGet(url string, headers, params aza.MapString) (result map[string]interface{}) {
 	// Basic, without debugging
 	return ApiCall("GET", url, nil, headers, params, false)  // Verbose = false
 }
 
-func ApiGetDebug(url string, headers, params aza.MapString) (result JsonObject) {
+func ApiGetDebug(url string, headers, params aza.MapString) (result map[string]interface{}) {
 	// Sets verbose boolean to true
 	return ApiCall("GET", url, nil, headers, params, true)  // Verbose = true
 }
 
-func ApiCall(method, url string, jsonObj JsonObject, headers, params aza.MapString, verbose bool) (result JsonObject) {
+func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params aza.MapString, verbose bool) (result map[string]interface{}) {
 	// Make API call and return JSON object. Global az_headers and mg_headers are merged with additional ones called with.
 
 	if !strings.HasPrefix(url, "http") {

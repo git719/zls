@@ -224,3 +224,18 @@ func GetAzRoleAssignment(x JsonObject, z aza.AzaBundle) (y JsonObject) {
 	ApiErrorCheck(r, utl.Trace())
 	return nil
 }
+
+func GetAzRoleAssignmentById(id string, z aza.AzaBundle) (map[string]interface{}) {
+	// Get Azure resource roleAssignment by by Object Id
+	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments
+	scopes = append(scopes, "/")
+	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
+	for _, scope := range scopes {
+		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments/" + id + "?disambiguation_dummy"
+		r := ApiGet(url, z.AzHeaders, params)
+		if r != nil && r["name"] != nil && StrVal(r["name"]) == id {
+			return r
+		}
+	}
+	return nil
+}

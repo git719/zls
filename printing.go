@@ -9,30 +9,30 @@ import (
 )
 
 func PrintCountStatus(z aza.AzaBundle, oMap map[string]string) {
-	fmt.Printf("Note: Counting Azure objects can take some time.\n")
-	fmt.Printf("%-38s %-20s %s\n", "OBJECTS", "LOCAL_CACHE_COUNT","AZURE_COUNT")
-	fmt.Printf("%-38s %-20d %d\n", "Groups", GroupsCountLocal(z), GroupsCountAzure(z))
-	fmt.Printf("%-38s %-20d %d\n", "Users", UsersCountLocal(z), UsersCountAzure(z))
-	fmt.Printf("%-38s %-20d %d\n", "App Registrations", AppsCountLocal(z), AppsCountAzure(z))
+	fmt.Printf("Note: Counting Azure resource role definitions and assignments can take some time.\n")
+	fmt.Printf("%-36s %10s %10s\n", "OBJECTS", "LOCAL","AZURE")
+	fmt.Printf("%-36s %10d %10d\n", "Groups", GroupsCountLocal(z), GroupsCountAzure(z))
+	fmt.Printf("%-36s %10d %10d\n", "Users", UsersCountLocal(z), UsersCountAzure(z))
+	fmt.Printf("%-36s %10d %10d\n", "App Registrations", AppsCountLocal(z), AppsCountAzure(z))
 
 	nativeSpsLocal, msSpsLocal := SpsCountLocal(z)
 	nativeSpsAzure, msSpsAzure := SpsCountAzure(z)
-	fmt.Printf("%-38s %-20d %d\n", "SPs Owned by Microsoft", msSpsLocal, msSpsAzure)
-	fmt.Printf("%-38s %-20d %d\n", "SPs Owned by this Tenant", nativeSpsLocal, nativeSpsAzure)
+	fmt.Printf("%-36s %10d %10d\n", "SPs (App registered elsewhere)", msSpsLocal, msSpsAzure)
+	fmt.Printf("%-36s %10d %10d\n", "SPs (App registered in this Tenant)", nativeSpsLocal, nativeSpsAzure)
 
-	fmt.Printf("%-38s %-20d %d\n", "Azure AD Roles", AdRolesCountLocal(z), AdRolesCountAzure(z))
+	fmt.Printf("%-36s %10d %10d\n", "Azure AD Roles", AdRolesCountLocal(z), AdRolesCountAzure(z))
     fmt.Println("-----------------------------")
-	fmt.Printf("%-38s %-20d %d\n", "Management Groups", ObjectCountLocal("m", z, oMap), ObjectCountAzure("m", z, oMap))
-	fmt.Printf("%-38s %-20d %d\n", "Subscriptions", ObjectCountLocal("s", z, oMap), ObjectCountAzure("s", z, oMap))
+	fmt.Printf("%-36s %10d %10d\n", "Management Groups", ObjectCountLocal("m", z, oMap), ObjectCountAzure("m", z, oMap))
+	fmt.Printf("%-36s %10d %10d\n", "Subscriptions", ObjectCountLocal("s", z, oMap), ObjectCountAzure("s", z, oMap))
 
 	builtinLocal, customLocal := RoleDefinitionCountLocal(z)
 	builtinAzure, customAzure := RoleDefinitionCountAzure(z, oMap)
-	fmt.Printf("%-38s %-20d %d\n", "RBAC Role Definitions BuiltIn", builtinLocal, builtinAzure)
-	fmt.Printf("%-38s %-20d %d\n", "RBAC Role Definitions Custom", customLocal, customAzure)
+	fmt.Printf("%-36s %10d %10d\n", "Resource Role Definitions BuiltIn", builtinLocal, builtinAzure)
+	fmt.Printf("%-36s %10d %10d\n", "Resource Role Definitions Custom", customLocal, customAzure)
 
 	assignmentsLocal := len(GetRoleAssignments("", false, false, z, oMap)) // false = prefer local, false = be silent
 	assignmentsAzure := len(GetRoleAssignments("", true, false, z, oMap)) // true = force a call to Azure, false = be silent
-	fmt.Printf("%-38s %-20d %d\n", "RBAC Role Assignments", assignmentsLocal, assignmentsAzure)
+	fmt.Printf("%-36s %10d %10d\n", "Resource Role Assignments", assignmentsLocal, assignmentsAzure)
 }
 
 func PrintTersely(t string, object interface{}) {

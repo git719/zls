@@ -52,8 +52,8 @@ func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedLi
 }
 
 func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
-	// Generic function to get objects of type t whose attributes match on filter. If filter is
-	// the "" empty string, then return ALL of the objects of this type.
+	// Generic function to get objects of type t whose attributes match on filter.
+	// If filter is the "" empty string return ALL of the objects of this type.
 	switch t {
 	case "d":
 		return GetRoleDefinitions(filter, force, true, z, oMap) // true = verbose, to print progress while getting
@@ -77,7 +77,7 @@ func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap map[string]s
 	return nil
 }
 
-func GetAzObjectsLooper(url, cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
+func GetAzObjectsLooper(url, cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
 	// Generic Azure object retriever function
 	// This function implements the pattern described at https://docs.microsoft.com/en-us/graph/delta-query-overview
 	
@@ -146,8 +146,9 @@ func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap map[string
 
 func GetObjectMemberOfs(t, id string, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
 	// Get all group/role objects this object of type 't' with 'id' is a memberof
+	// See https://stackoverflow.com/questions/72186263/how-to-identify-the-assigned-roles-for-a-user-in-ms-graph-api
 	list = nil
-	url := aza.ConstMgUrl  + "/beta/" + oMap[t] + "/" + id + "/memberof"
+	url := aza.ConstMgUrl  + "/beta/" + oMap[t] + "/" + id + "/transitiveMemberOf"
 	r := ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] != nil {

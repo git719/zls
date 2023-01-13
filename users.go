@@ -105,7 +105,7 @@ func GetUsers(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	return matchingList	
 }
 
-func GetAzUsers(cacheFile string, headers aza.MapString, verbose bool) (list JsonArray) {
+func GetAzUsers(cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
 	// Get all Azure AD users in current tenant AND save them to local cache file. Show progress if verbose = true.
 	
 	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview

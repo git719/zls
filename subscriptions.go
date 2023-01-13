@@ -15,24 +15,8 @@ func PrintSubscription(x JsonObject) {
 	list := []string{"displayName", "subscriptionId", "state", "tenantId"}
 	for _, i := range list {
 		v := StrVal(x[i])
-		if v != "" { fmt.Printf("%-15s %s\n", i+":", v) } // Only print non-null attributes
+		if v != "" { fmt.Printf("%s: %s\n", i, v) } // Only print non-null attributes
 	}
-}
-
-func GetAzSubscriptions(z aza.AzaBundle) (list JsonArray) {
-	// Get ALL subscription in current Azure tenant AND save them to local cache file
-	list = nil // We have to zero it out
-	params := aza.MapString{"api-version": "2022-09-01"} // subscriptions
-	url := aza.ConstAzUrl + "/subscriptions"
-	r := ApiGet(url, z.AzHeaders, params)
-	ApiErrorCheck(r, utl.Trace())
-	if r != nil && r["value"] != nil {
-		objects := r["value"].([]interface{})
-		list = append(list, objects...)
-	}
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_subscriptions.json")
-	utl.SaveFileJson(list, cacheFile) // Update the local cache
-	return list
 }
 
 func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
@@ -64,4 +48,29 @@ func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list JsonArra
 		}
 	}
 	return matchingList
+}
+
+func GetAzSubscriptions(z aza.AzaBundle) (list JsonArray) {
+	// Get ALL subscription in current Azure tenant AND save them to local cache file
+	list = nil // We have to zero it out
+	params := aza.MapString{"api-version": "2022-09-01"} // subscriptions
+	url := aza.ConstAzUrl + "/subscriptions"
+	r := ApiGet(url, z.AzHeaders, params)
+	ApiErrorCheck(r, utl.Trace())
+	if r != nil && r["value"] != nil {
+		objects := r["value"].([]interface{})
+		list = append(list, objects...)
+	}
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_subscriptions.json")
+	utl.SaveFileJson(list, cacheFile) // Update the local cache
+	return list
+}
+
+func GetAzSubscriptionById(id string, headers aza.MapString) (JsonObject) {
+	// Get Azure subscription by Object Id
+	params := aza.MapString{"api-version": "2022-09-01"}  // subscriptions
+	url := aza.ConstAzUrl + "/subscriptions/" + id
+	r := ApiGet(url, headers, params)
+	ApiErrorCheck(r, utl.Trace())
+	return r
 }
