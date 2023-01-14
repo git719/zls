@@ -87,14 +87,14 @@ func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedLi
 	return true, nil // Cache is not usable, returning nil
 }
 
-func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap map[string]string) (list []interface{}) {
+func GetObjects(t, filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	// Generic function to get objects of type t whose attributes match on filter.
 	// If filter is the "" empty string return ALL of the objects of this type.
 	switch t {
 	case "d":
-		return GetRoleDefinitions(filter, force, true, z, oMap) // true = verbose, to print progress while getting
+		return GetRoleDefinitions(filter, force, true, z) // true = verbose, print progress while getting
 	case "a":
-		return GetRoleAssignments(filter, force, true, z, oMap) // true = verbose, to print progress while getting
+		return GetRoleAssignments(filter, force, true, z) // true = verbose, to print progress while getting
 	case "s":
 		return GetSubscriptions(filter, force, z)
 	case "m":
@@ -148,125 +148,107 @@ func GetAzObjects(url string, headers aza.MapString, verbose bool) (deltaSet []i
 	return nil, nil
 }
 
-func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap map[string]string) (idNameMap map[string]string) {
-	// Return uuid:name map for given object type t
-	idNameMap = make(map[string]string)
-	allObjects := GetObjects(t, "", false, z, oMap) // false = do NOT force a call to Azure
-	for _, i := range allObjects {
-		x := i.(map[string]interface{})
-		switch t {
-		case "d": // Role definitions
-			if x["name"] != nil {
-				xProp := x["properties"].(map[string]interface{})
-				if xProp["roleName"] != nil {
-					idNameMap[StrVal(x["name"])] = StrVal(xProp["roleName"]) 
-				}
-			}
-		case "s": // Subscriptions
-			if x["subscriptionId"] != nil && x["displayName"] != nil {
-				idNameMap[StrVal(x["subscriptionId"])] = StrVal(x["displayName"])
-			}
-		case "u", "g", "sp", "ap", "ad": // All MS Graph objects use same Id and displayName attributes
-			if x["id"] != nil && x["displayName"] != nil {
-				idNameMap[StrVal(x["id"])] = StrVal(x["displayName"])
-			}
-		}
-	}
-	return idNameMap
-}
-
-func GetObjectMemberOfs(t, id string, z aza.AzaBundle, oMap map[string]string) (list []interface{}) {
-	// Get all group/role objects this object of type 't' with 'id' is a memberof
-	// See https://stackoverflow.com/questions/72186263/how-to-identify-the-assigned-roles-for-a-user-in-ms-graph-api
-	list = nil
-	url := aza.ConstMgUrl  + "/beta/" + oMap[t] + "/" + id + "/transitiveMemberOf"
-	r := ApiGet(url, z.MgHeaders, nil)
-	ApiErrorCheck(r, utl.Trace())
-	if r["value"] != nil {
-		list = r["value"].([]interface{})
-	}
-	return list
-}
-
-func RemoveCacheFile(t string, z aza.AzaBundle, oMap map[string]string) {
-	// Remove cache file for objects of type t, or all of them
+func RemoveCacheFile(t string, z aza.AzaBundle) {
 	switch t {
-	case "t": // Token file is a little special: It doesn't use tenant ID
+	case "t":
 		utl.RemoveFile(filepath.Join(z.ConfDir, z.TokenFile))
-	case "d", "a", "s", "m", "u", "g", "sp", "ap", "ad":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json"))
-		// Types d, a, s, m, & ad do not have deltaLink files, but below won't balk anyway
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + "_deltaLink.json"))
+	case "d":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json"))
+	case "a":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json"))
+	case "s":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_subscriptions.json"))
+	case "m":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json"))
+	case "u":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_users.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_users_deltaLink.json"))
+	case "g":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_groups.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_groups_deltaLink.json"))
+	case "sp":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals_deltaLink.json"))
+	case "ap":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_applications.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_applications_deltaLink.json"))
+	case "ad":
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_directoryRoles.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_directoryRoles_deltaLink.json"))
 	case "all":
-		for _, i := range oMap {
-			utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_" + i + ".json"))
-			utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_" + i + "_deltaLink.json"))
+		// See https://stackoverflow.com/questions/48072236/remove-files-with-wildcard
+		fileList, err := filepath.Glob(filepath.Join(z.ConfDir, z.TenantId + "_*.json"))
+		if err != nil {
+			panic(err)
+		}
+		for _, filePath := range fileList {
+			utl.RemoveFile(filePath)
 		}
 	}
 	os.Exit(0)
 }
 
 func GetObjectFromFile(filePath string) (formatType, t string, obj map[string]interface{}) {
-	// Returns 3 values: File format type, oMap type, and the object itself
+	// Returns 3 values: File format type, single-letter object type, and the object itself
 
 	// Because JSON is essentially a subset of YAML, we have to check JSON first
-	// As an aside, see https://news.ycombinator.com/item?id=31406473
-	objRaw, _ := utl.LoadFileJson(filePath) // Ignore the errors
-	formatType = "JSON"
-	if objRaw == nil {
+	// As an interesting aside regarding YAML & JSON, see https://news.ycombinator.com/item?id=31406473
+	formatType = "JSON" // Pretend it's JSON
+	objRaw, _ := utl.LoadFileJson(filePath) // Ignores the errors
+	if objRaw == nil { // Ok, it's NOT JSON
 		objRaw, _ = utl.LoadFileYaml(filePath) // See if it's YAML, ignoring the error
 		if objRaw == nil {
-			return "", "", nil // It's neither, return null values
+			return "", "", nil // Ok, it's neither, let's return 3 null values
 		}
-		formatType = "YAML"
+		formatType = "YAML" // It is YAML
 	}
-	obj = objRaw.(map[string]interface{})  // Henceforht, assert as single JSON object
+	obj = objRaw.(map[string]interface{})
 
 	// Continue unpacking the object to see what it is
 	xProp, ok := obj["properties"].(map[string]interface{})
-	if !ok {
-		return formatType, "", nil // Assertion failed, also return null values
-	}
+	if !ok { // Valid definition/assignments have a properties attribute
+		return formatType, "", nil // It's not a valid object, return null for type and object
+			}
 	roleName := StrVal(xProp["roleName"]) // Assert and assume it's a definition
 	roleId := StrVal(xProp["roleDefinitionId"]) // assert and assume it's an assignment
 
     if roleName != "" {
-        return formatType, "d", obj // It's a role definition. Type can neatly be used with oMap
+        return formatType, "d", obj // Role definition
     } else if roleId != "" {
-        return formatType, "a", obj // It's a role assignment 
+        return formatType, "a", obj // Role assignment 
     } else {
-        return formatType, "", obj
+        return formatType, "", obj // Unknown
     }
 }
 
-func CompareSpecfile(filePath string, z aza.AzaBundle, oMap map[string]string) {
+func CompareSpecfileToAzure(filePath string, z aza.AzaBundle) {
 	if utl.FileNotExist(filePath) || utl.FileSize(filePath) < 1 {
 		utl.Die("File does not exist, or is zero size\n")
 	}
-    ft, t, x := GetObjectFromFile(filePath)
-	if ft != "JSON" && ft != "YAML" {
+    formatType, t, x := GetObjectFromFile(filePath)
+	if formatType != "JSON" && formatType != "YAML" {
         utl.Die("File is not in JSON nor YAML format\n")
     }
     if t != "d" && t != "a" {
-        utl.Die("This " + ft + " file is not a role definition nor an assignment specfile\n")
+        utl.Die("This " + formatType + " file is not a role definition nor an assignment specfile\n")
     }
 	
     fmt.Printf("==== SPECFILE ============================\n")
-    PrintObject(t, x, z, oMap) // Use generic print function
+    PrintObject(t, x, z) // Use generic print function
     fmt.Printf("==== AZURE ===============================\n")
     if t == "d" {
         y := GetAzRoleDefinition(x, z)
         if y == nil {
             fmt.Printf("Above definition does NOT exist in current Azure tenant\n")
         } else {
-			PrintRoleDefinition(y, z, oMap) // Use specific role def print function
+			PrintRoleDefinition(y, z) // Use specific role def print function
         }
     } else {
         y := GetAzRoleAssignment(x, z)
         if y == nil {
             fmt.Printf("Above assignment does NOT exist in current Azure tenant\n")
         } else {
-			PrintRoleAssignment(y, z, oMap) // Use specific role assgmnt print function
+			PrintRoleAssignment(y, z) // Use specific role assgmnt print function
         }
     }
     os.Exit(0)	

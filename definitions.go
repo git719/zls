@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
+func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle) {
 	// Print role definition object in YAML-like format
 	if x == nil {
 		return
@@ -37,13 +37,13 @@ func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle, oMap map[str
 	} else {
 		fmt.Printf("\n")
 		scopes := xProp["assignableScopes"].([]interface{})
-		subNames := GetIdNameMap("s", "", false, z, oMap) // Get all subscription id/names pairs
 		if len(scopes) > 0 {
+			subNameMap := GetIdMapSubs(z) // Get all subscription id:name pairs
 			for _, i := range scopes {
 				if strings.HasPrefix(i.(string), "/subscriptions") {
 					// Print subscription name as a comment at end of line
 					subId := utl.LastElem(i.(string), "/")
-					fmt.Printf("    - %s # %s\n", StrVal(i), subNames[subId])
+					fmt.Printf("    - %s # %s\n", StrVal(i), subNameMap[subId])
 				} else {
 					fmt.Printf("    - %s\n", StrVal(i))
 				}
@@ -115,10 +115,27 @@ func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle, oMap map[str
 	}
 }
 
-func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle, oMap map[string]string) (list []interface{}) {
-	// Get all roleDefinitions that match on provided filter. An empty "" filter means return all of them.
-	// It always uses local cache if it's within the cache retention period. The force boolean option forces
-	// a call to Azure. The verbose option details the progress. 
+func GetIdMapRoleDefs(z aza.AzaBundle) (nameMap map[string]string) {
+	// Return role definition id:name map
+	nameMap = make(map[string]string)
+	roleDefs := GetRoleDefinitions("", false, false, z) // false = don't force going to Azure, false = quiet
+	// By not forcing an Azure call we're opting for cache speed over id:name map accuracy
+	for _, i := range roleDefs {
+		x := i.(map[string]interface{})
+		if x["name"] != nil {
+			xProp := x["properties"].(map[string]interface{})
+			if xProp["roleName"] != nil {
+				nameMap[StrVal(x["name"])] = StrVal(xProp["roleName"]) 
+			}
+		}
+	}
+	return nameMap
+}
+
+func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle) (list []interface{}) {
+	// Get all roleDefinitions that match on provided filter, empty "" filter grabs all
+	// Defaults to querying local cache if it's within the cache retention period, unless force
+	// boolean option is given to call Azure. The verbose option details the progress. 
 	list = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json")
 	cacheNoGood, list := CheckLocalCache(cacheFile, 604800) // cachePeriod = 1 week in seconds

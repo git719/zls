@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintApp(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
+func PrintApp(x map[string]interface{}, z aza.AzaBundle) {
 	// Print application object in YAML-like format
 	if x == nil {
 		return
@@ -56,9 +56,14 @@ func PrintApp(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string)
 	}
 	ApiErrorCheck(r, utl.Trace())
 
-	// Print all groups/roles it is a member of
-	memberOf := GetObjectMemberOfs("ap", id, z, oMap) // For this App object
-	PrintMemberOfs("ap", memberOf)
+	// Print all groups and roles it is a member of
+	url = aza.ConstMgUrl  + "/v1.0/applications/" + id + "/transitiveMemberOf"
+	r = ApiGet(url, z.MgHeaders, nil)
+	ApiErrorCheck(r, utl.Trace())
+	if r != nil && r["value"] != nil {
+		memberOf := r["value"].([]interface{})
+		PrintMemberOfs("g", memberOf)
+	}
 
 	// Print API permissions
 	// Just look under this object's 'requiredResourceAccess' attribute
@@ -160,6 +165,20 @@ func AppsCountAzure(z aza.AzaBundle) (int64) {
 		return r["value"].(int64) // Expected result is a single int64 value for the count
 	}
 	return 0	
+}
+
+func GetIdMapApps(z aza.AzaBundle) (nameMap map[string]string) {
+	// Return applications id:name map
+	nameMap = make(map[string]string)
+	apps := GetApps("", false, z) // false = don't force a call to Azure
+	// By not forcing an Azure call we're opting for cache speed over id:name map accuracy
+	for _, i := range apps {
+		x := i.(map[string]interface{})
+		if x["id"] != nil && x["displayName"] != nil {
+			nameMap[StrVal(x["id"])] = StrVal(x["displayName"])
+		}
+	}
+	return nameMap
 }
 
 func GetApps(filter string, force bool, z aza.AzaBundle) (list []interface{}) {

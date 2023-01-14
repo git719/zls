@@ -11,7 +11,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintSp(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
+func PrintSp(x map[string]interface{}, z aza.AzaBundle) {
 	// Print service principal object in YAML-like format
 	if x == nil {
 		return
@@ -92,9 +92,14 @@ func PrintSp(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) 
 		}
 	}
 
-	// Print groups & roles it is a member of
-	memberOf := GetObjectMemberOfs("sp", id, z, oMap) // For this SP object
-	PrintMemberOfs("sp", memberOf)
+	// Print all groups and roles it is a member of
+	url = aza.ConstMgUrl  + "/v1.0/servicePrincipals/" + id + "/transitiveMemberOf"
+	r = ApiGet(url, z.MgHeaders, nil)
+	ApiErrorCheck(r, utl.Trace())
+	if r != nil && r["value"] != nil {
+		memberOf := r["value"].([]interface{})
+		PrintMemberOfs("g", memberOf)
+	}
 
 	// Print API permissions 
 	url = aza.ConstMgUrl + "/v1.0/servicePrincipals/" + id + "/oauth2PermissionGrants"
@@ -178,6 +183,20 @@ func SpsCountAzure(z aza.AzaBundle) (native, microsoft int64) {
 	microsoft = all - native
 
 	return native, microsoft
+}
+
+func GetIdMapSps(z aza.AzaBundle) (nameMap map[string]string) {
+	// Return service principals id:name map
+	nameMap = make(map[string]string)
+	sps := GetSps("", false, z) // false = don't force a call to Azure
+	// By not forcing an Azure call we're opting for cache speed over id:name map accuracy
+	for _, i := range sps {
+		x := i.(map[string]interface{})
+		if x["id"] != nil && x["displayName"] != nil {
+			nameMap[StrVal(x["id"])] = StrVal(x["displayName"])
+		}
+	}
+	return nameMap
 }
 
 func GetSps(filter string, force bool, z aza.AzaBundle) (list []interface{}) {

@@ -53,6 +53,20 @@ func GetAzSubscriptionsIds(z aza.AzaBundle) (scopes []string) {
 	return scopes
 }
 
+func GetIdMapSubs(z aza.AzaBundle) (nameMap map[string]string) {
+	// Return subscription id:name map
+	nameMap = make(map[string]string)
+	roleDefs := GetSubscriptions("", false, z) // false = don't force a call to Azure
+	// By not forcing an Azure call we're opting for cache speed over id:name map accuracy
+	for _, i := range roleDefs {
+		x := i.(map[string]interface{})
+		if x["subscriptionId"] != nil && x["displayName"] != nil {
+			nameMap[StrVal(x["subscriptionId"])] = StrVal(x["displayName"])
+		}
+	}
+	return nameMap
+}
+
 func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	// Get all subscriptions that match on provided filter. An empty "" filter means return
 	// all subscription objects. It always uses local cache if it's within the cache retention

@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintRoleAssignment(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
+func PrintRoleAssignment(x map[string]interface{}, z aza.AzaBundle) {
 	// Print role definition object in YAML-like
 	if x == nil {
 		return
@@ -26,35 +26,35 @@ func PrintRoleAssignment(x map[string]interface{}, z aza.AzaBundle, oMap map[str
 	}
 	xProp := x["properties"].(map[string]interface{})
 
-	roleMap := GetIdNameMap("d", "", false, z, oMap) // Get all role id/names pairs
+	roleNameMap := GetIdMapRoleDefs(z) // Get all role definition id:name pairs
 	roleId := utl.LastElem(StrVal(xProp["roleDefinitionId"]), "/")
-	fmt.Printf("  %-17s %s  # roleName = \"%s\"\n", "roleDefinitionId:", roleId, roleMap[roleId])
+	fmt.Printf("  %-17s %s  # roleName = \"%s\"\n", "roleDefinitionId:", roleId, roleNameMap[roleId])
 
-	var nameMap map[string]string
+	var principalNameMap map[string]string = nil
 	pType := StrVal(xProp["principalType"])
 	switch pType {
-	case "User":
-		nameMap = GetIdNameMap("u", "", false, z, oMap) // Get all user id/names pairs
 	case "Group":
-		nameMap = GetIdNameMap("g", "", false, z, oMap) // Get all group id/names pairs
+		principalNameMap = GetIdMapGroups(z) // Get all users id:name pairs
+	case "User":
+		principalNameMap = GetIdMapUsers(z) // Get all users id:name pairs
 	case "ServicePrincipal":
-		nameMap = GetIdNameMap("sp", "", false, z, oMap) // Get all SP id/names pairs
+		principalNameMap = GetIdMapSps(z) // Get all SPs id:name pairs
 	default:
 		pType = "not provided"
 	}
-	pId := StrVal(xProp["principalId"])
-	pName := nameMap[StrVal(xProp["principalId"])]
+	principalId := StrVal(xProp["principalId"])
+	pName := principalNameMap[principalId]
 	if pName == "" {
 		pName = "???"
 	}
-	fmt.Printf("  %-17s %s  # principaltype = %s, displayName = \"%s\"\n", "principalId:", pId, pType, pName)
+	fmt.Printf("  %-17s %s  # principaltype = %s, displayName = \"%s\"\n", "principalId:", principalId, pType, pName)
 
-	subMap := GetIdNameMap("s", "", false, z, oMap) // Get all subscriptions id/names pairs
+	subNameMap := GetIdMapSubs(z) // Get all subscription id:name pairs
 	scope := StrVal(xProp["scope"])
 	if scope == "" { scope = StrVal(xProp["Scope"]) }  // Account for possibly capitalized key
 	if strings.HasPrefix(scope, "/subscriptions") {
 		split := strings.Split(scope, "/")
-		subName := subMap[split[2]]
+		subName := subNameMap[split[2]]
 		fmt.Printf("  %-17s %s  # Sub = %s\n", "scope:", scope, subName)
 	} else if scope == "/" {
 		fmt.Printf("  %-17s %s  # Entire tenant\n", "scope:", scope)
@@ -63,29 +63,29 @@ func PrintRoleAssignment(x map[string]interface{}, z aza.AzaBundle, oMap map[str
 	}
 }
 
-func PrintRoleAssignmentReport(z aza.AzaBundle, oMap map[string]string)  {
+func PrintRoleAssignmentReport(z aza.AzaBundle)  {
 	// Print a human-readable report of all role assignments
-	roleMap := GetIdNameMap("d", "", false, z, oMap) // Get all role id/names pairs
-	subMap := GetIdNameMap("s", "", false, z, oMap) // Get all subscriptions id/names pairs
-	userMap := GetIdNameMap("u", "", false, z, oMap) // Get all user id/names pairs
-	groupMap := GetIdNameMap("g", "", false, z, oMap) // Get all group id/names pairs
-	spMap := GetIdNameMap("sp", "", false, z, oMap) // Get all SP id/names pairs
+	roleNameMap := GetIdMapRoleDefs(z) // Get all role definition id:name pairs
+	subNameMap := GetIdMapSubs(z) // Get all subscription id:name pairs
+	groupNameMap := GetIdMapGroups(z) // Get all users id:name pairs
+	userNameMap := GetIdMapUsers(z) // Get all users id:name pairs
+	spNameMap := GetIdMapSps(z) // Get all SPs id:name pairs
 	
 	assignments := GetAzRoleAssignments(false, z)
 	for _, i := range assignments {
 		x := i.(map[string]interface{})
 		xProp := x["properties"].(map[string]interface{})
 		Rid := utl.LastElem(StrVal(xProp["roleDefinitionId"]), "/")
-		Pid := StrVal(xProp["principalId"])
+		principalId := StrVal(xProp["principalId"])
 		Type := StrVal(xProp["principalType"])
 		pName := "ID-Not-Found"
 		switch Type {
-		case "User":
-			pName = userMap[Pid]
-		case "ServicePrincipal":
-			pName = spMap[Pid]
 		case "Group":
-			pName = groupMap[Pid]
+			pName = groupNameMap[principalId]
+		case "User":
+			pName = userNameMap[principalId]
+		case "ServicePrincipal":
+			pName = spNameMap[principalId]
 		}
 
 		Scope := StrVal(xProp["scope"])
@@ -93,11 +93,11 @@ func PrintRoleAssignmentReport(z aza.AzaBundle, oMap map[string]string)  {
 			// Replace sub ID to name
 			split := strings.Split(Scope, "/")
 			// Map subscription Id to its name + the rest of the resource path
-			Scope = subMap[split[2]] + " " + strings.Join(split[3:], "/")
+			Scope = subNameMap[split[2]] + " " + strings.Join(split[3:], "/")
 		}
 		Scope = strings.TrimSpace(Scope)
 
-		fmt.Printf("\"%s\",\"%s\",\"%s\",\"%s\"\n", roleMap[Rid], pName, Type, Scope)
+		fmt.Printf("\"%s\",\"%s\",\"%s\",\"%s\"\n", roleNameMap[Rid], pName, Type, Scope)
 	}
 }
 
@@ -119,7 +119,7 @@ func RoleAssignmentsCountAzure(z aza.AzaBundle) (int64) {
 	return int64(len(list))
 }
 
-func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMap map[string]string) (list []interface{}) {
+func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle) (list []interface{}) {
 	// Get all roleAssignments that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The
 	// force boolean option will force a call to Azure.
@@ -136,13 +136,13 @@ func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMa
 		return list
 	}
 	var matchingList []interface{} = nil
-	roleMap := GetIdNameMap("d", "", false, z, oMap) // Get all role definition id/names pairs (used later below)
+	roleNameMap := GetIdMapRoleDefs(z) // Get all role definition id:name pairs
 	for _, i := range list { // Parse every object
 		x := i.(map[string]interface{})
 		// Match against relevant roleDefinitions attributes
 		xProp := x["properties"].(map[string]interface{})
 		rdId := StrVal(xProp["roleDefinitionId"])
-		roleName := roleMap[utl.LastElem(rdId, "/")]
+		roleName := roleNameMap[utl.LastElem(rdId, "/")]
 		principalId := StrVal(xProp["principalId"])
 		description := StrVal(xProp["description"])
 		principalType := StrVal(xProp["principalType"])

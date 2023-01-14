@@ -43,7 +43,7 @@ func PrintUsage() {
 	os.Exit(0)
 }
 
-func SetupVariables(z *aza.AzaBundle, oMap *map[string]string) (aza.AzaBundle, map[string]string) {
+func SetupVariables(z *aza.AzaBundle) (aza.AzaBundle) {
 	// Set up variable object struct
 	*z = aza.AzaBundle{
 		ConfDir:      "",
@@ -60,27 +60,14 @@ func SetupVariables(z *aza.AzaBundle, oMap *map[string]string) (aza.AzaBundle, m
 		AzToken:      "",
 		AzHeaders:    aza.MapString{},  
 	}
-
-	// Set up the configuration directory
+	// Set up configuration directory
 	z.ConfDir = filepath.Join(os.Getenv("HOME"), "." + prgname)
 	if utl.FileNotExist(z.ConfDir) {
 		if err := os.Mkdir(z.ConfDir, 0700); err != nil {
 			panic(err.Error())
 		}
 	}
-
-	*oMap = map[string]string{ // Helps generesize many of the functions
-		"d":  "roleDefinitions",
-		"a":  "roleAssignments",
-		"s":  "subscriptions",
-		"m":  "managementGroups",
-		"u":  "users",
-		"g":  "groups",
-		"sp": "servicePrincipals",
-		"ap": "applications",
-		"ad": "directoryRoles",
-	}	
-	return *z, *oMap
+	return *z
 }
 
 func main() {
@@ -91,8 +78,7 @@ func main() {
 	}
 
 	var z aza.AzaBundle
-	var oMap map[string]string
-	z, oMap = SetupVariables(&z, &oMap)
+	z = SetupVariables(&z)
 
 	switch numberOfArguments {
 	case 1: // Process 1-argument requests
@@ -107,22 +93,22 @@ func main() {
 		z = aza.SetupApiTokens(&z) // The remaining 1-arg requests DO required API tokens to be set up
 		switch arg1 {
 		case "-xx":
-			RemoveCacheFile("all", z, oMap)
+			RemoveCacheFile("all", z)
 		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-adx":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
-			RemoveCacheFile(t, z, oMap)
+			RemoveCacheFile(t, z)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1]
-			all := GetObjects(t, "", false, z, oMap) // false means do not force Azure call, ok to use cache
+			all := GetObjects(t, "", false, z) // false means do not force Azure call, ok to use cache
 			utl.PrintJson(all) // Print entire set in JSON
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
 			t := arg1[1:]
-			all := GetObjects(t, "", false, z, oMap)
+			all := GetObjects(t, "", false, z)
 			for _, i := range all { // Print entire set tersely
 				PrintTersely(t, i)
 			}
 		case "-ar":
-			PrintRoleAssignmentReport(z, oMap)
+			PrintRoleAssignmentReport(z)
 		case "-mt":
 			PrintMgTree(z)
 		case "-pags":
@@ -139,14 +125,14 @@ func main() {
 		z = aza.SetupApiTokens(&z)
 		switch arg1 {
 		case "-vs":
-			CompareSpecfile(arg2, z, oMap)
+			CompareSpecfileToAzure(arg2, z)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
 			if utl.ValidUuid(arg2) { // Search/print single object, if it's valid UUID
 				x := GetObjectById(t, arg2, z)
 				utl.PrintJson(x)
 			} else {
-				matchingObjects := GetObjects(t, arg2, false, z, oMap)
+				matchingObjects := GetObjects(t, arg2, false, z)
 				if len(matchingObjects) == 1 {
 					utl.PrintJson(matchingObjects[0]) // Print single matching object in JSON
 				} else if len(matchingObjects) > 1 {
@@ -157,12 +143,12 @@ func main() {
 			t := arg1[1:] // Single out the object type
 			if utl.ValidUuid(arg2) { // Search/print single object, if it's valid UUID
 				x := GetObjectById(t, arg2, z)
-				PrintObject(t, x, z, oMap) // Print in YAML-like
+				PrintObject(t, x, z)
 			} else {
-				matchingObjects := GetObjects(t, arg2, false, z, oMap)
+				matchingObjects := GetObjects(t, arg2, false, z)
 				if len(matchingObjects) == 1 {
 					x := matchingObjects[0].(map[string]interface{})
-					PrintObject(t, x, z, oMap) // Print single matching object in YAML-like
+					PrintObject(t, x, z)
 				} else if len(matchingObjects) > 1 {
 					for _, i := range matchingObjects { // Print all matching object teresely
 						x := i.(map[string]interface{})

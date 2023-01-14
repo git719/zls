@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintGroup(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
+func PrintGroup(x map[string]interface{}, z aza.AzaBundle) {
 	// Print group object in YAML-like format
 	if x == nil {
 		return
@@ -43,16 +43,22 @@ func PrintGroup(x map[string]interface{}, z aza.AzaBundle, oMap map[string]strin
 		}
 	}
 
-	// Print groups & roles this group is a member of
-	memberOf := GetObjectMemberOfs("g", id, z, oMap) // For this Group object
-	PrintMemberOfs("g", memberOf)
+	// Print all groups and roles it is a member of
+	url = aza.ConstMgUrl  + "/v1.0/groups/" + id + "/transitiveMemberOf"
+	r = ApiGet(url, z.MgHeaders, nil)
+	ApiErrorCheck(r, utl.Trace())
+	if r != nil && r["value"] != nil {
+		memberOf := r["value"].([]interface{})
+		PrintMemberOfs("g", memberOf)
+	}
+
 
 	// Print members of this group
 	url = aza.ConstMgUrl + "/beta/groups/" + id + "/members"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
-	if r["value"] != nil {
-		members := r["value"].([]interface{}) // Assert as JSON array type
+	if r != nil && r["value"] != nil {
+		members := r["value"].([]interface{})
 		if len(members) > 0 {
 			fmt.Printf("members:\n")
 			for _, i := range members {
@@ -97,6 +103,20 @@ func GroupsCountAzure(z aza.AzaBundle) (int64) {
 		return r["value"].(int64) // Expected result is a single int64 value for the count
 	}
 	return 0	
+}
+
+func GetIdMapGroups(z aza.AzaBundle) (nameMap map[string]string) {
+	// Return groups id:name map
+	nameMap = make(map[string]string)
+	groups := GetGroups("", false, z) // false = don't force a call to Azure
+	// By not forcing an Azure call we're opting for cache speed over id:name map accuracy
+	for _, i := range groups {
+		x := i.(map[string]interface{})
+		if x["id"] != nil && x["displayName"] != nil {
+			nameMap[StrVal(x["id"])] = StrVal(x["displayName"])
+		}
+	}
+	return nameMap
 }
 
 func GetGroups(filter string, force bool, z aza.AzaBundle) (list []interface{}) {

@@ -72,32 +72,31 @@ func PrintTersely(t string, object interface{}) {
 	}
 }
 
-func PrintObject(t string, x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
+func PrintObject(t string, x map[string]interface{}, z aza.AzaBundle) {
 	switch t {
 	case "d":
-		PrintRoleDefinition(x, z, oMap)
+		PrintRoleDefinition(x, z)
 	case "a":
-		PrintRoleAssignment(x, z, oMap)
+		PrintRoleAssignment(x, z)
 	case "s":
 		PrintSubscription(x)
 	case "m":
 		PrintMgGroup(x)
 	case "u":
-		PrintUser(x, z, oMap)
+		PrintUser(x, z)
 	case "g":
-		PrintGroup(x, z, oMap)
+		PrintGroup(x, z)
 	case "sp":
-		PrintSp(x, z, oMap)
+		PrintSp(x, z)
 	case "ap":
-		PrintApp(x, z, oMap)
+		PrintApp(x, z)
 	case "ad":
 		PrintAdRole(x, z)
 	}
 }
 
 func PrintMemberOfs(t string, memberOf []interface{}) {
-	// Print all memberof entries
-	// Object type t is for future use
+	// Print all memberOf entries
 	if len(memberOf) > 0 {
 		fmt.Printf("memberof:\n")
 		for _, i := range memberOf {
