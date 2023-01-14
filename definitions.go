@@ -120,9 +120,8 @@ func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle, oMa
 	// It always uses local cache if it's within the cache retention period. The force boolean option forces
 	// a call to Azure. The verbose option details the progress. 
 	list = nil
-	cachePeriod := int64(3660 * 24 * 7) // 1 week cache retention period 
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json")
-	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
+	cacheNoGood, list := CheckLocalCache(cacheFile, 604800) // cachePeriod = 1 week in seconds
 	if cacheNoGood || force {
 		GetAzRoleDefinitions(verbose, z) // Get the entire set from Azure
 	}

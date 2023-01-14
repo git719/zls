@@ -162,12 +162,12 @@ func AppsCountAzure(z aza.AzaBundle) (int64) {
 	return 0	
 }
 
-func GetApps(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
+func GetApps(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	// Get all Azure AD applications whose searchAttributes match on 'filter'. An empty "" filter returns all.
-	// Uses local cache if it's less than 1hr old. The 'force' option forces calling Azure query.
+	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_applications.json")
-	cacheNoGood, list := CheckLocalCache(cacheFile, 3660) // cachePeriod = 1hr = 3600sec
+	cacheNoGood, list := CheckLocalCache(cacheFile, 86400) // cachePeriod = 1 day in seconds
 	if cacheNoGood || force {
 		list = GetAzApps(cacheFile, z.MgHeaders, true) // Get all from Azure and show progress (verbose = true)
 	}
@@ -176,7 +176,7 @@ func GetApps(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	if filter == "" {
 		return list
 	}
-	var matchingList JsonArray = nil
+	var matchingList []interface{} = nil
 	searchAttributes := []string{"id", "displayName", "appId"}
 	var ids []string // Keep track of each unique objects to eliminate repeats
 	for _, i := range list {
@@ -196,6 +196,7 @@ func GetAzApps(cacheFile string, headers aza.MapString, verbose bool) (list []in
 	// Get all Azure AD service principal in current tenant AND save them to local cache file. Show progress if verbose = true.
 	
 	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
+	var deltaLinkMap map[string]string = nil
 	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
 	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
 	baseUrl := aza.ConstMgUrl + "/v1.0/applications"
@@ -205,17 +206,22 @@ func GetAzApps(cacheFile string, headers aza.MapString, verbose bool) (list []in
 	headers["Prefer"] = "return=minimal" // This tells API to focus only on specific 'select' attributes
 
 	// But first, double-check the base set again to avoid running a delta query on an empty set
-	listIsEmpty, list := CheckLocalCache(cacheFile, 3600) // cachePeriod = 1hr = 3600sec
+	listIsEmpty, list := CheckLocalCache(cacheFile, 86400) // cachePeriod = 1 day in seconds
 	if  utl.FileUsable(deltaLinkFile) && deltaAge < (3660 * 24 * 27) && listIsEmpty == false {
 		// Note that deltaLink file age has to be within 30 days (we do 27)
 		tmpVal, _ := utl.LoadFileJson(deltaLinkFile)
-		deltaLinkMap := tmpVal.(map[string]interface{})
+		deltaLinkMap = tmpVal.(map[string]string)
 		url = StrVal(deltaLinkMap["@odata.deltaLink"]) // Base URL is now the cached Delta Link
 	}
 
-	// Run generic looper function to retrieve all objects from Azure
-	list = GetAzObjectsLooper(url, cacheFile, headers, verbose)
+    // Now go get azure objects using the updated URL (either a full query or a deltaLink query)
+	var deltaSet []interface{} = nil
+	deltaSet, deltaLinkMap = GetAzObjects(url, headers, verbose) // Run generic deltaSet retriever function
 
+	// Save new deltaLink for future call, and merge newly acquired delta set with existing list
+	utl.SaveFileJson(deltaLinkMap, deltaLinkFile)
+	list = NormalizeCache(list, deltaSet) // Run our MERGE LOGIC with new delta set
+	utl.SaveFileJson(list, cacheFile) // Update the local cache
 	return list
 }
 

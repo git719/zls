@@ -42,12 +42,14 @@ func SelectObject(id string, objSet JsonArray) (x JsonObject) {
 	for _, obj := range objSet {
 		x = obj.(map[string]interface{})
 		objId := StrVal(x["id"])
-		if id == objId { return x }
+		if id == objId {
+			return x
+		}
 	}
 	return nil
 }
 
-func NormalizeCache(baseSet, deltaSet JsonArray) (oList JsonArray) {
+func NormalizeCache(baseSet, deltaSet JsonArray) (list JsonArray) {
 	// Build JSON mergeSet from deltaSet, and build list of deleted IDs
 	var deletedIds []string
 	var uniqueIds []string
@@ -68,13 +70,15 @@ func NormalizeCache(baseSet, deltaSet JsonArray) (oList JsonArray) {
 	}
 
 	// Remove recently deleted entries (deletedIs) from baseSet
-	oList = nil
+	list = nil
 	var baseIds []string = nil // Track all the IDs in the base cache set
 	for _, i := range baseSet {
 		x := i.(map[string]interface{})
 		id := StrVal(x["id"])
-		if utl.ItemInList(id, deletedIds) { continue }
-		oList = append(oList, x)
+		if utl.ItemInList(id, deletedIds) {
+			continue
+		}
+		list = append(list, x)
 		baseIds = append(baseIds, id)
 	}
 
@@ -89,25 +93,25 @@ func NormalizeCache(baseSet, deltaSet JsonArray) (oList JsonArray) {
 			duplicateIds = append(duplicateIds, id)
 			continue // Skip duplicates (these are updates)
 		}
-		oList = append(oList, x) // Merge all others (these are new entries)
+		list = append(list, x) // Merge all others (these are new entries)
 	}
 
 	// Merge updated entries in deltaSet into baseSet
-	oList2 := oList
-	oList = nil
-	for _, obj := range oList2 {
+	list2 := list
+	list = nil
+	for _, obj := range list2 {
 		x := obj.(map[string]interface{})
 		id := StrVal(x["id"])
 		if !utl.ItemInList(id, duplicateIds) {
 			// If this object is not a duplicate, add it to our growing list
-			oList = append(oList, x)
+			list = append(list, x)
 		} else {
 			// Merge object updates, then add it to our growing list
 			y := SelectObject(id, duplicates)
 			x = MergeObjects(x, y)
-			oList = append(oList, x)
+			list = append(list, x)
 		}
 	}
 
-	return oList
+	return list
 }

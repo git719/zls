@@ -77,11 +77,10 @@ func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap map[string]s
 	return nil
 }
 
-func GetAzObjectsLooper(url, cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
-	// Generic Azure object retriever function
-	// This function implements the pattern described at https://docs.microsoft.com/en-us/graph/delta-query-overview
-	
-	var deltaSet JsonArray = nil // Assume zero entries have been updated
+func GetAzObjects(url string, headers aza.MapString, verbose bool) (deltaSet []interface{}, deltaLinkMap map[string]string) {
+	// Generic Azure object deltaSet retriever function. Returns the set of changed or new items,
+	// and a deltaLink for running the next future Azure query. Implements the pattern described at
+	// https://docs.microsoft.com/en-us/graph/delta-query-overview
 	calls := 1 // Track number of API calls
 	r := ApiGet(url, headers, nil)
 	ApiErrorCheck(r, utl.Trace())
@@ -99,13 +98,9 @@ func GetAzObjectsLooper(url, cacheFile string, headers aza.MapString, verbose bo
 			fmt.Printf("%s(API calls = %d) %d objects in set %d", rUp, calls, len(thisBatch), calls)
 		}
 		if r["@odata.deltaLink"] != nil {
-			// BREAK infinite for-loop when deltaLink appears
-			deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
-			deltaLinkMap := JsonObject{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
-			utl.SaveFileJson(deltaLinkMap, deltaLinkFile) // Save new deltaLink for future call
-			list = NormalizeCache(list, deltaSet) // New objects returned, run our MERGE LOGIC
-			utl.SaveFileJson(list, cacheFile) // Update the local cache
-			break
+			// BREAK infinite for-loop when deltaLink appears, meaning there are no more entries to retrieve
+			deltaLinkMap := map[string]string{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
+			return deltaSet, deltaLinkMap
 		}
 		r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil)  // Get next batch
 		ApiErrorCheck(r, utl.Trace())
@@ -114,7 +109,7 @@ func GetAzObjectsLooper(url, cacheFile string, headers aza.MapString, verbose bo
 	if verbose {
 		fmt.Printf("\n")
 	}
-	return list
+	return nil, nil
 }
 
 func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap map[string]string) (idNameMap map[string]string) {

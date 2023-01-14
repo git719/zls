@@ -23,11 +23,10 @@ func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list JsonArra
 	// Get all subscriptions that match on provided filter. An empty "" filter means return
 	// all subscription objects. It always uses local cache if it's within the cache retention
 	// period, else it gets them from Azure. Also gets them from Azure if force is specified.
-	// TODO: Make this cache retention period a configurable variable.
+	// TODO: Make cachePeriod a configurable variable
 	list = nil
-	cachePeriod := int64(3660 * 24 * 1) // 1 day cache retention period 
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_subscriptions.json")
-	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
+	cacheNoGood, list := CheckLocalCache(cacheFile, 604800) // cachePeriod = 1 week in seconds
 	if cacheNoGood || force {
 		list = GetAzSubscriptions(z) // Get the entire set from Azure
 	}

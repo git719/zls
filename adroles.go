@@ -92,10 +92,10 @@ func AdRolesCountAzure(z aza.AzaBundle) (int64) {
 
 func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	// Get all Azure AD role definitions whose searchAttributes match on 'filter'. An empty "" filter returns all.
-	// Uses local cache if it's less than 1hr old. The 'force' option forces calling Azure query.
+	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_directoryRoles.json")
-	cacheNoGood, list := CheckLocalCache(cacheFile, 3660) // cachePeriod = 1hr = 3600sec
+	cacheNoGood, list := CheckLocalCache(cacheFile, 86400) // cachePeriod = 1 day in seconds
 	if cacheNoGood || force {
 		list = GetAzAdRoles(cacheFile, z.MgHeaders, true) // Get all from Azure and show progress (verbose = true)
 	}

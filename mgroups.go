@@ -52,9 +52,8 @@ func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	// all of them. It always uses local cache if it's within the cache retention period. The force boolean
 	// option will force a call to Azure.
 	list = nil
-	cachePeriod := int64(3660 * 24 * 1) // 1 day cache retention period 
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json")
-	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
+	cacheNoGood, list := CheckLocalCache(cacheFile, 604800) // cachePeriod = 1 week in seconds
 	if cacheNoGood || force {
 		list = GetAzMgGroups(z) // Get the entire set from Azure
 	}

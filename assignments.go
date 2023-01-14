@@ -107,9 +107,8 @@ func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMa
 	// force boolean option will force a call to Azure.
 	// See https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-rest
 	list = nil
-	cachePeriod := int64(3660 * 24 * 7) // 1 week cache retention period 
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json")
-	cacheNoGood, list := CheckLocalCache(cacheFile, cachePeriod)
+	cacheNoGood, list := CheckLocalCache(cacheFile, 604800) // cachePeriod = 1 week in seconds
 	if cacheNoGood || force {
 		list = GetAzRoleAssignments(verbose, z) // Get the entire set from Azure
 	}
