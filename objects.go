@@ -17,7 +17,7 @@ func MergeMaps(m1, m2 map[string]string) (result map[string]string) {
 	return result
 }
 
-func MergeObjects(x, y JsonObject) (obj JsonObject) {
+func MergeObjects(x, y map[string]interface{}) (obj map[string]interface{}) {
 	// Merge JSON object y into x
 	// NOTES:
 	// 1. Non-recursive, only works attributes at first level
@@ -37,7 +37,7 @@ func MergeObjects(x, y JsonObject) (obj JsonObject) {
 	return obj
 }
 
-func SelectObject(id string, objSet JsonArray) (x JsonObject) {
+func SelectObject(id string, objSet []interface{}) (x map[string]interface{}) {
 	// Select JSON object with given ID from slice
 	for _, obj := range objSet {
 		x = obj.(map[string]interface{})
@@ -49,11 +49,11 @@ func SelectObject(id string, objSet JsonArray) (x JsonObject) {
 	return nil
 }
 
-func NormalizeCache(baseSet, deltaSet JsonArray) (list JsonArray) {
+func NormalizeCache(baseSet, deltaSet []interface{}) (list []interface{}) {
 	// Build JSON mergeSet from deltaSet, and build list of deleted IDs
 	var deletedIds []string
 	var uniqueIds []string
-	var mergeSet JsonArray = nil
+	var mergeSet []interface{} = nil
 	for _, i := range deltaSet {
 		x := i.(map[string]interface{})
 		id := StrVal(x["id"])
@@ -83,7 +83,7 @@ func NormalizeCache(baseSet, deltaSet JsonArray) (list JsonArray) {
 	}
 
 	// Merge new entries in deltaSet into baseSet
-	var duplicates JsonArray = nil
+	var duplicates []interface{} = nil
 	var duplicateIds []string = nil
 	for _, obj := range mergeSet {
 		x := obj.(map[string]interface{})

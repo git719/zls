@@ -16,9 +16,6 @@ const (
 	rUp     = "\x1B[2K\r" // See https://stackoverflow.com/questions/1508490/erase-the-current-printed-console-line
 )
 
-type JsonArray   []interface{} // This and below for clearer JSON handling. See https://eager.io/blog/go-and-json/
-type JsonObject  map[string]interface{}
-
 func PrintUsage() {
 	fmt.Printf(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
 		"    -vs SPECFILE         Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +

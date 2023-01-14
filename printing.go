@@ -77,7 +77,7 @@ func PrintTersely(t string, object interface{}) {
 	}
 }
 
-func PrintObject(t string, x JsonObject, z aza.AzaBundle, oMap map[string]string) {
+func PrintObject(t string, x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
 	switch t {
 	case "d":
 		PrintRoleDefinition(x, z, oMap)
@@ -100,7 +100,7 @@ func PrintObject(t string, x JsonObject, z aza.AzaBundle, oMap map[string]string
 	}
 }
 
-func PrintMemberOfs(t string, memberOf JsonArray) {
+func PrintMemberOfs(t string, memberOf []interface{}) {
 	// Print all memberof entries
 	// Object type t is for future use
 	if len(memberOf) > 0 {

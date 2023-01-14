@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintRoleAssignment(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
+func PrintRoleAssignment(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
 	// Print role definition object in YAML-like
 	if x == nil {
 		return
@@ -101,7 +101,7 @@ func PrintRoleAssignmentReport(z aza.AzaBundle, oMap map[string]string)  {
 	}
 }
 
-func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
+func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMap map[string]string) (list []interface{}) {
 	// Get all roleAssignments that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The
 	// force boolean option will force a call to Azure.
@@ -139,35 +139,57 @@ func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMa
 	return matchingList
 }
 
-func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list JsonArray) {
+func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
 	// Get ALL roleAssignments in current Azure tenant AND save them to local cache file
 	// Option to be verbose (true) or quiet (false), since it can take a while. 
+	// See https://learn.microsoft.com/en-us/rest/api/authorization/role-assignments/list-for-subscription
+    // 1st, we look for all tenant-level role assignments
 	list = nil // We have to zero it out
-	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments 
-	var uuids []string // Keep track of each unique objects to eliminate inherited repeats
-	calls := 1 // Track number of API calls below
+	var assignmentIds []string // Keep track of each unique object to eliminate inherited repeats
+	k := 1 // Track number of API calls to provide progress
 	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
-	for _, scope := range scopes {
-		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
-		r := ApiGet(url, z.AzHeaders, params)
-		ApiErrorCheck(r, utl.Trace())
-		if r["value"] != nil {
-			assignments := r["value"].([]interface{})
-			if verbose {
-				// Using global var rUp to overwrite last line. Defer newline until done
-				fmt.Printf("%s(API calls = %d) %d assignments in set %d", rUp, calls, len(assignments), calls)
-			}
-			for _, i := range assignments {
-				x := i.(map[string]interface{})
-				uuid := StrVal(x["name"])  // NOTE that 'name' key is the role assignment Object Id
-				if !utl.ItemInList(uuid, uuids) {
-					// Role assignments DO repeat! Add to growing list ONLY if it's NOT in it already
-					list = append(list, x)
-					uuids = append(uuids, uuid)
-				}
-			}
+	params["$filter"] = "atScope()" // Needed for this scope only
+	url := aza.ConstAzUrl + "/providers/Microsoft.Authorization/roleAssignments"
+	r := ApiGet(url, z.AzHeaders, params)
+	ApiErrorCheck(r, utl.Trace())
+	if r != nil && r["value"] != nil {
+		tenantLevelAssignments := r["value"].([]interface{})
+		for _, i := range tenantLevelAssignments {
+			x := i.(map[string]interface{})
+			// Append to growing list, keeping track of all assignmentIds
+			list = append(list, x)
+			assignmentIds = append(assignmentIds, StrVal(x["name"])) // Note, name is the object UUID
 		}
-		calls++
+		if verbose { // Using global var rUp to overwrite last line. Defer newline until done
+			fmt.Printf("%s(API calls = %d) %d assignment in this set", rUp, k, len(tenantLevelAssignments))
+		}
+		k++
+	}
+	// 2nd, we look under subscription-level role assignments 
+	subscriptionScopes := GetAzSubscriptionsIds(z)
+	delete(params, "$filter") // Removing, so we can pull all assignments under each subscription
+	for _, scope := range subscriptionScopes {
+		url = aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
+		r = ApiGet(url, z.AzHeaders, params)
+		ApiErrorCheck(r, utl.Trace())
+		if r != nil && r["value"] != nil {
+			assignmentsInThisSubscription := r["value"].([]interface{})
+			u := 0 // Count assignments in this subscription
+			for _, i := range assignmentsInThisSubscription {
+				x := i.(map[string]interface{})
+				id := StrVal(x["name"])
+				if utl.ItemInList(id, assignmentIds) {
+					continue // Skip repeats
+				}
+				list = append(list, x) // This one is unique, append to growing list 
+				assignmentIds = append(assignmentIds, id) // Keep track of the Id
+				u++
+			}
+			if verbose {
+				fmt.Printf("%s(API calls = %d) %d assignment in this set", rUp, k, u)
+			}
+			k++
+		}
 	}
 	if verbose {
 		fmt.Printf("\n") // Use newline now
@@ -177,7 +199,47 @@ func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list JsonArray) {
 	return list
 }
 
-func GetAzRoleAssignment(x JsonObject, z aza.AzaBundle) (y JsonObject) {
+// func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
+// 	// Get ALL roleAssignments in current Azure tenant AND save them to local cache file
+// 	// Option to be verbose (true) or quiet (false), since it can take a while. 
+// 	list = nil // We have to zero it out
+// 	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments 
+// 	var uuids []string // Keep track of each unique objects to eliminate inherited repeats
+// 	k := 1 // Track number of API calls to provide progress
+// 	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
+// 	for _, scope := range scopes {
+// 		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
+// 		r := ApiGet(url, z.AzHeaders, params)
+// 		ApiErrorCheck(r, utl.Trace())
+// 		if r["value"] != nil {
+// 			assignments := r["value"].([]interface{})
+// 			u := 0 // Keep track of assignments in this scope
+// 			for _, i := range assignments {
+// 				x := i.(map[string]interface{})
+// 				uuid := StrVal(x["name"])  // NOTE that 'name' key is the role assignment Object Id
+// 				if utl.ItemInList(uuid, uuids) {
+// 					continue // Role assignments DO repeat! Skip if it's already been added.
+// 				}
+// 				list = append(list, x)
+// 				uuids = append(uuids, uuid)
+// 				u++
+// 			}
+// 			// if verbose { // Using global var rUp to overwrite last line. Defer newline until done
+// 			// 	fmt.Printf("%s(API calls = %d) %d assignments in this set", rUp, k, u)
+// 			// }
+// 			fmt.Printf("(API calls = %d) %d assignments in this set (%s)\n", k, u, scope)
+// 		}
+// 		k++
+// 	}
+// 	if verbose {
+// 		fmt.Printf("\n") // Use newline now
+// 	}
+// 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json")
+// 	utl.SaveFileJson(list, cacheFile) // Update the local cache
+// 	return list
+// }
+
+func GetAzRoleAssignment(x map[string]interface{}, z aza.AzaBundle) (y map[string]interface{}) {
 	// Special function to get RBAC role assignment object from Azure if it exists
 	// as defined by given x object, matching roleId, principalId, and scope (3 parameters
 	// which make the role assignment unique)
@@ -225,16 +287,53 @@ func GetAzRoleAssignment(x JsonObject, z aza.AzaBundle) (y JsonObject) {
 }
 
 func GetAzRoleAssignmentById(id string, z aza.AzaBundle) (map[string]interface{}) {
-	// Get Azure resource roleAssignment by by Object Id
-	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments
-	scopes = append(scopes, "/")
+	// Get Azure resource roleAssignment by Object Id
+	// Unfortunately we have to traverse and search the entire Azure resource scope hierarchy
+
+	// 1st, we look for all tenant-level role assignments
 	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
-	for _, scope := range scopes {
-		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments/" + id + "?disambiguation_dummy"
-		r := ApiGet(url, z.AzHeaders, params)
-		if r != nil && r["name"] != nil && StrVal(r["name"]) == id {
-			return r
+	params["$filter"] = "AtScope()" // Needed for this scope only
+	url := aza.ConstAzUrl + "/providers/Microsoft.Authorization/roleAssignments"
+	r := ApiGet(url, z.AzHeaders, params)
+	ApiErrorCheck(r, utl.Trace())
+	if r != nil && r["value"] != nil {
+		tenantLevelAssignments := r["value"].([]interface{})
+		for _, i := range tenantLevelAssignments {
+			x := i.(map[string]interface{})
+			if StrVal(x["name"]) == id {
+				return x // Return immediately if found
+			}
 		}
 	}
+
+	// 2nd, we look under subscription-level role assignments 
+	subscriptionScopes := GetAzSubscriptionsIds(z)
+	delete(params, "$filter") // Removing, so we can pull all assignments under each subscription
+	for _, scope := range subscriptionScopes {
+		url = aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
+		r = ApiGet(url, z.AzHeaders, params)
+		ApiErrorCheck(r, utl.Trace())
+		if r != nil && r["value"] != nil {
+			assignmentsInThisSubscription := r["value"].([]interface{})
+			for _, i := range assignmentsInThisSubscription {
+				x := i.(map[string]interface{})
+				if StrVal(x["name"]) == id {
+					return x // Return immediately if found
+				}
+			}
+		}
+	}
+	// BELOW DOESN'T WORK. WOULD NEED TO have GetAzRbacScopes() bring back EVERY SINGLE scope across
+	// the environment, which is not efficient.
+	// scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments
+	// scopes = append(scopes, "/") // This covers those at the root of the tenant
+	// params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
+	// for _, scope := range scopes {		
+	// 	url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments/" + id
+	// 	r := ApiGet(url, z.AzHeaders, params)
+	// 	if r != nil && r["name"] != nil && StrVal(r["name"]) == id {
+	// 		return r
+	// 	}
+	// }
 	return nil
 }

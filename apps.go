@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintApp(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
+func PrintApp(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
 	// Print application object in YAML-like format
 	if x == nil {
 		return
@@ -138,7 +138,7 @@ func PrintApp(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 
 func AppsCountLocal(z aza.AzaBundle) (int64) {
 	// Return number of entries in local cache file
-	var cachedList JsonArray = nil
+	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_applications.json")
 	if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
@@ -225,7 +225,7 @@ func GetAzApps(cacheFile string, headers aza.MapString, verbose bool) (list []in
 	return list
 }
 
-func GetAzAppById(id string, headers aza.MapString) (JsonObject) {
+func GetAzAppById(id string, headers aza.MapString) (map[string]interface{}) {
 	// Get Azure AD application by its Object UUID or by its appId, with extended attributes
 	baseUrl := aza.ConstMgUrl + "/v1.0/applications"
 	selection := "?$select=id,addIns,api,appId,applicationTemplateId,appRoles,certification,createdDateTime,"

@@ -15,6 +15,64 @@ func StrVal(x interface{}) string {
 	return utl.StrVal(x)		// Shorthand
 }
 
+func ObjectCountLocal(t string, z aza.AzaBundle, oMap map[string]string) int64 {
+	var cachedList []interface{} = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
+    if utl.FileUsable(cacheFile) {
+		rawList, _ := utl.LoadFileJson(cacheFile)
+		if rawList != nil {
+			cachedList = rawList.([]interface{})
+			return int64(len(cachedList))
+		}
+	}
+	return 0
+}
+
+func ObjectCountAzure(t string, z aza.AzaBundle, oMap map[string]string) int64 {
+	// Returns count of given object type (ARM or MG)
+	switch t {
+	case "d":
+		// Azure Resource Management (ARM) API does not have a dedicated '$count' object filter,
+		// so we're forced to retrieve all objects then count them
+		roleDefinitions := GetRoleDefinitions("", true, false, z, oMap)
+		// true = force querying Azure, false = quietly
+		return int64(len(roleDefinitions))
+	case "a":
+		roleAssignments := GetRoleAssignments("", true, false, z, oMap)
+		return int64(len(roleAssignments))
+	case "s":
+		subscriptions :=  GetSubscriptions("", true, z)
+		return int64(len(subscriptions))
+	case "m":
+		mgGroups := GetMgGroups("", true, z)
+		return int64(len(mgGroups))
+	}
+	return 0
+}
+
+func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
+	// Retrieve Azure object by Object Id
+	switch t {
+	case "d":
+		return GetAzRoleDefinitionById(id, z)
+	case "a":
+		return GetAzRoleAssignmentById(id, z)
+	case "s":
+		return GetAzSubscriptionById(id, z.AzHeaders)
+	case "u":
+		return GetAzUserById(id, z.MgHeaders)
+	case "g":
+		return GetAzGroupById(id, z.MgHeaders)
+	case "sp":
+		return GetAzSpById(id, z.MgHeaders)
+	case "ap":
+		return GetAzAppById(id, z.MgHeaders)
+	case "ad":
+		return GetAzAdRoleById(id, z.MgHeaders)
+	}
+	return nil
+}
+
 func GetAzRbacScopes(z aza.AzaBundle) (scopes []string) {
 	// Get all scopes from the Azure RBAC hierarchy
 	scopes = nil
@@ -31,11 +89,24 @@ func GetAzRbacScopes(z aza.AzaBundle) (scopes []string) {
 			continue
 		}
 		scopes = append(scopes, StrVal(x["id"]))
+		// BELOW NOT REALLY NEEDED
+		// // Now get/add all resourceGroups under this subscription
+		// params := aza.MapString{"api-version": "2021-04-01"} // resourceGroups
+        // url := aza.ConstAzUrl + StrVal(x["id"]) + "/resourcegroups"
+		// r := ApiGet(url, z.AzHeaders, params)
+		// ApiErrorCheck(r, utl.Trace())
+		// if r != nil && r["value"] != nil {
+		// 	resourceGroups := r["value"].([]interface{})
+		// 	for _, j := range resourceGroups {
+		// 		y := j.(map[string]interface{})
+		// 		scopes = append(scopes, StrVal(y["id"]))
+		// 	}
+		// }
 	}
 	return scopes
 }
 
-func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedList JsonArray) {
+func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedList []interface{}) {
 	// Return locally cached list of objects if it exists *and* it is within the specified cachePeriod in seconds 
 	if utl.FileUsable(cacheFile) {
 		cacheFileEpoc := int64(utl.FileModTime(cacheFile))
@@ -51,7 +122,7 @@ func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedLi
 	return true, nil // Cache is not usable, returning nil
 }
 
-func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
+func GetObjects(t, filter string, force bool, z aza.AzaBundle, oMap map[string]string) (list []interface{}) {
 	// Generic function to get objects of type t whose attributes match on filter.
 	// If filter is the "" empty string return ALL of the objects of this type.
 	switch t {
@@ -86,7 +157,7 @@ func GetAzObjects(url string, headers aza.MapString, verbose bool) (deltaSet []i
 	ApiErrorCheck(r, utl.Trace())
 	for {
 		// Infinite for-loop until deltalLink appears (meaning we're done getting current delta set)
-		var thisBatch JsonArray = nil // Assume zero entries in this batch
+		var thisBatch []interface{} = nil // Assume zero entries in this batch
 		if r["value"] != nil {
 			thisBatch = r["value"].([]interface{})
 			if len(thisBatch) > 0 {
@@ -139,7 +210,7 @@ func GetIdNameMap(t, filter string, force bool, z aza.AzaBundle, oMap map[string
 	return idNameMap
 }
 
-func GetObjectMemberOfs(t, id string, z aza.AzaBundle, oMap map[string]string) (list JsonArray) {
+func GetObjectMemberOfs(t, id string, z aza.AzaBundle, oMap map[string]string) (list []interface{}) {
 	// Get all group/role objects this object of type 't' with 'id' is a memberof
 	// See https://stackoverflow.com/questions/72186263/how-to-identify-the-assigned-roles-for-a-user-in-ms-graph-api
 	list = nil
@@ -170,7 +241,7 @@ func RemoveCacheFile(t string, z aza.AzaBundle, oMap map[string]string) {
 	os.Exit(0)
 }
 
-func GetObjectFromFile(filePath string) (formatType, t string, obj JsonObject) {
+func GetObjectFromFile(filePath string) (formatType, t string, obj map[string]interface{}) {
 	// Returns 3 values: File format type, oMap type, and the object itself
 
 	// Because JSON is essentially a subset of YAML, we have to check JSON first

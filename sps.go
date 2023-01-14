@@ -11,7 +11,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintSp(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
+func PrintSp(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
 	// Print service principal object in YAML-like format
 	if x == nil {
 		return
@@ -128,8 +128,8 @@ func PrintSp(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 
 func SpsCountLocal(z aza.AzaBundle) (native, microsoft int64) {
 	// Retrieves counts of all SPs in local cache, 2 values: Native ones to this tenant, and all others
-	var nativeList JsonArray = nil
-	var microsoftList JsonArray = nil
+	var nativeList []interface{} = nil
+	var microsoftList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
     if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
@@ -243,7 +243,7 @@ func GetAzSps(cacheFile string, headers aza.MapString, verbose bool) (list []int
 	return list
 }
 
-func GetAzSpById(id string, headers aza.MapString) (JsonObject) {
+func GetAzSpById(id string, headers aza.MapString) (map[string]interface{}) {
 	// Get Azure AD service principal by its Object UUID or by its appId, with extended attributes
 	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
 	selection := "?$select=id,displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId,"

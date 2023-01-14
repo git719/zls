@@ -9,80 +9,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"github.com/git719/aza"
 	"github.com/git719/utl"
 )
-
-func ObjectCountLocal(t string, z aza.AzaBundle, oMap map[string]string) int64 {
-	var cachedList JsonArray = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
-    if utl.FileUsable(cacheFile) {
-		rawList, _ := utl.LoadFileJson(cacheFile)
-		if rawList != nil {
-			cachedList = rawList.([]interface{})
-			return int64(len(cachedList))
-		}
-	}
-	return 0
-}
-
-func ObjectCountAzure(t string, z aza.AzaBundle, oMap map[string]string) int64 {
-	// Returns count of given object type (ARM or MG)
-	switch t {
-	case "d":
-		// Azure Resource Management (ARM) API does not have a dedicated '$count' object filter,
-		// so we're forced to retrieve all objects then count them
-		roleDefinitions := GetRoleDefinitions("", true, false, z, oMap)
-		// true = force querying Azure, false = quietly
-		return int64(len(roleDefinitions))
-	case "a":
-		roleAssignments := GetRoleAssignments("", true, false, z, oMap)
-		return int64(len(roleAssignments))
-	case "s":
-		subscriptions :=  GetSubscriptions("", true, z)
-		return int64(len(subscriptions))
-	case "m":
-		mgGroups := GetMgGroups("", true, z)
-		return int64(len(mgGroups))
-	}
-	return 0
-}
-
-func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
-	// Retrieve Azure object by Object Id
-	switch t {
-// 	case "d", "a":
-// 		scopes := GetAzRbacScopes(z.ConfDir, z.TenantId)  // Look for objects under all the RBAC hierarchy scopes
-// 		// Add null string below to represent the root "/" scope, else we miss any role assignments for it
-// 		scopes = append(scopes, "")
-// 		params := aza.MapString{ "api-version": "2022-04-01"}  // roleDefinitions and roleAssignments
-// 		for _, scope := range scopes {
-// 			url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/" + oMap[t] + "/" + id
-// 			r := ApiGet(url, z.AzHeaders, params)
-// 			if r != nil && r["id"] != nil { return r }  // Returns as soon as we find a match
-// 			//ApiErrorCheck(r, utl.Trace()) // # DEBUG
-// 		}
-	case "a":
-		return GetAzRoleAssignmentById(id, z)
-	case "s":
-		return GetAzSubscriptionById(id, z.AzHeaders)
-	case "u":
-		return GetAzUserById(id, z.MgHeaders)
-	case "g":
-		return GetAzGroupById(id, z.MgHeaders)
-	case "sp":
-		return GetAzSpById(id, z.MgHeaders)
-	case "ap":
-		return GetAzAppById(id, z.MgHeaders)
-	case "ad":
-		return GetAzAdRoleById(id, z.MgHeaders)
-	}
-	return nil
-}
 
 func ApiGet(url string, headers, params aza.MapString) (result map[string]interface{}) {
 	// Basic, without debugging
@@ -96,7 +28,8 @@ func ApiGetDebug(url string, headers, params aza.MapString) (result map[string]i
 
 func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params aza.MapString, verbose bool) (result map[string]interface{}) {
 	// Make API call and return JSON object. Global az_headers and mg_headers are merged with additional ones called with.
-
+	// See https://eager.io/blog/go-and-json/ for a clear explanation of how to interpret JSON response with GoLang
+	
 	if !strings.HasPrefix(url, "http") {
 		utl.Die(utl.Trace() + "Error: Bad URL, " + url + "\n")
 	}

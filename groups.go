@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintGroup(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
+func PrintGroup(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
 	// Print group object in YAML-like format
 	if x == nil {
 		return
@@ -75,7 +75,7 @@ func PrintGroup(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 
 func GroupsCountLocal(z aza.AzaBundle) (int64) {
 	// Return number of entries in local cache file
-	var cachedList JsonArray = nil
+	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_groups.json")
 	if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
@@ -165,7 +165,7 @@ func GetAzGroups(cacheFile string, headers aza.MapString, verbose bool) (list []
 	return list
 }
 
-func GetAzGroupById(id string, headers aza.MapString) (JsonObject) {
+func GetAzGroupById(id string, headers aza.MapString) (map[string]interface{}) {
 	// Get Azure AD group by UUID, with extended attributes
 	baseUrl := aza.ConstMgUrl + "/v1.0/groups"
 	selection := "?$select=id,createdDateTime,description,displayName,groupTypes,id,isAssignableToRole,"

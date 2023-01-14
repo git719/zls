@@ -20,7 +20,7 @@ func MgType(typeIn string) string {
 	}
 }
 
-func PrintMgGroup(x JsonObject) {
+func PrintMgGroup(x map[string]interface{}) {
 	// Print management group object in YAML-like
 	if x == nil {
 		return
@@ -31,7 +31,7 @@ func PrintMgGroup(x JsonObject) {
 	fmt.Printf("%-12s %s\n", "type:", MgType(StrVal(x["type"])))
 }
 
-func GetAzMgGroups(z aza.AzaBundle) (list JsonArray) {
+func GetAzMgGroups(z aza.AzaBundle) (list []interface{}) {
 	// Get ALL managementGroups in current Azure tenant AND save them to local cache file
 	list = nil // We have to zero it out
 	params := aza.MapString{"api-version": "2020-05-01"} // managementGroups
@@ -47,7 +47,7 @@ func GetAzMgGroups(z aza.AzaBundle) (list JsonArray) {
 	return list
 }
 
-func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
+func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	// Get all managementGroups that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The force boolean
 	// option will force a call to Azure.
@@ -74,7 +74,7 @@ func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	return matchingList
 }
 
-func PrintMgChildren(indent int, children JsonArray) {
+func PrintMgChildren(indent int, children []interface{}) {
 	// Recursively print managementGroups children (MGs and subscriptions) 
 	for _, i := range children {
 		child := i.(map[string]interface{})

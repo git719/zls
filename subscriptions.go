@@ -9,7 +9,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintSubscription(x JsonObject) {
+func PrintSubscription(x map[string]interface{}) {
 	// Print subscription object in YAML-like
 	if x == nil { return }
 	list := []string{"displayName", "subscriptionId", "state", "tenantId"}
@@ -19,7 +19,23 @@ func PrintSubscription(x JsonObject) {
 	}
 }
 
-func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
+func GetAzSubscriptionsIds(z aza.AzaBundle) (scopes []string) {
+	// Get all subscription full IDs, i.e. "/subscriptions/UUID", which are commonly
+	// used as scopes for Azure resource RBAC role definitions and assignments
+	scopes = nil
+	subscriptions := GetAzSubscriptions(z)
+	for _, i := range subscriptions {
+		x := i.(map[string]interface{})
+		// Skip legacy subscriptions, since they have no role definitions and calling them causes an error
+		if StrVal(x["displayName"]) == "Access to Azure Active Directory" {
+			continue
+		}
+		scopes = append(scopes, StrVal(x["id"]))
+	}
+	return scopes
+}
+
+func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	// Get all subscriptions that match on provided filter. An empty "" filter means return
 	// all subscription objects. It always uses local cache if it's within the cache retention
 	// period, else it gets them from Azure. Also gets them from Azure if force is specified.
@@ -49,7 +65,7 @@ func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list JsonArra
 	return matchingList
 }
 
-func GetAzSubscriptions(z aza.AzaBundle) (list JsonArray) {
+func GetAzSubscriptions(z aza.AzaBundle) (list []interface{}) {
 	// Get ALL subscription in current Azure tenant AND save them to local cache file
 	list = nil // We have to zero it out
 	params := aza.MapString{"api-version": "2022-09-01"} // subscriptions
@@ -65,7 +81,7 @@ func GetAzSubscriptions(z aza.AzaBundle) (list JsonArray) {
 	return list
 }
 
-func GetAzSubscriptionById(id string, headers aza.MapString) (JsonObject) {
+func GetAzSubscriptionById(id string, headers aza.MapString) (map[string]interface{}) {
 	// Get Azure subscription by Object Id
 	params := aza.MapString{"api-version": "2022-09-01"}  // subscriptions
 	url := aza.ConstAzUrl + "/subscriptions/" + id

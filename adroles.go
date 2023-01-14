@@ -9,7 +9,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintAdRole(x JsonObject, z aza.AzaBundle) {
+func PrintAdRole(x map[string]interface{}, z aza.AzaBundle) {
 	// Print Azure AD role definition object in YAML-like format
 	if x == nil {
 		return
@@ -61,7 +61,7 @@ func PrintAdRole(x JsonObject, z aza.AzaBundle) {
 
 func AdRolesCountLocal(z aza.AzaBundle) (int64) {
 	// Return count of Azure AD directory role entries in local cache file
-	var cachedList JsonArray = nil
+	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_directoryRoles.json")
 	if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
@@ -90,7 +90,7 @@ func AdRolesCountAzure(z aza.AzaBundle) (int64) {
     return 0
 }
 
-func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
+func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	// Get all Azure AD role definitions whose searchAttributes match on 'filter'. An empty "" filter returns all.
 	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
@@ -104,7 +104,7 @@ func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list JsonArray) {
 	if filter == "" {
 		return list
 	}
-	var matchingList JsonArray = nil
+	var matchingList []interface{} = nil
 	searchAttributes := []string{"id", "displayName", "description", "templateId"}
 	var ids []string // Keep track of each unique objects to eliminate repeats
 	for _, i := range list {
@@ -137,7 +137,7 @@ func GetAzAdRoles(cacheFile string, headers aza.MapString, verbose bool) (list [
 	return list
 }
 
-func GetAzAdRoleById(id string, headers aza.MapString) (JsonObject) {
+func GetAzAdRoleById(id string, headers aza.MapString) (map[string]interface{}) {
 	// Get Azure AD role definition by UUID, with extended attributes
 	// Note that role definitions are under a different area, until they are activated
 	baseUrl := aza.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions"

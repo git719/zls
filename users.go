@@ -10,7 +10,7 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintUser(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
+func PrintUser(x map[string]interface{}, z aza.AzaBundle, oMap map[string]string) {
 	// Print user object in YAML-like format
 	if x == nil {
 		return
@@ -48,7 +48,7 @@ func PrintUser(x JsonObject, z aza.AzaBundle, oMap map[string]string) {
 
 func UsersCountLocal(z aza.AzaBundle) (int64) {
 	// Return number of entries in local cache file
-	var cachedList JsonArray = nil
+	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_users.json")
 	if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
@@ -140,7 +140,7 @@ func GetAzUsers(cacheFile string, headers aza.MapString, verbose bool) (list []i
 	return list
 }
 
-func GetAzUserById(id string, headers aza.MapString) (JsonObject) {
+func GetAzUserById(id string, headers aza.MapString) (map[string]interface{}) {
 	// Get Azure user by UUID, with extended attributes
 	baseUrl := aza.ConstMgUrl + "/v1.0/users"
 	selection := "?$select=id,accountEnabled,createdDateTime,creationType,displayName,id,identities,"
