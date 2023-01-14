@@ -119,7 +119,7 @@ func RoleAssignmentsCountAzure(z aza.AzaBundle) (int64) {
 	return int64(len(list))
 }
 
-func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle) (list []interface{}) {
+func GetRoleAssignments(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	// Get all roleAssignments that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The
 	// force boolean option will force a call to Azure.
@@ -128,7 +128,7 @@ func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle) (li
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json")
 	cacheNoGood, list := CheckLocalCache(cacheFile, 604800) // cachePeriod = 1 week in seconds
 	if cacheNoGood || force {
-		list = GetAzRoleAssignments(verbose, z) // Get the entire set from Azure
+		list = GetAzRoleAssignments(true, z) // Get the entire set from Azure, true = show progress
 	}
 
 	// Do filter matching

@@ -12,7 +12,7 @@ import (
 )
 
 func StrVal(x interface{}) string {
-	return utl.StrVal(x)		// Shorthand
+	return utl.StrVal(x) // Shorthand
 }
 
 func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
@@ -39,6 +39,7 @@ func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
 }
 
 func GetAzRbacScopes(z aza.AzaBundle) (scopes []string) {
+	// DO USED: LOOKING TO DELETE THIS
 	// Get all scopes from the Azure RBAC hierarchy
 	scopes = nil
 	managementGroups := GetAzMgGroups(z) // Let's start with all managementGroups scopes
@@ -92,9 +93,9 @@ func GetObjects(t, filter string, force bool, z aza.AzaBundle) (list []interface
 	// If filter is the "" empty string return ALL of the objects of this type.
 	switch t {
 	case "d":
-		return GetRoleDefinitions(filter, force, true, z) // true = verbose, print progress while getting
+		return GetRoleDefinitions(filter, force, z)
 	case "a":
-		return GetRoleAssignments(filter, force, true, z) // true = verbose, to print progress while getting
+		return GetRoleAssignments(filter, force, z)
 	case "s":
 		return GetSubscriptions(filter, force, z)
 	case "m":

@@ -31,12 +31,7 @@ func TestFunction() {
 	fmt.Println(Pur + "Hellow world!" + Rst)
 	fmt.Println(Cya + "Hellow world!" + Rst)
 
-	// 	var z aza.AzaBundle
-
-	// cacheFile := "/Users/user1/.zls/3f550b9f-29b0-4ba6-ad61-c95f63104213_users.json"
-	// deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
-	// fmt.Println(cacheFile)
-	// fmt.Println(deltaLinkFile)
+	// var z aza.AzaBundle
 
 // 	// Set up the bundle of variables
 // 	z = SetupVariables(&z)

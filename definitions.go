@@ -118,7 +118,7 @@ func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle) {
 func GetIdMapRoleDefs(z aza.AzaBundle) (nameMap map[string]string) {
 	// Return role definition id:name map
 	nameMap = make(map[string]string)
-	roleDefs := GetRoleDefinitions("", false, false, z) // false = don't force going to Azure, false = quiet
+	roleDefs := GetRoleDefinitions("", false, z) // false = don't force going to Azure
 	// By not forcing an Azure call we're opting for cache speed over id:name map accuracy
 	for _, i := range roleDefs {
 		x := i.(map[string]interface{})
@@ -132,7 +132,7 @@ func GetIdMapRoleDefs(z aza.AzaBundle) (nameMap map[string]string) {
 	return nameMap
 }
 
-func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle) (list []interface{}) {
+func GetRoleDefinitions(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	// Get all roleDefinitions that match on provided filter, empty "" filter grabs all
 	// Defaults to querying local cache if it's within the cache retention period, unless force
 	// boolean option is given to call Azure. The verbose option details the progress. 
@@ -140,7 +140,7 @@ func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle) (li
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json")
 	cacheNoGood, list := CheckLocalCache(cacheFile, 604800) // cachePeriod = 1 week in seconds
 	if cacheNoGood || force {
-		list = GetAzRoleDefinitions(verbose, z) // Get the entire set from Azure
+		list = GetAzRoleDefinitions(true, z) // Get the entire set from Azure, true = show progress
 	}
 
 	// Do filter matching
@@ -162,7 +162,7 @@ func GetRoleDefinitions(filter string, force, verbose bool, z aza.AzaBundle) (li
 
 func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list []interface{}) {
 	// Get ALL roleDefinitions in current Azure tenant AND save them to local cache file
-	// Option to be verbose (true) or quiet (false), since it can take a while.
+	// Option to be verbose (true) to show progress, since it can take a while.
 	// See https://learn.microsoft.com/en-us/rest/api/authorization/role-definitions/list
     // 1st, we look for all tenant-level role definitions (this includes all universal BuiltIn ones)
 	list = nil // We have to zero it out
