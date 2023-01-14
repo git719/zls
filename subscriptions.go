@@ -19,6 +19,24 @@ func PrintSubscription(x map[string]interface{}) {
 	}
 }
 
+func SubsCountLocal(z aza.AzaBundle) (int64) {
+	var cachedList []interface{} = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_subscriptions.json")
+    if utl.FileUsable(cacheFile) {
+		rawList, _ := utl.LoadFileJson(cacheFile)
+		if rawList != nil {
+			cachedList = rawList.([]interface{})
+			return int64(len(cachedList))
+		}
+	}
+	return 0
+}
+
+func SubsCountAzure(z aza.AzaBundle) (int64) {
+	list := GetAzSubscriptions(z)
+	return int64(len(list))
+}
+
 func GetAzSubscriptionsIds(z aza.AzaBundle) (scopes []string) {
 	// Get all subscription full IDs, i.e. "/subscriptions/UUID", which are commonly
 	// used as scopes for Azure resource RBAC role definitions and assignments

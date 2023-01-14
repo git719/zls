@@ -15,41 +15,6 @@ func StrVal(x interface{}) string {
 	return utl.StrVal(x)		// Shorthand
 }
 
-func ObjectCountLocal(t string, z aza.AzaBundle, oMap map[string]string) int64 {
-	var cachedList []interface{} = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_" + oMap[t] + ".json")
-    if utl.FileUsable(cacheFile) {
-		rawList, _ := utl.LoadFileJson(cacheFile)
-		if rawList != nil {
-			cachedList = rawList.([]interface{})
-			return int64(len(cachedList))
-		}
-	}
-	return 0
-}
-
-func ObjectCountAzure(t string, z aza.AzaBundle, oMap map[string]string) int64 {
-	// Returns count of given object type (ARM or MG)
-	switch t {
-	case "d":
-		// Azure Resource Management (ARM) API does not have a dedicated '$count' object filter,
-		// so we're forced to retrieve all objects then count them
-		roleDefinitions := GetRoleDefinitions("", true, false, z, oMap)
-		// true = force querying Azure, false = quietly
-		return int64(len(roleDefinitions))
-	case "a":
-		roleAssignments := GetRoleAssignments("", true, false, z, oMap)
-		return int64(len(roleAssignments))
-	case "s":
-		subscriptions :=  GetSubscriptions("", true, z)
-		return int64(len(subscriptions))
-	case "m":
-		mgGroups := GetMgGroups("", true, z)
-		return int64(len(mgGroups))
-	}
-	return 0
-}
-
 func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
 	// Retrieve Azure object by Object Id
 	switch t {

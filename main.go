@@ -128,7 +128,7 @@ func main() {
 		case "-pags":
 			PrintPags(z)
 		case "-st":
-			PrintCountStatus(z, oMap)
+			PrintCountStatus(z)
 		case "-z":
 			aza.DumpVariables(z)
 		default:

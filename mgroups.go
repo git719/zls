@@ -31,6 +31,24 @@ func PrintMgGroup(x map[string]interface{}) {
 	fmt.Printf("%-12s %s\n", "type:", MgType(StrVal(x["type"])))
 }
 
+func MgGroupCountLocal(z aza.AzaBundle) (int64) {
+	var cachedList []interface{} = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json")
+    if utl.FileUsable(cacheFile) {
+		rawList, _ := utl.LoadFileJson(cacheFile)
+		if rawList != nil {
+			cachedList = rawList.([]interface{})
+			return int64(len(cachedList))
+		}
+	}
+	return 0
+}
+
+func MgGroupCountAzure(z aza.AzaBundle) (int64) {
+	list := GetAzMgGroups(z)
+	return int64(len(list))
+}
+
 func GetAzMgGroups(z aza.AzaBundle) (list []interface{}) {
 	// Get ALL managementGroups in current Azure tenant AND save them to local cache file
 	list = nil // We have to zero it out

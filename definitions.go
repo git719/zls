@@ -244,11 +244,11 @@ func RoleDefinitionCountLocal(z aza.AzaBundle) (builtin, custom int64) {
 	return 0, 0
 }
 
-func RoleDefinitionCountAzure(z aza.AzaBundle, oMap map[string]string) (builtin, custom int64) {
+func RoleDefinitionCountAzure(z aza.AzaBundle) (builtin, custom int64) {
 	// Dedicated role definition Azure counter able to discern if role is custom to native tenant or it's an Azure BuilIn role
 	var customList []interface{} = nil
 	var builtinList []interface{} = nil
-	definitions := GetRoleDefinitions("", true, false, z, oMap) // true = force a call to Azure, false = be silent
+	definitions := GetAzRoleDefinitions(false, z) // false = be silent
 	for _, i := range definitions {
 		x := i.(map[string]interface{}) // Assert as JSON object type
 		xProp := x["properties"].(map[string]interface{})

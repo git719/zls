@@ -101,6 +101,24 @@ func PrintRoleAssignmentReport(z aza.AzaBundle, oMap map[string]string)  {
 	}
 }
 
+func RoleAssignmentsCountLocal(z aza.AzaBundle) (int64) {
+	var cachedList []interface{} = nil
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json")
+    if utl.FileUsable(cacheFile) {
+		rawList, _ := utl.LoadFileJson(cacheFile)
+		if rawList != nil {
+			cachedList = rawList.([]interface{})
+			return int64(len(cachedList))
+		}
+	}
+	return 0
+}
+
+func RoleAssignmentsCountAzure(z aza.AzaBundle) (int64) {
+	list := GetAzRoleAssignments(false, z) // false = quiet
+	return int64(len(list))
+}
+
 func GetRoleAssignments(filter string, force, verbose bool, z aza.AzaBundle, oMap map[string]string) (list []interface{}) {
 	// Get all roleAssignments that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The

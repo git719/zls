@@ -8,31 +8,26 @@ import (
 	"github.com/git719/utl"
 )
 
-func PrintCountStatus(z aza.AzaBundle, oMap map[string]string) {
+func PrintCountStatus(z aza.AzaBundle) {
 	fmt.Printf("Note: Counting Azure resource role definitions and assignments can take some time.\n")
 	fmt.Printf("%-36s %10s %10s\n", "OBJECTS", "LOCAL","AZURE")
-	fmt.Printf("%-36s %10d %10d\n", "Groups", GroupsCountLocal(z), GroupsCountAzure(z))
 	fmt.Printf("%-36s %10d %10d\n", "Users", UsersCountLocal(z), UsersCountAzure(z))
+	fmt.Printf("%-36s %10d %10d\n", "Groups", GroupsCountLocal(z), GroupsCountAzure(z))
+    fmt.Println()
 	fmt.Printf("%-36s %10d %10d\n", "App Registrations", AppsCountLocal(z), AppsCountAzure(z))
-
 	nativeSpsLocal, msSpsLocal := SpsCountLocal(z)
 	nativeSpsAzure, msSpsAzure := SpsCountAzure(z)
 	fmt.Printf("%-36s %10d %10d\n", "SPs (App registered elsewhere)", msSpsLocal, msSpsAzure)
 	fmt.Printf("%-36s %10d %10d\n", "SPs (App registered in this Tenant)", nativeSpsLocal, nativeSpsAzure)
-
 	fmt.Printf("%-36s %10d %10d\n", "Azure AD Roles", AdRolesCountLocal(z), AdRolesCountAzure(z))
-    fmt.Println("-----------------------------")
-	fmt.Printf("%-36s %10d %10d\n", "Management Groups", ObjectCountLocal("m", z, oMap), ObjectCountAzure("m", z, oMap))
-	fmt.Printf("%-36s %10d %10d\n", "Subscriptions", ObjectCountLocal("s", z, oMap), ObjectCountAzure("s", z, oMap))
-
+    fmt.Println()
+	fmt.Printf("%-36s %10d %10d\n", "Management Groups", MgGroupCountLocal(z), MgGroupCountAzure(z))
+	fmt.Printf("%-36s %10d %10d\n", "Subscriptions", SubsCountLocal(z), SubsCountAzure(z))
 	builtinLocal, customLocal := RoleDefinitionCountLocal(z)
-	builtinAzure, customAzure := RoleDefinitionCountAzure(z, oMap)
+	builtinAzure, customAzure := RoleDefinitionCountAzure(z)
 	fmt.Printf("%-36s %10d %10d\n", "Resource Role Definitions BuiltIn", builtinLocal, builtinAzure)
 	fmt.Printf("%-36s %10d %10d\n", "Resource Role Definitions Custom", customLocal, customAzure)
-
-	assignmentsLocal := len(GetRoleAssignments("", false, false, z, oMap)) // false = prefer local, false = be silent
-	assignmentsAzure := len(GetRoleAssignments("", true, false, z, oMap)) // true = force a call to Azure, false = be silent
-	fmt.Printf("%-36s %10d %10d\n", "Resource Role Assignments", assignmentsLocal, assignmentsAzure)
+	fmt.Printf("%-36s %10d %10d\n", "Resource Role Assignments", RoleAssignmentsCountLocal(z), RoleAssignmentsCountAzure(z))
 }
 
 func PrintTersely(t string, object interface{}) {
