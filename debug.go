@@ -7,7 +7,7 @@ import (
 	"os"
 	//"runtime"
 	//"path/filepath"
-	// "github.com/git719/aza"
+	// "github.com/git719/maz"
 	// "github.com/git719/utl"
 )
 var (
@@ -31,7 +31,7 @@ func TestFunction() {
 	fmt.Println(Pur + "Hellow world!" + Rst)
 	fmt.Println(Cya + "Hellow world!" + Rst)
 
-	// var z aza.AzaBundle
+	// var z maz.Bundle
 
 // 	// Set up the bundle of variables
 // 	z = SetupVariables(&z)
@@ -40,7 +40,7 @@ func TestFunction() {
 // 	fmt.Println(z.TokenFile)
 	
 // 	// Setup the API tokens
-// 	z = aza.SetupApiTokens(&z)
+// 	z = maz.SetupApiTokens(&z)
 
 // 	// Get subscription with a specific filter
 // 	subs := GetSubscriptions("as01", z)

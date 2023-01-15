@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
-func PrintRoleAssignment(x map[string]interface{}, z aza.AzaBundle) {
+func PrintRoleAssignment(x map[string]interface{}, z maz.Bundle) {
 	// Print role definition object in YAML-like
 	if x == nil {
 		return
@@ -63,7 +63,7 @@ func PrintRoleAssignment(x map[string]interface{}, z aza.AzaBundle) {
 	}
 }
 
-func PrintRoleAssignmentReport(z aza.AzaBundle)  {
+func PrintRoleAssignmentReport(z maz.Bundle)  {
 	// Print a human-readable report of all role assignments
 	roleNameMap := GetIdMapRoleDefs(z) // Get all role definition id:name pairs
 	subNameMap := GetIdMapSubs(z) // Get all subscription id:name pairs
@@ -101,7 +101,7 @@ func PrintRoleAssignmentReport(z aza.AzaBundle)  {
 	}
 }
 
-func RoleAssignmentsCountLocal(z aza.AzaBundle) (int64) {
+func RoleAssignmentsCountLocal(z maz.Bundle) (int64) {
 	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json")
     if utl.FileUsable(cacheFile) {
@@ -114,12 +114,12 @@ func RoleAssignmentsCountLocal(z aza.AzaBundle) (int64) {
 	return 0
 }
 
-func RoleAssignmentsCountAzure(z aza.AzaBundle) (int64) {
+func RoleAssignmentsCountAzure(z maz.Bundle) (int64) {
 	list := GetAzRoleAssignments(false, z) // false = quiet
 	return int64(len(list))
 }
 
-func GetRoleAssignments(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetRoleAssignments(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all roleAssignments that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The
 	// force boolean option will force a call to Azure.
@@ -157,7 +157,7 @@ func GetRoleAssignments(filter string, force bool, z aza.AzaBundle) (list []inte
 	return matchingList
 }
 
-func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
+func GetAzRoleAssignments(verbose bool, z maz.Bundle) (list []interface{}) {
 	// Get ALL roleAssignments in current Azure tenant AND save them to local cache file
 	// Option to be verbose (true) or quiet (false), since it can take a while. 
 	// See https://learn.microsoft.com/en-us/rest/api/authorization/role-assignments/list-for-subscription
@@ -165,9 +165,9 @@ func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
 	list = nil // We have to zero it out
 	var assignmentIds []string // Keep track of each unique object to eliminate inherited repeats
 	k := 1 // Track number of API calls to provide progress
-	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
+	params := map[string]string{"api-version": "2022-04-01"}  // roleAssignments
 	params["$filter"] = "atScope()" // Needed for this scope only
-	url := aza.ConstAzUrl + "/providers/Microsoft.Authorization/roleAssignments"
+	url := maz.ConstAzUrl + "/providers/Microsoft.Authorization/roleAssignments"
 	r := ApiGet(url, z.AzHeaders, params)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -189,7 +189,7 @@ func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
 	delete(params, "$filter") // Removing, so we can pull all assignments under each subscription
 	for _, scope := range subscriptionScopes {
 		subName :=  subNameMap[utl.LastElem(scope, "/")] // Get subscription name
-		url = aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
+		url = maz.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
 		r = ApiGet(url, z.AzHeaders, params)
 		ApiErrorCheck(r, utl.Trace())
 		if r != nil && r["value"] != nil {
@@ -219,16 +219,16 @@ func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
 	return list
 }
 
-// func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
+// func GetAzRoleAssignments(verbose bool, z maz.Bundle) (list []interface{}) {
 // 	// Get ALL roleAssignments in current Azure tenant AND save them to local cache file
 // 	// Option to be verbose (true) or quiet (false), since it can take a while. 
 // 	list = nil // We have to zero it out
 // 	scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments 
 // 	var uuids []string // Keep track of each unique objects to eliminate inherited repeats
 // 	k := 1 // Track number of API calls to provide progress
-// 	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
+// 	params := map[string]string{"api-version": "2022-04-01"}  // roleAssignments
 // 	for _, scope := range scopes {
-// 		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
+// 		url := maz.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
 // 		r := ApiGet(url, z.AzHeaders, params)
 // 		ApiErrorCheck(r, utl.Trace())
 // 		if r["value"] != nil {
@@ -259,7 +259,7 @@ func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
 // 	return list
 // }
 
-func GetAzRoleAssignment(x map[string]interface{}, z aza.AzaBundle) (y map[string]interface{}) {
+func GetAzRoleAssignment(x map[string]interface{}, z maz.Bundle) (y map[string]interface{}) {
 	// Special function to get RBAC role assignment object from Azure if it exists
 	// as defined by given x object, matching roleId, principalId, and scope (3 parameters
 	// which make the role assignment unique)
@@ -284,11 +284,11 @@ func GetAzRoleAssignment(x map[string]interface{}, z aza.AzaBundle) (y map[strin
 	}
 
 	// Get all role assignments for xPrincipalId under xScope
-    params := aza.MapString{
+    params := map[string]string{
 		"api-version": "2022-04-01",  // roleAssignments
 		"$filter":     "principalId eq '" + xPrincipalId + "'",
 	}
-	url := aza.ConstAzUrl + xScope + "/providers/Microsoft.Authorization/roleAssignments"
+	url := maz.ConstAzUrl + xScope + "/providers/Microsoft.Authorization/roleAssignments"
 	r := ApiGet(url, z.AzHeaders, params)
 	if r != nil && r["value"] != nil {
 		results := r["value"].([]interface{})
@@ -306,14 +306,14 @@ func GetAzRoleAssignment(x map[string]interface{}, z aza.AzaBundle) (y map[strin
 	return nil
 }
 
-func GetAzRoleAssignmentById(id string, z aza.AzaBundle) (map[string]interface{}) {
+func GetAzRoleAssignmentById(id string, z maz.Bundle) (map[string]interface{}) {
 	// Get Azure resource roleAssignment by Object Id
 	// Unfortunately we have to traverse and search the entire Azure resource scope hierarchy
 
 	// 1st, we look for all tenant-level role assignments
-	params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
+	params := map[string]string{"api-version": "2022-04-01"}  // roleAssignments
 	params["$filter"] = "AtScope()" // Needed for this scope only
-	url := aza.ConstAzUrl + "/providers/Microsoft.Authorization/roleAssignments"
+	url := maz.ConstAzUrl + "/providers/Microsoft.Authorization/roleAssignments"
 	r := ApiGet(url, z.AzHeaders, params)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -329,7 +329,7 @@ func GetAzRoleAssignmentById(id string, z aza.AzaBundle) (map[string]interface{}
 	subscriptionScopes := GetAzSubscriptionsIds(z)
 	delete(params, "$filter") // Removing, so we can pull all assignments under each subscription
 	for _, scope := range subscriptionScopes {
-		url = aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
+		url = maz.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
 		r = ApiGet(url, z.AzHeaders, params)
 		ApiErrorCheck(r, utl.Trace())
 		if r != nil && r["value"] != nil {
@@ -346,9 +346,9 @@ func GetAzRoleAssignmentById(id string, z aza.AzaBundle) (map[string]interface{}
 	// the environment, which is not efficient.
 	// scopes := GetAzRbacScopes(z) // Get all RBAC hierarchy scopes to search for all role assignments
 	// scopes = append(scopes, "/") // This covers those at the root of the tenant
-	// params := aza.MapString{"api-version": "2022-04-01"}  // roleAssignments
+	// params := map[string]string{"api-version": "2022-04-01"}  // roleAssignments
 	// for _, scope := range scopes {		
-	// 	url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments/" + id
+	// 	url := maz.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments/" + id
 	// 	r := ApiGet(url, z.AzHeaders, params)
 	// 	if r != nil && r["name"] != nil && StrVal(r["name"]) == id {
 	// 		return r

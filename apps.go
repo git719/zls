@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"time"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
-func PrintApp(x map[string]interface{}, z aza.AzaBundle) {
+func PrintApp(x map[string]interface{}, z maz.Bundle) {
 	// Print application object in YAML-like format
 	if x == nil {
 		return
@@ -27,7 +27,7 @@ func PrintApp(x map[string]interface{}, z aza.AzaBundle) {
 	}
 
 	// Print owners
-	url := aza.ConstMgUrl + "/beta/applications/" + id + "/owners"
+	url := maz.ConstMgUrl + "/beta/applications/" + id + "/owners"
 	r := ApiGet(url, z.MgHeaders, nil)
 	if r["value"] != nil {
 		owners := r["value"].([]interface{})
@@ -57,7 +57,7 @@ func PrintApp(x map[string]interface{}, z aza.AzaBundle) {
 	ApiErrorCheck(r, utl.Trace())
 
 	// Print all groups and roles it is a member of
-	url = aza.ConstMgUrl  + "/v1.0/applications/" + id + "/transitiveMemberOf"
+	url = maz.ConstMgUrl  + "/v1.0/applications/" + id + "/transitiveMemberOf"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -86,7 +86,7 @@ func PrintApp(x map[string]interface{}, z aza.AzaBundle) {
 			resAppId := StrVal(api["resourceAppId"])
 
 			// Get this API's SP object with all relevant attributes
-			url := aza.ConstMgUrl + "/beta/servicePrincipals?filter=appId+eq+'" + resAppId + "'"
+			url := maz.ConstMgUrl + "/beta/servicePrincipals?filter=appId+eq+'" + resAppId + "'"
 			r := ApiGet(url, z.MgHeaders, nil)
 			// Unclear why result is a list instead of a single entry
 			if r["value"] == nil {
@@ -141,7 +141,7 @@ func PrintApp(x map[string]interface{}, z aza.AzaBundle) {
 	}
 }
 
-func AppsCountLocal(z aza.AzaBundle) (int64) {
+func AppsCountLocal(z maz.Bundle) (int64) {
 	// Return number of entries in local cache file
 	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_applications.json")
@@ -155,10 +155,10 @@ func AppsCountLocal(z aza.AzaBundle) (int64) {
 	return 0
 }	
 
-func AppsCountAzure(z aza.AzaBundle) (int64) {
+func AppsCountAzure(z maz.Bundle) (int64) {
 	// Return number of entries in Azure tenant
 	z.MgHeaders["ConsistencyLevel"] = "eventual"
-	url := aza.ConstMgUrl + "/v1.0/applications/$count"
+	url := maz.ConstMgUrl + "/v1.0/applications/$count"
 	r := ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] != nil {
@@ -167,7 +167,7 @@ func AppsCountAzure(z aza.AzaBundle) (int64) {
 	return 0	
 }
 
-func GetIdMapApps(z aza.AzaBundle) (nameMap map[string]string) {
+func GetIdMapApps(z maz.Bundle) (nameMap map[string]string) {
 	// Return applications id:name map
 	nameMap = make(map[string]string)
 	apps := GetApps("", false, z) // false = don't force a call to Azure
@@ -181,7 +181,7 @@ func GetIdMapApps(z aza.AzaBundle) (nameMap map[string]string) {
 	return nameMap
 }
 
-func GetApps(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetApps(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all Azure AD applications whose searchAttributes match on 'filter'. An empty "" filter returns all.
 	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
@@ -211,14 +211,14 @@ func GetApps(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	return matchingList	
 }
 
-func GetAzApps(cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
+func GetAzApps(cacheFile string, headers map[string]string, verbose bool) (list []interface{}) {
 	// Get all Azure AD service principal in current tenant AND save them to local cache file. Show progress if verbose = true.
 	
 	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
 	var deltaLinkMap map[string]string = nil
 	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
 	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
-	baseUrl := aza.ConstMgUrl + "/v1.0/applications"
+	baseUrl := maz.ConstMgUrl + "/v1.0/applications"
     // Get delta updates only when below selection of attributes are modified
 	selection := "?$select=displayName,appId,requiredResourceAccess"
 	url := baseUrl + "/delta" + selection + "&$top=999"
@@ -244,9 +244,9 @@ func GetAzApps(cacheFile string, headers aza.MapString, verbose bool) (list []in
 	return list
 }
 
-func GetAzAppById(id string, headers aza.MapString) (map[string]interface{}) {
+func GetAzAppById(id string, headers map[string]string) (map[string]interface{}) {
 	// Get Azure AD application by its Object UUID or by its appId, with extended attributes
-	baseUrl := aza.ConstMgUrl + "/v1.0/applications"
+	baseUrl := maz.ConstMgUrl + "/v1.0/applications"
 	selection := "?$select=id,addIns,api,appId,applicationTemplateId,appRoles,certification,createdDateTime,"
 	selection += "deletedDateTime,disabledByMicrosoftStatus,displayName,groupMembershipClaims,id,identifierUris,"
 	selection += "info,isDeviceOnlyAuthSupported,isFallbackPublicClient,keyCredentials,logo,notes,"
@@ -258,7 +258,7 @@ func GetAzAppById(id string, headers aza.MapString) (map[string]interface{}) {
     if r != nil && r["error"] != nil {
 		// Second search is for this app's application Client Id
 		url = baseUrl + selection
-		params := aza.MapString{"$filter": "appId eq '" + id + "'"}
+		params := map[string]string{"$filter": "appId eq '" + id + "'"}
 		r := ApiGet(url, headers, params)
 		ApiErrorCheck(r, utl.Trace())
 		if r != nil && r["value"] != nil {

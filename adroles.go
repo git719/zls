@@ -5,11 +5,11 @@ package main
 import (
 	"fmt"
 	"path/filepath"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
-func PrintAdRole(x map[string]interface{}, z aza.AzaBundle) {
+func PrintAdRole(x map[string]interface{}, z maz.Bundle) {
 	// Print Azure AD role definition object in YAML-like format
 	if x == nil {
 		return
@@ -41,7 +41,7 @@ func PrintAdRole(x map[string]interface{}, z aza.AzaBundle) {
 
 	// Print members of this role
 	// See https://github.com/microsoftgraph/microsoft-graph-docs/blob/main/api-reference/v1.0/api/directoryrole-list-members.md
-	url := aza.ConstMgUrl + "/v1.0/directoryRoles(roleTemplateId='" + StrVal(x["templateId"]) + "')/members"
+	url := maz.ConstMgUrl + "/v1.0/directoryRoles(roleTemplateId='" + StrVal(x["templateId"]) + "')/members"
 	r := ApiGet(url, z.MgHeaders, nil)
 	if r["value"] != nil {
 		members := r["value"].([]interface{})
@@ -59,7 +59,7 @@ func PrintAdRole(x map[string]interface{}, z aza.AzaBundle) {
 	}
 }
 
-func AdRolesCountLocal(z aza.AzaBundle) (int64) {
+func AdRolesCountLocal(z maz.Bundle) (int64) {
 	// Return count of Azure AD directory role entries in local cache file
 	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_directoryRoles.json")
@@ -73,7 +73,7 @@ func AdRolesCountLocal(z aza.AzaBundle) (int64) {
 	return 0
 }	
 
-func AdRolesCountAzure(z aza.AzaBundle) (int64) {
+func AdRolesCountAzure(z maz.Bundle) (int64) {
 	// Return count of Azure AD directory role entries in current tenant
 	// Note that endpoint "/v1.0/directoryRoles" is for Activated AD roles, so it wont give us
 	// the full count of all AD roles. Also, the actual role definitions, with what permissions
@@ -81,7 +81,7 @@ func AdRolesCountAzure(z aza.AzaBundle) (int64) {
 	// we only care about their count it is easier to just call end point
 	// "/v1.0/directoryRoleTemplates" which is a quicker API call and has the accurate count.
 	// It's not clear why MSFT makes this so darn confusing.
-	url := aza.ConstMgUrl + "/v1.0/directoryRoleTemplates"
+	url := maz.ConstMgUrl + "/v1.0/directoryRoleTemplates"
     r := ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] != nil {
@@ -90,7 +90,7 @@ func AdRolesCountAzure(z aza.AzaBundle) (int64) {
     return 0
 }
 
-func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetAdRoles(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all Azure AD role definitions whose searchAttributes match on 'filter'. An empty "" filter returns all.
 	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
@@ -120,13 +120,13 @@ func GetAdRoles(filter string, force bool, z aza.AzaBundle) (list []interface{})
 	return matchingList	
 }
 
-func GetAzAdRoles(cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
+func GetAzAdRoles(cacheFile string, headers map[string]string, verbose bool) (list []interface{}) {
 	// Get all Azure AD role definitions in current tenant AND save them to local cache file.
 	// Usually a short list, so verbose is ignored, and not used.
 	// See https://learn.microsoft.com/en-us/graph/api/rbacapplication-list-roledefinitions
 
 	// There's no API delta options for this object (too short a list?), so just one call
-	url := aza.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions"
+	url := maz.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions"
 	r := ApiGet(url, headers, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] == nil {
@@ -137,10 +137,10 @@ func GetAzAdRoles(cacheFile string, headers aza.MapString, verbose bool) (list [
 	return list
 }
 
-func GetAzAdRoleById(id string, headers aza.MapString) (map[string]interface{}) {
+func GetAzAdRoleById(id string, headers map[string]string) (map[string]interface{}) {
 	// Get Azure AD role definition by UUID, with extended attributes
 	// Note that role definitions are under a different area, until they are activated
-	baseUrl := aza.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions"
+	baseUrl := maz.ConstMgUrl + "/v1.0/roleManagement/directory/roleDefinitions"
 	selection := "?$select=id,displayName,description,isBuiltIn,isEnabled,resourceScopes,"
 	selection += "templateId,version,rolePermissions,inheritsPermissionsFrom"
 	url := baseUrl + "/" + id + selection

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"path/filepath"
 	"time"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
-func PrintSp(x map[string]interface{}, z aza.AzaBundle) {
+func PrintSp(x map[string]interface{}, z maz.Bundle) {
 	// Print service principal object in YAML-like format
 	if x == nil {
 		return
@@ -28,7 +28,7 @@ func PrintSp(x map[string]interface{}, z aza.AzaBundle) {
 	}
 
 	// Print owners
-	url := aza.ConstMgUrl + "/beta/servicePrincipals/" + id + "/owners"
+	url := maz.ConstMgUrl + "/beta/servicePrincipals/" + id + "/owners"
 	r := ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] != nil {
@@ -57,7 +57,7 @@ func PrintSp(x map[string]interface{}, z aza.AzaBundle) {
 	}
 
 	// Print members and their roles
-	url = aza.ConstMgUrl + "/beta/servicePrincipals/" + id + "/appRoleAssignedTo"
+	url = maz.ConstMgUrl + "/beta/servicePrincipals/" + id + "/appRoleAssignedTo"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] != nil {
@@ -93,7 +93,7 @@ func PrintSp(x map[string]interface{}, z aza.AzaBundle) {
 	}
 
 	// Print all groups and roles it is a member of
-	url = aza.ConstMgUrl  + "/v1.0/servicePrincipals/" + id + "/transitiveMemberOf"
+	url = maz.ConstMgUrl  + "/v1.0/servicePrincipals/" + id + "/transitiveMemberOf"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -102,7 +102,7 @@ func PrintSp(x map[string]interface{}, z aza.AzaBundle) {
 	}
 
 	// Print API permissions 
-	url = aza.ConstMgUrl + "/v1.0/servicePrincipals/" + id + "/oauth2PermissionGrants"
+	url = maz.ConstMgUrl + "/v1.0/servicePrincipals/" + id + "/oauth2PermissionGrants"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] != nil && len(r["value"].([]interface{})) > 0 {
@@ -114,7 +114,7 @@ func PrintSp(x map[string]interface{}, z aza.AzaBundle) {
 			api := i.(map[string]interface{}) // Assert as JSON object
 			apiName := "Unknown"
 			id := StrVal(api["resourceId"])   // Get API's SP to get its displayName
-			url2 := aza.ConstMgUrl + "/v1.0/servicePrincipals/" + id
+			url2 := maz.ConstMgUrl + "/v1.0/servicePrincipals/" + id
 			r2 := ApiGet(url2, z.MgHeaders, nil)
 			if r2["appDisplayName"] != nil {
 				apiName = StrVal(r2["appDisplayName"])
@@ -131,7 +131,7 @@ func PrintSp(x map[string]interface{}, z aza.AzaBundle) {
 	}
 }
 
-func SpsCountLocal(z aza.AzaBundle) (native, microsoft int64) {
+func SpsCountLocal(z maz.Bundle) (native, microsoft int64) {
 	// Retrieves counts of all SPs in local cache, 2 values: Native ones to this tenant, and all others
 	var nativeList []interface{} = nil
 	var microsoftList []interface{} = nil
@@ -154,13 +154,13 @@ func SpsCountLocal(z aza.AzaBundle) (native, microsoft int64) {
 	return 0, 0
 }
 
-func SpsCountAzure(z aza.AzaBundle) (native, microsoft int64) {
+func SpsCountAzure(z maz.Bundle) (native, microsoft int64) {
 	// Retrieves counts of all SPs in this Azure tenant, 2 values: Native ones to this tenant, and all others
 	
 	// First, get total number of SPs in tenant
     var all int64 = 0
 	z.MgHeaders["ConsistencyLevel"] = "eventual"
-	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
+	baseUrl := maz.ConstMgUrl + "/v1.0/servicePrincipals"
 	url := baseUrl + "/$count"
 	r := ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
@@ -170,7 +170,7 @@ func SpsCountAzure(z aza.AzaBundle) (native, microsoft int64) {
 	all = r["value"].(int64)
 
 	// Now get count of SPs registered and native to only this tenant
-	params := aza.MapString{"$filter": "appOwnerOrganizationId eq " + z.TenantId}
+	params := map[string]string{"$filter": "appOwnerOrganizationId eq " + z.TenantId}
 	params["$count"] = "true"
 	url = baseUrl
 	r = ApiGet(url, z.MgHeaders, params)
@@ -185,7 +185,7 @@ func SpsCountAzure(z aza.AzaBundle) (native, microsoft int64) {
 	return native, microsoft
 }
 
-func GetIdMapSps(z aza.AzaBundle) (nameMap map[string]string) {
+func GetIdMapSps(z maz.Bundle) (nameMap map[string]string) {
 	// Return service principals id:name map
 	nameMap = make(map[string]string)
 	sps := GetSps("", false, z) // false = don't force a call to Azure
@@ -199,7 +199,7 @@ func GetIdMapSps(z aza.AzaBundle) (nameMap map[string]string) {
 	return nameMap
 }
 
-func GetSps(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetSps(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all Azure AD service principal whose searchAttributes match on 'filter'. An empty "" filter returns all.
 	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
@@ -229,14 +229,14 @@ func GetSps(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
 	return matchingList	
 }
 
-func GetAzSps(cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
+func GetAzSps(cacheFile string, headers map[string]string, verbose bool) (list []interface{}) {
 	// Get all Azure AD service principal in current tenant AND save them to local cache file. Show progress if verbose = true.
 	
 	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
 	var deltaLinkMap map[string]string = nil
 	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
 	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
-	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
+	baseUrl := maz.ConstMgUrl + "/v1.0/servicePrincipals"
     // Get delta updates only when below selection of attributes are modified
 	selection := "?$id,select=displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId"
 	url := baseUrl + "/delta" + selection + "&$top=999"
@@ -262,9 +262,9 @@ func GetAzSps(cacheFile string, headers aza.MapString, verbose bool) (list []int
 	return list
 }
 
-func GetAzSpById(id string, headers aza.MapString) (map[string]interface{}) {
+func GetAzSpById(id string, headers map[string]string) (map[string]interface{}) {
 	// Get Azure AD service principal by its Object UUID or by its appId, with extended attributes
-	baseUrl := aza.ConstMgUrl + "/v1.0/servicePrincipals"
+	baseUrl := maz.ConstMgUrl + "/v1.0/servicePrincipals"
 	selection := "?$select=id,displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId,"
 	selection += "appRoleAssignmentRequired,appRoles,disabledByMicrosoftStatus,addIns,alternativeNames,"
 	selection += "appDisplayName,homepage,id,info,logoutUrl,notes,oauth2PermissionScopes,replyUrls,"
@@ -274,7 +274,7 @@ func GetAzSpById(id string, headers aza.MapString) (map[string]interface{}) {
     if r != nil && r["error"] != nil {
 		// Second search is for this SP's application Client Id
 		url = baseUrl + selection
-		params := aza.MapString{"$filter": "appId eq '" + id + "'"}
+		params := map[string]string{"$filter": "appId eq '" + id + "'"}
 		r := ApiGet(url, headers, params)
 		ApiErrorCheck(r, utl.Trace())
 		if r != nil && r["value"] != nil {

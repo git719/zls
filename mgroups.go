@@ -5,7 +5,7 @@ package main
 import (
 	"fmt"
 	"path/filepath"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
@@ -31,7 +31,7 @@ func PrintMgGroup(x map[string]interface{}) {
 	fmt.Printf("%-12s %s\n", "type:", MgType(StrVal(x["type"])))
 }
 
-func MgGroupCountLocal(z aza.AzaBundle) (int64) {
+func MgGroupCountLocal(z maz.Bundle) (int64) {
 	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json")
     if utl.FileUsable(cacheFile) {
@@ -44,16 +44,16 @@ func MgGroupCountLocal(z aza.AzaBundle) (int64) {
 	return 0
 }
 
-func MgGroupCountAzure(z aza.AzaBundle) (int64) {
+func MgGroupCountAzure(z maz.Bundle) (int64) {
 	list := GetAzMgGroups(z)
 	return int64(len(list))
 }
 
-func GetAzMgGroups(z aza.AzaBundle) (list []interface{}) {
+func GetAzMgGroups(z maz.Bundle) (list []interface{}) {
 	// Get ALL managementGroups in current Azure tenant AND save them to local cache file
 	list = nil // We have to zero it out
-	params := aza.MapString{"api-version": "2020-05-01"} // managementGroups
-	url := aza.ConstAzUrl + "/providers/Microsoft.Management/managementGroups"
+	params := map[string]string{"api-version": "2020-05-01"} // managementGroups
+	url := maz.ConstAzUrl + "/providers/Microsoft.Management/managementGroups"
 	r := ApiGet(url, z.AzHeaders, params)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -65,7 +65,7 @@ func GetAzMgGroups(z aza.AzaBundle) (list []interface{}) {
 	return list
 }
 
-func GetMgGroups(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetMgGroups(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all managementGroups that match on provided filter. An empty "" filter means return
 	// all of them. It always uses local cache if it's within the cache retention period. The force boolean
 	// option will force a call to Azure.
@@ -115,11 +115,11 @@ func PrintMgChildren(indent int, children []interface{}) {
 	}
 }
 
-func PrintMgTree(z aza.AzaBundle) {
+func PrintMgTree(z maz.Bundle) {
 	// Get current tenant managementGroups and subscriptions tree, and use
 	// recursive function PrintMgChildren() to print the entire hierarchy
-	url := aza.ConstAzUrl + "/providers/Microsoft.Management/managementGroups/" + z.TenantId
-	params := aza.MapString{
+	url := maz.ConstAzUrl + "/providers/Microsoft.Management/managementGroups/" + z.TenantId
+	params := map[string]string{
 		"api-version": "2020-05-01",  // managementGroups
 		"$expand":     "children",
 		"$recurse":    "true",

@@ -4,11 +4,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
-func PrintCountStatus(z aza.AzaBundle) {
+func PrintCountStatus(z maz.Bundle) {
 	fmt.Printf("Note: Counting some Azure resources can take a long time.\n")
 	fmt.Printf("%-36s %10s %10s\n", "OBJECTS", "LOCAL","AZURE")
 	fmt.Printf("%-36s %10d %10d\n", "Azure AD Users", UsersCountLocal(z), UsersCountAzure(z))
@@ -70,7 +70,7 @@ func PrintTersely(t string, object interface{}) {
 	}
 }
 
-func PrintObject(t string, x map[string]interface{}, z aza.AzaBundle) {
+func PrintObject(t string, x map[string]interface{}, z maz.Bundle) {
 	switch t {
 	case "d":
 		PrintRoleDefinition(x, z)

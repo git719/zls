@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
@@ -15,7 +15,7 @@ func StrVal(x interface{}) string {
 	return utl.StrVal(x) // Shorthand
 }
 
-func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
+func GetObjectById(t, id string, z maz.Bundle) (x map[string]interface{}) {
 	// Retrieve Azure object by Object Id
 	switch t {
 	case "d":
@@ -38,7 +38,7 @@ func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
 	return nil
 }
 
-func GetAzRbacScopes(z aza.AzaBundle) (scopes []string) {
+func GetAzRbacScopes(z maz.Bundle) (scopes []string) {
 	// NOT USED: LOOKING TO DELETE THIS
 	// Get all scopes from the Azure RBAC hierarchy
 	scopes = nil
@@ -57,8 +57,8 @@ func GetAzRbacScopes(z aza.AzaBundle) (scopes []string) {
 		scopes = append(scopes, StrVal(x["id"]))
 		// BELOW NOT REALLY NEEDED
 		// // Now get/add all resourceGroups under this subscription
-		// params := aza.MapString{"api-version": "2021-04-01"} // resourceGroups
-        // url := aza.ConstAzUrl + StrVal(x["id"]) + "/resourcegroups"
+		// params := map[string]string{"api-version": "2021-04-01"} // resourceGroups
+        // url := maz.ConstAzUrl + StrVal(x["id"]) + "/resourcegroups"
 		// r := ApiGet(url, z.AzHeaders, params)
 		// ApiErrorCheck(r, utl.Trace())
 		// if r != nil && r["value"] != nil {
@@ -88,7 +88,7 @@ func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedLi
 	return true, nil // Cache is not usable, returning nil
 }
 
-func GetObjects(t, filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetObjects(t, filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Generic function to get objects of type t whose attributes match on filter.
 	// If filter is the "" empty string return ALL of the objects of this type.
 	switch t {
@@ -114,7 +114,7 @@ func GetObjects(t, filter string, force bool, z aza.AzaBundle) (list []interface
 	return nil
 }
 
-func GetAzObjects(url string, headers aza.MapString, verbose bool) (deltaSet []interface{}, deltaLinkMap map[string]string) {
+func GetAzObjects(url string, headers map[string]string, verbose bool) (deltaSet []interface{}, deltaLinkMap map[string]string) {
 	// Generic Azure object deltaSet retriever function. Returns the set of changed or new items,
 	// and a deltaLink for running the next future Azure query. Implements the pattern described at
 	// https://docs.microsoft.com/en-us/graph/delta-query-overview
@@ -151,7 +151,7 @@ func GetAzObjects(url string, headers aza.MapString, verbose bool) (deltaSet []i
 	return nil, nil
 }
 
-func RemoveCacheFile(t string, z aza.AzaBundle) {
+func RemoveCacheFile(t string, z maz.Bundle) {
 	switch t {
 	case "t":
 		utl.RemoveFile(filepath.Join(z.ConfDir, z.TokenFile))
@@ -224,7 +224,7 @@ func GetObjectFromFile(filePath string) (formatType, t string, obj map[string]in
     }
 }
 
-func CompareSpecfileToAzure(filePath string, z aza.AzaBundle) {
+func CompareSpecfileToAzure(filePath string, z maz.Bundle) {
 	if utl.FileNotExist(filePath) || utl.FileSize(filePath) < 1 {
 		utl.Die("File does not exist, or is zero size\n")
 	}

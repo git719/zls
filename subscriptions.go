@@ -5,7 +5,7 @@ package main
 import (
 	"fmt"
 	"path/filepath"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
@@ -19,7 +19,7 @@ func PrintSubscription(x map[string]interface{}) {
 	}
 }
 
-func SubsCountLocal(z aza.AzaBundle) (int64) {
+func SubsCountLocal(z maz.Bundle) (int64) {
 	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_subscriptions.json")
     if utl.FileUsable(cacheFile) {
@@ -32,12 +32,12 @@ func SubsCountLocal(z aza.AzaBundle) (int64) {
 	return 0
 }
 
-func SubsCountAzure(z aza.AzaBundle) (int64) {
+func SubsCountAzure(z maz.Bundle) (int64) {
 	list := GetAzSubscriptions(z)
 	return int64(len(list))
 }
 
-func GetAzSubscriptionsIds(z aza.AzaBundle) (scopes []string) {
+func GetAzSubscriptionsIds(z maz.Bundle) (scopes []string) {
 	// Get all subscription full IDs, i.e. "/subscriptions/UUID", which are commonly
 	// used as scopes for Azure resource RBAC role definitions and assignments
 	scopes = nil
@@ -53,7 +53,7 @@ func GetAzSubscriptionsIds(z aza.AzaBundle) (scopes []string) {
 	return scopes
 }
 
-func GetIdMapSubs(z aza.AzaBundle) (nameMap map[string]string) {
+func GetIdMapSubs(z maz.Bundle) (nameMap map[string]string) {
 	// Return subscription id:name map
 	nameMap = make(map[string]string)
 	roleDefs := GetSubscriptions("", false, z) // false = don't force a call to Azure
@@ -67,7 +67,7 @@ func GetIdMapSubs(z aza.AzaBundle) (nameMap map[string]string) {
 	return nameMap
 }
 
-func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetSubscriptions(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all subscriptions that match on provided filter. An empty "" filter means return
 	// all subscription objects. It always uses local cache if it's within the cache retention
 	// period, else it gets them from Azure. Also gets them from Azure if force is specified.
@@ -97,11 +97,11 @@ func GetSubscriptions(filter string, force bool, z aza.AzaBundle) (list []interf
 	return matchingList
 }
 
-func GetAzSubscriptions(z aza.AzaBundle) (list []interface{}) {
+func GetAzSubscriptions(z maz.Bundle) (list []interface{}) {
 	// Get ALL subscription in current Azure tenant AND save them to local cache file
 	list = nil // We have to zero it out
-	params := aza.MapString{"api-version": "2022-09-01"} // subscriptions
-	url := aza.ConstAzUrl + "/subscriptions"
+	params := map[string]string{"api-version": "2022-09-01"} // subscriptions
+	url := maz.ConstAzUrl + "/subscriptions"
 	r := ApiGet(url, z.AzHeaders, params)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -113,10 +113,10 @@ func GetAzSubscriptions(z aza.AzaBundle) (list []interface{}) {
 	return list
 }
 
-func GetAzSubscriptionById(id string, headers aza.MapString) (map[string]interface{}) {
+func GetAzSubscriptionById(id string, headers map[string]string) (map[string]interface{}) {
 	// Get Azure subscription by Object Id
-	params := aza.MapString{"api-version": "2022-09-01"}  // subscriptions
-	url := aza.ConstAzUrl + "/subscriptions/" + id
+	params := map[string]string{"api-version": "2022-09-01"}  // subscriptions
+	url := maz.ConstAzUrl + "/subscriptions/" + id
 	r := ApiGet(url, headers, params)
 	ApiErrorCheck(r, utl.Trace())
 	return r

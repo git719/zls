@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"time"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
-func PrintGroup(x map[string]interface{}, z aza.AzaBundle) {
+func PrintGroup(x map[string]interface{}, z maz.Bundle) {
 	// Print group object in YAML-like format
 	if x == nil {
 		return
@@ -27,7 +27,7 @@ func PrintGroup(x map[string]interface{}, z aza.AzaBundle) {
 	}
 
 	// Print owners of this group
-	url := aza.ConstMgUrl + "/beta/groups/" + id + "/owners"
+	url := maz.ConstMgUrl + "/beta/groups/" + id + "/owners"
 	r := ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] != nil {
@@ -44,7 +44,7 @@ func PrintGroup(x map[string]interface{}, z aza.AzaBundle) {
 	}
 
 	// Print all groups and roles it is a member of
-	url = aza.ConstMgUrl  + "/v1.0/groups/" + id + "/transitiveMemberOf"
+	url = maz.ConstMgUrl  + "/v1.0/groups/" + id + "/transitiveMemberOf"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -54,7 +54,7 @@ func PrintGroup(x map[string]interface{}, z aza.AzaBundle) {
 
 
 	// Print members of this group
-	url = aza.ConstMgUrl + "/beta/groups/" + id + "/members"
+	url = maz.ConstMgUrl + "/beta/groups/" + id + "/members"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -79,7 +79,7 @@ func PrintGroup(x map[string]interface{}, z aza.AzaBundle) {
 	}
 }
 
-func GroupsCountLocal(z aza.AzaBundle) (int64) {
+func GroupsCountLocal(z maz.Bundle) (int64) {
 	// Return number of entries in local cache file
 	var cachedList []interface{} = nil
 	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_groups.json")
@@ -93,10 +93,10 @@ func GroupsCountLocal(z aza.AzaBundle) (int64) {
 	return 0
 }	
 
-func GroupsCountAzure(z aza.AzaBundle) (int64) {
+func GroupsCountAzure(z maz.Bundle) (int64) {
 	// Return number of entries in Azure tenant
 	z.MgHeaders["ConsistencyLevel"] = "eventual"
-	url := aza.ConstMgUrl + "/v1.0/groups/$count"
+	url := maz.ConstMgUrl + "/v1.0/groups/$count"
 	r := ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r["value"] != nil {
@@ -105,7 +105,7 @@ func GroupsCountAzure(z aza.AzaBundle) (int64) {
 	return 0	
 }
 
-func GetIdMapGroups(z aza.AzaBundle) (nameMap map[string]string) {
+func GetIdMapGroups(z maz.Bundle) (nameMap map[string]string) {
 	// Return groups id:name map
 	nameMap = make(map[string]string)
 	groups := GetGroups("", false, z) // false = don't force a call to Azure
@@ -119,7 +119,7 @@ func GetIdMapGroups(z aza.AzaBundle) (nameMap map[string]string) {
 	return nameMap
 }
 
-func GetGroups(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetGroups(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all Azure AD groups whose searchAttributes match on 'filter'. An empty "" filter returns all.
 	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
@@ -152,14 +152,14 @@ func GetGroups(filter string, force bool, z aza.AzaBundle) (list []interface{}) 
 	return matchingList	
 }
 
-func GetAzGroups(cacheFile string, headers aza.MapString, verbose bool) (list []interface{}) {
+func GetAzGroups(cacheFile string, headers map[string]string, verbose bool) (list []interface{}) {
 	// Get all Azure AD groups in current tenant AND save them to local cache file. Show progress if verbose = true.
 	
 	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
 	var deltaLinkMap map[string]string = nil
 	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
 	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
-	baseUrl := aza.ConstMgUrl + "/v1.0/groups"
+	baseUrl := maz.ConstMgUrl + "/v1.0/groups"
     // Get delta updates only when below selection of attributes are modified
 	selection := "?$select=displayName,mailNickname,description,mailEnabled,isAssignableToRole"
 	url := baseUrl + "/delta" + selection + "&$top=999"
@@ -185,9 +185,9 @@ func GetAzGroups(cacheFile string, headers aza.MapString, verbose bool) (list []
 	return list
 }
 
-func GetAzGroupById(id string, headers aza.MapString) (map[string]interface{}) {
+func GetAzGroupById(id string, headers map[string]string) (map[string]interface{}) {
 	// Get Azure AD group by UUID, with extended attributes
-	baseUrl := aza.ConstMgUrl + "/v1.0/groups"
+	baseUrl := maz.ConstMgUrl + "/v1.0/groups"
 	selection := "?$select=id,createdDateTime,description,displayName,groupTypes,id,isAssignableToRole,"
 	selection += "mail,mailNickname,onPremisesLastSyncDateTime,onPremisesProvisioningErrors,"
 	selection += "onPremisesSecurityIdentifier,onPremisesSyncEnabled,renewedDateTime,securityEnabled,"
@@ -198,7 +198,7 @@ func GetAzGroupById(id string, headers aza.MapString) (map[string]interface{}) {
 	return r
 }
 
-func PrintPags(z aza.AzaBundle) {
+func PrintPags(z maz.Bundle) {
 	// List all Privileged Access Groups
 	groups := GetGroups("", false, z) // Get all groups, false = not need to hit Azure
 	for _, i := range groups {

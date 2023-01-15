@@ -12,21 +12,20 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/git719/aza"
 	"github.com/git719/utl"
 )
 
-func ApiGet(url string, headers, params aza.MapString) (result map[string]interface{}) {
+func ApiGet(url string, headers, params map[string]string) (result map[string]interface{}) {
 	// Basic, without debugging
 	return ApiCall("GET", url, nil, headers, params, false)  // Verbose = false
 }
 
-func ApiGetDebug(url string, headers, params aza.MapString) (result map[string]interface{}) {
+func ApiGetDebug(url string, headers, params map[string]string) (result map[string]interface{}) {
 	// Sets verbose boolean to true
 	return ApiCall("GET", url, nil, headers, params, true)  // Verbose = true
 }
 
-func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params aza.MapString, verbose bool) (result map[string]interface{}) {
+func ApiCall(method, url string, jsonObj map[string]interface{}, headers, params map[string]string, verbose bool) (result map[string]interface{}) {
 	// Make API call and return JSON object. Global az_headers and mg_headers are merged with additional ones called with.
 	// See https://eager.io/blog/go-and-json/ for a clear explanation of how to interpret JSON response with GoLang
 	

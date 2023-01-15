@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
@@ -43,9 +43,9 @@ func PrintUsage() {
 	os.Exit(0)
 }
 
-func SetupVariables(z *aza.AzaBundle) (aza.AzaBundle) {
+func SetupVariables(z *maz.Bundle) (maz.Bundle) {
 	// Set up variable object struct
-	*z = aza.AzaBundle{
+	*z = maz.Bundle{
 		ConfDir:      "",
 		CredsFile:    "credentials.yaml",
 		TokenFile:    "accessTokens.json",
@@ -56,9 +56,9 @@ func SetupVariables(z *aza.AzaBundle) (aza.AzaBundle) {
 		Username:     "",
 		AuthorityUrl: "",
 		MgToken:      "",
-		MgHeaders:    aza.MapString{},
+		MgHeaders:    map[string]string{},
 		AzToken:      "",
-		AzHeaders:    aza.MapString{},  
+		AzHeaders:    map[string]string{},  
 	}
 	// Set up configuration directory
 	z.ConfDir = filepath.Join(os.Getenv("HOME"), "." + prgname)
@@ -77,7 +77,7 @@ func main() {
 		PrintUsage() // Don't accept less than 1 or more than 4 arguments
 	}
 
-	var z aza.AzaBundle
+	var z maz.Bundle
 	z = SetupVariables(&z)
 
 	switch numberOfArguments {
@@ -88,9 +88,9 @@ func main() {
 	    case "-v":
 			PrintUsage()
 		case "-cr":
-			aza.DumpCredentials(z)
+			maz.DumpCredentials(z)
 		}
-		z = aza.SetupApiTokens(&z) // The remaining 1-arg requests DO required API tokens to be set up
+		z = maz.SetupApiTokens(&z) // The remaining 1-arg requests DO required API tokens to be set up
 		switch arg1 {
 		case "-xx":
 			RemoveCacheFile("all", z)
@@ -116,13 +116,13 @@ func main() {
 		case "-st":
 			PrintCountStatus(z)
 		case "-z":
-			aza.DumpVariables(z)
+			maz.DumpVariables(z)
 		default:
 			PrintUsage()
 		}
 	case 2: // Process 2-argument requests
 		arg1 := os.Args[1] ; arg2 := os.Args[2]
-		z = aza.SetupApiTokens(&z)
+		z = maz.SetupApiTokens(&z)
 		switch arg1 {
 		case "-vs":
 			CompareSpecfileToAzure(arg2, z)
@@ -164,7 +164,7 @@ func main() {
 		switch arg1 {
 		case "-cri":
 			z.TenantId = arg2 ; z.Username = arg3
-			aza.SetupInterativeLogin(z)
+			maz.SetupInterativeLogin(z)
 		default:
 			PrintUsage()
 		}
@@ -173,7 +173,7 @@ func main() {
 		switch arg1 {
 		case "-cr":
 			z.TenantId = arg2 ; z.ClientId = arg3 ; z.ClientSecret = arg4
-			aza.SetupAutomatedLogin(z)
+			maz.SetupAutomatedLogin(z)
 		default:
 			PrintUsage()
 		}

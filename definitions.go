@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 	"path/filepath"
-	"github.com/git719/aza"
+	"github.com/git719/maz"
 	"github.com/git719/utl"
 )
 
-func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle) {
+func PrintRoleDefinition(x map[string]interface{}, z maz.Bundle) {
 	// Print role definition object in YAML-like format
 	if x == nil {
 		return
@@ -115,7 +115,7 @@ func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle) {
 	}
 }
 
-func GetIdMapRoleDefs(z aza.AzaBundle) (nameMap map[string]string) {
+func GetIdMapRoleDefs(z maz.Bundle) (nameMap map[string]string) {
 	// Return role definition id:name map
 	nameMap = make(map[string]string)
 	roleDefs := GetRoleDefinitions("", false, z) // false = don't force going to Azure
@@ -132,7 +132,7 @@ func GetIdMapRoleDefs(z aza.AzaBundle) (nameMap map[string]string) {
 	return nameMap
 }
 
-func GetRoleDefinitions(filter string, force bool, z aza.AzaBundle) (list []interface{}) {
+func GetRoleDefinitions(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all roleDefinitions that match on provided filter, empty "" filter grabs all
 	// Defaults to querying local cache if it's within the cache retention period, unless force
 	// boolean option is given to call Azure. The verbose option details the progress. 
@@ -160,7 +160,7 @@ func GetRoleDefinitions(filter string, force bool, z aza.AzaBundle) (list []inte
 	return matchingList
 }
 
-func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list []interface{}) {
+func GetAzRoleDefinitions(verbose bool, z maz.Bundle) (list []interface{}) {
 	// Get ALL roleDefinitions in current Azure tenant AND save them to local cache file
 	// Option to be verbose (true) to show progress, since it can take a while.
 	// See https://learn.microsoft.com/en-us/rest/api/authorization/role-definitions/list
@@ -168,8 +168,8 @@ func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list []interface{}) {
 	list = nil // We have to zero it out
 	var definitionIds []string // Keep track of each unique object to eliminate inherited repeats
 	k := 1 // Track number of API calls to provide progress
-	params := aza.MapString{"api-version": "2022-04-01"}  // roleDefinitions
-	url := aza.ConstAzUrl + "/providers/Microsoft.Authorization/roleDefinitions"
+	params := map[string]string{"api-version": "2022-04-01"}  // roleDefinitions
+	url := maz.ConstAzUrl + "/providers/Microsoft.Authorization/roleDefinitions"
 	r := ApiGet(url, z.AzHeaders, params)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -190,7 +190,7 @@ func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list []interface{}) {
 	subNameMap := GetIdMapSubs(z) // Get all subscription id:name pairs
 	for _, scope := range subscriptionScopes {
 		subName :=  subNameMap[utl.LastElem(scope, "/")] // Get subscription name
-		url = aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions"
+		url = maz.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions"
 		r = ApiGet(url, z.AzHeaders, params)
 		ApiErrorCheck(r, utl.Trace())
 		if r != nil && r["value"] != nil {
@@ -239,7 +239,7 @@ func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list []interface{}) {
 	// https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles
 }
 
-func RoleDefinitionCountLocal(z aza.AzaBundle) (builtin, custom int64) {
+func RoleDefinitionCountLocal(z maz.Bundle) (builtin, custom int64) {
 	// Dedicated role definition local cache counter able to discern if role is custom to native tenant or it's an Azure BuilIn role
 	var customList []interface{} = nil
 	var builtinList []interface{} = nil
@@ -263,7 +263,7 @@ func RoleDefinitionCountLocal(z aza.AzaBundle) (builtin, custom int64) {
 	return 0, 0
 }
 
-func RoleDefinitionCountAzure(z aza.AzaBundle) (builtin, custom int64) {
+func RoleDefinitionCountAzure(z maz.Bundle) (builtin, custom int64) {
 	// Dedicated role definition Azure counter able to discern if role is custom to native tenant or it's an Azure BuilIn role
 	var customList []interface{} = nil
 	var builtinList []interface{} = nil
@@ -280,7 +280,7 @@ func RoleDefinitionCountAzure(z aza.AzaBundle) (builtin, custom int64) {
 	return int64(len(builtinList)), int64(len(customList))
 }
 
-func GetAzRoleDefinition(x map[string]interface{}, z aza.AzaBundle) (y map[string]interface{}) {
+func GetAzRoleDefinition(x map[string]interface{}, z maz.Bundle) (y map[string]interface{}) {
 	// Special function to get RBAC role definition object from Azure if it exists
 	// as defined by given x object, matching displayName and assignableScopes
     
@@ -307,11 +307,11 @@ func GetAzRoleDefinition(x map[string]interface{}, z aza.AzaBundle) (y map[strin
 		scope := StrVal(i)
 		if scope == "/" { scope = "" } // Highly unlikely but just to avoid an err
 		// Get all role assignments for xPrincipalId under xScope
-		params := aza.MapString{
+		params := map[string]string{
 			"api-version": "2022-04-01",  // roleDefinitions
 			"$filter":     "roleName eq '" + xRoleName + "'",
 		}
-		url := aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions"
+		url := maz.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions"
 		r := ApiGet(url, z.AzHeaders, params)
 		ApiErrorCheck(r, utl.Trace())
 		if r != nil && r["value"] != nil {
@@ -327,12 +327,12 @@ func GetAzRoleDefinition(x map[string]interface{}, z aza.AzaBundle) (y map[strin
 	return nil
 }
 
-func GetAzRoleDefinitionById(id string, z aza.AzaBundle) (map[string]interface{}) {
+func GetAzRoleDefinitionById(id string, z maz.Bundle) (map[string]interface{}) {
 	// Get Azure resource roleDefinition by Object Id
 	// See https://learn.microsoft.com/en-us/rest/api/authorization/role-definitions/get-by-id
     // 1st, we look for this "id" under tenant level role definitions
-	params := aza.MapString{"api-version": "2022-04-01"}  // roleDefinitions
-	url := aza.ConstAzUrl + "/providers/Microsoft.Authorization/roleDefinitions/" + id
+	params := map[string]string{"api-version": "2022-04-01"}  // roleDefinitions
+	url := maz.ConstAzUrl + "/providers/Microsoft.Authorization/roleDefinitions/" + id
 	r := ApiGet(url, z.AzHeaders, params)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["name"] != nil && StrVal(r["name"]) == id {
@@ -341,7 +341,7 @@ func GetAzRoleDefinitionById(id string, z aza.AzaBundle) (map[string]interface{}
     // 2nd, we look under subscription level role definitions 
 	scopes := GetAzSubscriptionsIds(z)
 	for _, scope := range scopes {
-		url = aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions/" + id
+		url = maz.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions/" + id
 		r = ApiGet(url, z.AzHeaders, params)
 		ApiErrorCheck(r, utl.Trace())
 		if r != nil && r["name"] != nil && StrVal(r["name"]) == id {
