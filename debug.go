@@ -10,10 +10,15 @@ import (
 	// "github.com/git719/maz"
 	// "github.com/git719/utl"
 )
+
 var (
 	// Some basic colors
-	Red = "\033[1;31m" ; Gre = "\033[0;32m" ; Blu = "\033[1;34m"
-	Yel = "\033[0;33m" ; Pur = "\033[1;35m" ; Cya = "\033[0;36m"
+	Red = "\033[1;31m"
+	Gre = "\033[0;32m"
+	Blu = "\033[1;34m"
+	Yel = "\033[0;33m"
+	Pur = "\033[1;35m"
+	Cya = "\033[0;36m"
 	Rst = "\033[0m"
 )
 
@@ -33,18 +38,18 @@ func TestFunction() {
 
 	// var z maz.Bundle
 
-// 	// Set up the bundle of variables
-// 	z = SetupVariables(&z)
-// 	fmt.Println(z.ConfDir)
-// 	fmt.Println(z.CredsFile)
-// 	fmt.Println(z.TokenFile)
-	
-// 	// Setup the API tokens
-// 	z = maz.SetupApiTokens(&z)
+	// 	// Set up the bundle of variables
+	// 	z = SetupVariables(&z)
+	// 	fmt.Println(z.ConfDir)
+	// 	fmt.Println(z.CredsFile)
+	// 	fmt.Println(z.TokenFile)
 
-// 	// Get subscription with a specific filter
-// 	subs := GetSubscriptions("as01", z)
-// 	fmt.Println(len(subs))
-// 	utl.PrintJson(subs)
+	// 	// Setup the API tokens
+	// 	z = maz.SetupApiTokens(&z)
+
+	// 	// Get subscription with a specific filter
+	// 	subs := GetSubscriptions("as01", z)
+	// 	fmt.Println(len(subs))
+	// 	utl.PrintJson(subs)
 	os.Exit(0)
 }

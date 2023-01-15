@@ -4,9 +4,9 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
 	"github.com/git719/maz"
 	"github.com/git719/utl"
+	"path/filepath"
 )
 
 func MgType(typeIn string) string {
@@ -31,10 +31,10 @@ func PrintMgGroup(x map[string]interface{}) {
 	fmt.Printf("%-12s %s\n", "type:", MgType(StrVal(x["type"])))
 }
 
-func MgGroupCountLocal(z maz.Bundle) (int64) {
+func MgGroupCountLocal(z maz.Bundle) int64 {
 	var cachedList []interface{} = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json")
-    if utl.FileUsable(cacheFile) {
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId+"_managementGroups.json")
+	if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
 		if rawList != nil {
 			cachedList = rawList.([]interface{})
@@ -44,14 +44,14 @@ func MgGroupCountLocal(z maz.Bundle) (int64) {
 	return 0
 }
 
-func MgGroupCountAzure(z maz.Bundle) (int64) {
+func MgGroupCountAzure(z maz.Bundle) int64 {
 	list := GetAzMgGroups(z)
 	return int64(len(list))
 }
 
 func GetAzMgGroups(z maz.Bundle) (list []interface{}) {
 	// Get ALL managementGroups in current Azure tenant AND save them to local cache file
-	list = nil // We have to zero it out
+	list = nil                                               // We have to zero it out
 	params := map[string]string{"api-version": "2020-05-01"} // managementGroups
 	url := maz.ConstAzUrl + "/providers/Microsoft.Management/managementGroups"
 	r := ApiGet(url, z.AzHeaders, params)
@@ -60,7 +60,7 @@ func GetAzMgGroups(z maz.Bundle) (list []interface{}) {
 		objects := r["value"].([]interface{})
 		list = append(list, objects...)
 	}
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json")
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId+"_managementGroups.json")
 	utl.SaveFileJson(list, cacheFile) // Update the local cache
 	return list
 }
@@ -70,7 +70,7 @@ func GetMgGroups(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// all of them. It always uses local cache if it's within the cache retention period. The force boolean
 	// option will force a call to Azure.
 	list = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json")
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId+"_managementGroups.json")
 	cacheNoGood, list := CheckLocalCache(cacheFile, 604800) // cachePeriod = 1 week in seconds
 	if cacheNoGood || force {
 		list = GetAzMgGroups(z) // Get the entire set from Azure
@@ -93,7 +93,7 @@ func GetMgGroups(filter string, force bool, z maz.Bundle) (list []interface{}) {
 }
 
 func PrintMgChildren(indent int, children []interface{}) {
-	// Recursively print managementGroups children (MGs and subscriptions) 
+	// Recursively print managementGroups children (MGs and subscriptions)
 	for _, i := range children {
 		child := i.(map[string]interface{})
 		Name := StrVal(child["displayName"])
@@ -120,7 +120,7 @@ func PrintMgTree(z maz.Bundle) {
 	// recursive function PrintMgChildren() to print the entire hierarchy
 	url := maz.ConstAzUrl + "/providers/Microsoft.Management/managementGroups/" + z.TenantId
 	params := map[string]string{
-		"api-version": "2020-05-01",  // managementGroups
+		"api-version": "2020-05-01", // managementGroups
 		"$expand":     "children",
 		"$recurse":    "true",
 	}

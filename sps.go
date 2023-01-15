@@ -4,11 +4,11 @@ package main
 
 import (
 	"fmt"
-	"strings"
-	"path/filepath"
-	"time"
 	"github.com/git719/maz"
 	"github.com/git719/utl"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 func PrintSp(x map[string]interface{}, z maz.Bundle) {
@@ -93,7 +93,7 @@ func PrintSp(x map[string]interface{}, z maz.Bundle) {
 	}
 
 	// Print all groups and roles it is a member of
-	url = maz.ConstMgUrl  + "/v1.0/servicePrincipals/" + id + "/transitiveMemberOf"
+	url = maz.ConstMgUrl + "/v1.0/servicePrincipals/" + id + "/transitiveMemberOf"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -101,7 +101,7 @@ func PrintSp(x map[string]interface{}, z maz.Bundle) {
 		PrintMemberOfs("g", memberOf)
 	}
 
-	// Print API permissions 
+	// Print API permissions
 	url = maz.ConstMgUrl + "/v1.0/servicePrincipals/" + id + "/oauth2PermissionGrants"
 	r = ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
@@ -113,7 +113,7 @@ func PrintSp(x map[string]interface{}, z maz.Bundle) {
 		for _, i := range apiPerms {
 			api := i.(map[string]interface{}) // Assert as JSON object
 			apiName := "Unknown"
-			id := StrVal(api["resourceId"])   // Get API's SP to get its displayName
+			id := StrVal(api["resourceId"]) // Get API's SP to get its displayName
 			url2 := maz.ConstMgUrl + "/v1.0/servicePrincipals/" + id
 			r2 := ApiGet(url2, z.MgHeaders, nil)
 			if r2["appDisplayName"] != nil {
@@ -123,7 +123,7 @@ func PrintSp(x map[string]interface{}, z maz.Bundle) {
 
 			// Print each delegated claim for this API
 			scope := strings.TrimSpace(StrVal(api["scope"]))
-            claims := strings.Split(scope, " ")
+			claims := strings.Split(scope, " ")
 			for _, j := range claims {
 				fmt.Printf("  %-50s %s\n", apiName, j)
 			}
@@ -135,14 +135,14 @@ func SpsCountLocal(z maz.Bundle) (native, microsoft int64) {
 	// Retrieves counts of all SPs in local cache, 2 values: Native ones to this tenant, and all others
 	var nativeList []interface{} = nil
 	var microsoftList []interface{} = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
-    if utl.FileUsable(cacheFile) {
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId+"_servicePrincipals.json")
+	if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
 		if rawList != nil {
 			cachedList := rawList.([]interface{})
 			for _, i := range cachedList {
 				x := i.(map[string]interface{})
-				if StrVal(x["appOwnerOrganizationId"]) == z.TenantId {  // If owned by current tenant ...
+				if StrVal(x["appOwnerOrganizationId"]) == z.TenantId { // If owned by current tenant ...
 					nativeList = append(nativeList, x)
 				} else {
 					microsoftList = append(microsoftList, x)
@@ -156,9 +156,9 @@ func SpsCountLocal(z maz.Bundle) (native, microsoft int64) {
 
 func SpsCountAzure(z maz.Bundle) (native, microsoft int64) {
 	// Retrieves counts of all SPs in this Azure tenant, 2 values: Native ones to this tenant, and all others
-	
+
 	// First, get total number of SPs in tenant
-    var all int64 = 0
+	var all int64 = 0
 	z.MgHeaders["ConsistencyLevel"] = "eventual"
 	baseUrl := maz.ConstMgUrl + "/v1.0/servicePrincipals"
 	url := baseUrl + "/$count"
@@ -203,12 +203,12 @@ func GetSps(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all Azure AD service principal whose searchAttributes match on 'filter'. An empty "" filter returns all.
 	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json")
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId+"_servicePrincipals.json")
 	cacheNoGood, list := CheckLocalCache(cacheFile, 86400) // cachePeriod = 1 day in seconds
 	if cacheNoGood || force {
 		list = GetAzSps(cacheFile, z.MgHeaders, true) // Get all from Azure and show progress (verbose = true)
 	}
-	
+
 	// Do filter matching
 	if filter == "" {
 		return list
@@ -226,43 +226,43 @@ func GetSps(filter string, force bool, z maz.Bundle) (list []interface{}) {
 			}
 		}
 	}
-	return matchingList	
+	return matchingList
 }
 
 func GetAzSps(cacheFile string, headers map[string]string, verbose bool) (list []interface{}) {
 	// Get all Azure AD service principal in current tenant AND save them to local cache file. Show progress if verbose = true.
-	
+
 	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
 	var deltaLinkMap map[string]string = nil
 	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
 	deltaAge := int64(time.Now().Unix()) - int64(utl.FileModTime(deltaLinkFile))
 	baseUrl := maz.ConstMgUrl + "/v1.0/servicePrincipals"
-    // Get delta updates only when below selection of attributes are modified
+	// Get delta updates only when below selection of attributes are modified
 	selection := "?$id,select=displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId"
 	url := baseUrl + "/delta" + selection + "&$top=999"
 	headers["Prefer"] = "return=minimal" // This tells API to focus only on specific 'select' attributes
 
 	// But first, double-check the base set again to avoid running a delta query on an empty set
 	listIsEmpty, list := CheckLocalCache(cacheFile, 86400) // cachePeriod = 1 day in seconds
-	if  utl.FileUsable(deltaLinkFile) && deltaAge < (3660 * 24 * 27) && listIsEmpty == false {
+	if utl.FileUsable(deltaLinkFile) && deltaAge < (3660*24*27) && listIsEmpty == false {
 		// Note that deltaLink file age has to be within 30 days (we do 27)
 		tmpVal, _ := utl.LoadFileJson(deltaLinkFile)
 		deltaLinkMap = tmpVal.(map[string]string)
 		url = StrVal(deltaLinkMap["@odata.deltaLink"]) // Base URL is now the cached Delta Link
 	}
 
-    // Now go get azure objects using the updated URL (either a full query or a deltaLink query)
+	// Now go get azure objects using the updated URL (either a full query or a deltaLink query)
 	var deltaSet []interface{} = nil
 	deltaSet, deltaLinkMap = GetAzObjects(url, headers, verbose) // Run generic deltaSet retriever function
 
 	// Save new deltaLink for future call, and merge newly acquired delta set with existing list
 	utl.SaveFileJson(deltaLinkMap, deltaLinkFile)
 	list = NormalizeCache(list, deltaSet) // Run our MERGE LOGIC with new delta set
-	utl.SaveFileJson(list, cacheFile) // Update the local cache
+	utl.SaveFileJson(list, cacheFile)     // Update the local cache
 	return list
 }
 
-func GetAzSpById(id string, headers map[string]string) (map[string]interface{}) {
+func GetAzSpById(id string, headers map[string]string) map[string]interface{} {
 	// Get Azure AD service principal by its Object UUID or by its appId, with extended attributes
 	baseUrl := maz.ConstMgUrl + "/v1.0/servicePrincipals"
 	selection := "?$select=id,displayName,appId,accountEnabled,servicePrincipalType,appOwnerOrganizationId,"
@@ -271,7 +271,7 @@ func GetAzSpById(id string, headers map[string]string) (map[string]interface{}) 
 	selection += "resourceSpecificApplicationPermissions,servicePrincipalNames,tags"
 	url := baseUrl + "/" + id + selection // First search is for direct Object Id
 	r := ApiGet(url, headers, nil)
-    if r != nil && r["error"] != nil {
+	if r != nil && r["error"] != nil {
 		// Second search is for this SP's application Client Id
 		url = baseUrl + selection
 		params := map[string]string{"$filter": "appId eq '" + id + "'"}
@@ -281,7 +281,7 @@ func GetAzSpById(id string, headers map[string]string) (map[string]interface{}) 
 			list := r["value"].([]interface{})
 			count := len(list)
 			if count == 1 {
-				return list[0].(map[string]interface{})  // Return single value found
+				return list[0].(map[string]interface{}) // Return single value found
 			} else if count > 1 {
 				// Not sure this would ever happen, but just in case
 				fmt.Printf("Found %d entries with this appId\n", count)

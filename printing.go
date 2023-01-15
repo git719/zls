@@ -10,7 +10,7 @@ import (
 
 func PrintCountStatus(z maz.Bundle) {
 	fmt.Printf("Note: Counting some Azure resources can take a long time.\n")
-	fmt.Printf("%-36s %10s %10s\n", "OBJECTS", "LOCAL","AZURE")
+	fmt.Printf("%-36s %10s %10s\n", "OBJECTS", "LOCAL", "AZURE")
 	fmt.Printf("%-36s %10d %10d\n", "Azure AD Users", UsersCountLocal(z), UsersCountAzure(z))
 	fmt.Printf("%-36s %10d %10d\n", "Azure AD Groups", GroupsCountLocal(z), GroupsCountAzure(z))
 	fmt.Printf("%-36s %10d %10d\n", "Azure App Registrations", AppsCountLocal(z), AppsCountAzure(z))
@@ -41,7 +41,7 @@ func PrintTersely(t string, object interface{}) {
 		principalId := StrVal(xProp["principalId"])
 		principalType := StrVal(xProp["principalType"])
 		scope := StrVal(xProp["scope"])
-		fmt.Printf("%s  %s  %s %-20s %s\n", StrVal(x["name"]), rdId, principalId, "(" + principalType + ")", scope)
+		fmt.Printf("%s  %s  %s %-20s %s\n", StrVal(x["name"]), rdId, principalId, "("+principalType+")", scope)
 	case "s":
 		fmt.Printf("%s  %-10s  %s\n", StrVal(x["subscriptionId"]), StrVal(x["state"]), StrVal(x["displayName"]))
 	case "m":

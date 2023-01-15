@@ -4,10 +4,10 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
-	"time"
 	"github.com/git719/maz"
 	"github.com/git719/utl"
+	"path/filepath"
+	"time"
 )
 
 func PrintUser(x map[string]interface{}, z maz.Bundle) {
@@ -42,7 +42,7 @@ func PrintUser(x map[string]interface{}, z maz.Bundle) {
 	}
 
 	// Print all groups and roles it is a member of
-	url := maz.ConstMgUrl  + "/v1.0/users/" + id + "/transitiveMemberOf"
+	url := maz.ConstMgUrl + "/v1.0/users/" + id + "/transitiveMemberOf"
 	r := ApiGet(url, z.MgHeaders, nil)
 	ApiErrorCheck(r, utl.Trace())
 	if r != nil && r["value"] != nil {
@@ -51,10 +51,10 @@ func PrintUser(x map[string]interface{}, z maz.Bundle) {
 	}
 }
 
-func UsersCountLocal(z maz.Bundle) (int64) {
+func UsersCountLocal(z maz.Bundle) int64 {
 	// Return number of entries in local cache file
 	var cachedList []interface{} = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_users.json")
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId+"_users.json")
 	if utl.FileUsable(cacheFile) {
 		rawList, _ := utl.LoadFileJson(cacheFile)
 		if rawList != nil {
@@ -63,9 +63,9 @@ func UsersCountLocal(z maz.Bundle) (int64) {
 		}
 	}
 	return 0
-}	
+}
 
-func UsersCountAzure(z maz.Bundle) (int64) {
+func UsersCountAzure(z maz.Bundle) int64 {
 	// Return number of entries in Azure tenant
 	z.MgHeaders["ConsistencyLevel"] = "eventual"
 	url := maz.ConstMgUrl + "/v1.0/users/$count"
@@ -74,7 +74,7 @@ func UsersCountAzure(z maz.Bundle) (int64) {
 	if r["value"] != nil {
 		return r["value"].(int64) // Expected result is a single int64 value for the count
 	}
-	return 0	
+	return 0
 }
 
 func GetIdMapUsers(z maz.Bundle) (nameMap map[string]string) {
@@ -95,12 +95,12 @@ func GetUsers(filter string, force bool, z maz.Bundle) (list []interface{}) {
 	// Get all Azure AD users that match on 'filter'. An empty "" filter returns all.
 	// Uses local cache if it's less than cachePeriod old. The 'force' option forces calling Azure query.
 	list = nil
-	cacheFile := filepath.Join(z.ConfDir, z.TenantId + "_users.json")
+	cacheFile := filepath.Join(z.ConfDir, z.TenantId+"_users.json")
 	cacheNoGood, list := CheckLocalCache(cacheFile, 86400) // cachePeriod = 1 day in seconds
 	if cacheNoGood || force {
 		list = GetAzUsers(cacheFile, z.MgHeaders, true) // Get all from Azure and show progress (verbose = true)
 	}
-	
+
 	// Do filter matching
 	if filter == "" {
 		return list
@@ -121,12 +121,12 @@ func GetUsers(filter string, force bool, z maz.Bundle) (list []interface{}) {
 			}
 		}
 	}
-	return matchingList	
+	return matchingList
 }
 
 func GetAzUsers(cacheFile string, headers map[string]string, verbose bool) (list []interface{}) {
 	// Get all Azure AD users in current tenant AND save them to local cache file. Show progress if verbose = true.
-	
+
 	// We will first try doing a delta query. See https://docs.microsoft.com/en-us/graph/delta-query-overview
 	var deltaLinkMap map[string]string = nil
 	deltaLinkFile := cacheFile[:len(cacheFile)-len(filepath.Ext(cacheFile))] + "_deltaLink.json"
@@ -138,28 +138,28 @@ func GetAzUsers(cacheFile string, headers map[string]string, verbose bool) (list
 	selection += "onPremisesDomainName,onPremisesUserPrincipalName"
 	url := baseUrl + "/delta" + selection + "&$top=999"
 	headers["Prefer"] = "return=minimal" // This tells API to focus only on specific 'select' attributes
-	
+
 	// But first, double-check the base set again to avoid running a delta query on an empty set
 	listIsEmpty, list := CheckLocalCache(cacheFile, 86400) // cachePeriod = 1 day in seconds
-	if  utl.FileUsable(deltaLinkFile) && deltaAge < (3660 * 24 * 27) && listIsEmpty == false {
+	if utl.FileUsable(deltaLinkFile) && deltaAge < (3660*24*27) && listIsEmpty == false {
 		// Note that deltaLink file age has to be within 30 days (we do 27)
 		tmpVal, _ := utl.LoadFileJson(deltaLinkFile)
 		deltaLinkMap = tmpVal.(map[string]string)
 		url = StrVal(deltaLinkMap["@odata.deltaLink"]) // Base URL is now the cached Delta Link URL
 	}
 
-    // Now go get azure objects using the updated URL (either a full query or a deltaLink query)
+	// Now go get azure objects using the updated URL (either a full query or a deltaLink query)
 	var deltaSet []interface{} = nil
 	deltaSet, deltaLinkMap = GetAzObjects(url, headers, verbose) // Run generic deltaSet retriever function
 
 	// Save new deltaLink for future call, and merge newly acquired delta set with existing list
 	utl.SaveFileJson(deltaLinkMap, deltaLinkFile)
 	list = NormalizeCache(list, deltaSet) // Run our MERGE LOGIC with new delta set
-	utl.SaveFileJson(list, cacheFile) // Update the local cache
+	utl.SaveFileJson(list, cacheFile)     // Update the local cache
 	return list
 }
 
-func GetAzUserById(id string, headers map[string]string) (map[string]interface{}) {
+func GetAzUserById(id string, headers map[string]string) map[string]interface{} {
 	// Get Azure user by UUID, with extended attributes
 	baseUrl := maz.ConstMgUrl + "/v1.0/users"
 	selection := "?$select=id,accountEnabled,createdDateTime,creationType,displayName,id,identities,"

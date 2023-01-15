@@ -4,10 +4,10 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"github.com/git719/maz"
 	"github.com/git719/utl"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -43,7 +43,7 @@ func PrintUsage() {
 	os.Exit(0)
 }
 
-func SetupVariables(z *maz.Bundle) (maz.Bundle) {
+func SetupVariables(z *maz.Bundle) maz.Bundle {
 	// Set up variable object struct
 	*z = maz.Bundle{
 		ConfDir:      "",
@@ -58,10 +58,10 @@ func SetupVariables(z *maz.Bundle) (maz.Bundle) {
 		MgToken:      "",
 		MgHeaders:    map[string]string{},
 		AzToken:      "",
-		AzHeaders:    map[string]string{},  
+		AzHeaders:    map[string]string{},
 	}
 	// Set up configuration directory
-	z.ConfDir = filepath.Join(os.Getenv("HOME"), "." + prgname)
+	z.ConfDir = filepath.Join(os.Getenv("HOME"), "."+prgname)
 	if utl.FileNotExist(z.ConfDir) {
 		if err := os.Mkdir(z.ConfDir, 0700); err != nil {
 			panic(err.Error())
@@ -85,7 +85,7 @@ func main() {
 		arg1 := os.Args[1]
 		// This first set of 1-arg requests do not require API tokens to be set up
 		switch arg1 {
-	    case "-v":
+		case "-v":
 			PrintUsage()
 		case "-cr":
 			maz.DumpCredentials(z)
@@ -100,7 +100,7 @@ func main() {
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1]
 			all := GetObjects(t, "", false, z) // false means do not force Azure call, ok to use cache
-			utl.PrintJson(all) // Print entire set in JSON
+			utl.PrintJson(all)                 // Print entire set in JSON
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
 			t := arg1[1:]
 			all := GetObjects(t, "", false, z)
@@ -121,14 +121,15 @@ func main() {
 			PrintUsage()
 		}
 	case 2: // Process 2-argument requests
-		arg1 := os.Args[1] ; arg2 := os.Args[2]
+		arg1 := os.Args[1]
+		arg2 := os.Args[2]
 		z = maz.SetupApiTokens(&z)
 		switch arg1 {
 		case "-vs":
 			CompareSpecfileToAzure(arg2, z)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
-			if utl.ValidUuid(arg2) { // Search/print single object, if it's valid UUID
+			if utl.ValidUuid(arg2) {   // Search/print single object, if it's valid UUID
 				x := GetObjectById(t, arg2, z)
 				utl.PrintJson(x)
 			} else {
@@ -140,7 +141,7 @@ func main() {
 				}
 			}
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
-			t := arg1[1:] // Single out the object type
+			t := arg1[1:]            // Single out the object type
 			if utl.ValidUuid(arg2) { // Search/print single object, if it's valid UUID
 				x := GetObjectById(t, arg2, z)
 				PrintObject(t, x, z)
@@ -160,19 +161,27 @@ func main() {
 			PrintUsage()
 		}
 	case 3: // Process 3-argument requests
-		arg1 := os.Args[1] ; arg2 := os.Args[2] ; arg3 := os.Args[3]
+		arg1 := os.Args[1]
+		arg2 := os.Args[2]
+		arg3 := os.Args[3]
 		switch arg1 {
 		case "-cri":
-			z.TenantId = arg2 ; z.Username = arg3
+			z.TenantId = arg2
+			z.Username = arg3
 			maz.SetupInterativeLogin(z)
 		default:
 			PrintUsage()
 		}
 	case 4: // Process 4-argument requests
-		arg1 := os.Args[1] ; arg2 := os.Args[2]; arg3 := os.Args[3] ; arg4 := os.Args[4]
+		arg1 := os.Args[1]
+		arg2 := os.Args[2]
+		arg3 := os.Args[3]
+		arg4 := os.Args[4]
 		switch arg1 {
 		case "-cr":
-			z.TenantId = arg2 ; z.ClientId = arg3 ; z.ClientSecret = arg4
+			z.TenantId = arg2
+			z.ClientId = arg3
+			z.ClientSecret = arg4
 			maz.SetupAutomatedLogin(z)
 		default:
 			PrintUsage()

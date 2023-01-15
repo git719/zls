@@ -4,11 +4,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/git719/maz"
+	"github.com/git719/utl"
 	"os"
 	"path/filepath"
 	"time"
-	"github.com/git719/maz"
-	"github.com/git719/utl"
 )
 
 func StrVal(x interface{}) string {
@@ -58,7 +58,7 @@ func GetAzRbacScopes(z maz.Bundle) (scopes []string) {
 		// BELOW NOT REALLY NEEDED
 		// // Now get/add all resourceGroups under this subscription
 		// params := map[string]string{"api-version": "2021-04-01"} // resourceGroups
-        // url := maz.ConstAzUrl + StrVal(x["id"]) + "/resourcegroups"
+		// url := maz.ConstAzUrl + StrVal(x["id"]) + "/resourcegroups"
 		// r := ApiGet(url, z.AzHeaders, params)
 		// ApiErrorCheck(r, utl.Trace())
 		// if r != nil && r["value"] != nil {
@@ -73,7 +73,7 @@ func GetAzRbacScopes(z maz.Bundle) (scopes []string) {
 }
 
 func CheckLocalCache(cacheFile string, cachePeriod int64) (usable bool, cachedList []interface{}) {
-	// Return locally cached list of objects if it exists *and* it is within the specified cachePeriod in seconds 
+	// Return locally cached list of objects if it exists *and* it is within the specified cachePeriod in seconds
 	if utl.FileUsable(cacheFile) {
 		cacheFileEpoc := int64(utl.FileModTime(cacheFile))
 		cacheFileAge := int64(time.Now().Unix()) - cacheFileEpoc
@@ -156,31 +156,31 @@ func RemoveCacheFile(t string, z maz.Bundle) {
 	case "t":
 		utl.RemoveFile(filepath.Join(z.ConfDir, z.TokenFile))
 	case "d":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_roleDefinitions.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_roleDefinitions.json"))
 	case "a":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_roleAssignments.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_roleAssignments.json"))
 	case "s":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_subscriptions.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_subscriptions.json"))
 	case "m":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_managementGroups.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_managementGroups.json"))
 	case "u":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_users.json"))
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_users_deltaLink.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_users.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_users_deltaLink.json"))
 	case "g":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_groups.json"))
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_groups_deltaLink.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_groups.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_groups_deltaLink.json"))
 	case "sp":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals.json"))
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_servicePrincipals_deltaLink.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_servicePrincipals.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_servicePrincipals_deltaLink.json"))
 	case "ap":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_applications.json"))
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_applications_deltaLink.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_applications.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_applications_deltaLink.json"))
 	case "ad":
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_directoryRoles.json"))
-		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId + "_directoryRoles_deltaLink.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_directoryRoles.json"))
+		utl.RemoveFile(filepath.Join(z.ConfDir, z.TenantId+"_directoryRoles_deltaLink.json"))
 	case "all":
 		// See https://stackoverflow.com/questions/48072236/remove-files-with-wildcard
-		fileList, err := filepath.Glob(filepath.Join(z.ConfDir, z.TenantId + "_*.json"))
+		fileList, err := filepath.Glob(filepath.Join(z.ConfDir, z.TenantId+"_*.json"))
 		if err != nil {
 			panic(err)
 		}
@@ -196,9 +196,9 @@ func GetObjectFromFile(filePath string) (formatType, t string, obj map[string]in
 
 	// Because JSON is essentially a subset of YAML, we have to check JSON first
 	// As an interesting aside regarding YAML & JSON, see https://news.ycombinator.com/item?id=31406473
-	formatType = "JSON" // Pretend it's JSON
+	formatType = "JSON"                     // Pretend it's JSON
 	objRaw, _ := utl.LoadFileJson(filePath) // Ignores the errors
-	if objRaw == nil { // Ok, it's NOT JSON
+	if objRaw == nil {                      // Ok, it's NOT JSON
 		objRaw, _ = utl.LoadFileYaml(filePath) // See if it's YAML, ignoring the error
 		if objRaw == nil {
 			return "", "", nil // Ok, it's neither, let's return 3 null values
@@ -211,48 +211,48 @@ func GetObjectFromFile(filePath string) (formatType, t string, obj map[string]in
 	xProp, ok := obj["properties"].(map[string]interface{})
 	if !ok { // Valid definition/assignments have a properties attribute
 		return formatType, "", nil // It's not a valid object, return null for type and object
-			}
-	roleName := StrVal(xProp["roleName"]) // Assert and assume it's a definition
+	}
+	roleName := StrVal(xProp["roleName"])       // Assert and assume it's a definition
 	roleId := StrVal(xProp["roleDefinitionId"]) // assert and assume it's an assignment
 
-    if roleName != "" {
-        return formatType, "d", obj // Role definition
-    } else if roleId != "" {
-        return formatType, "a", obj // Role assignment 
-    } else {
-        return formatType, "", obj // Unknown
-    }
+	if roleName != "" {
+		return formatType, "d", obj // Role definition
+	} else if roleId != "" {
+		return formatType, "a", obj // Role assignment
+	} else {
+		return formatType, "", obj // Unknown
+	}
 }
 
 func CompareSpecfileToAzure(filePath string, z maz.Bundle) {
 	if utl.FileNotExist(filePath) || utl.FileSize(filePath) < 1 {
 		utl.Die("File does not exist, or is zero size\n")
 	}
-    formatType, t, x := GetObjectFromFile(filePath)
+	formatType, t, x := GetObjectFromFile(filePath)
 	if formatType != "JSON" && formatType != "YAML" {
-        utl.Die("File is not in JSON nor YAML format\n")
-    }
-    if t != "d" && t != "a" {
-        utl.Die("This " + formatType + " file is not a role definition nor an assignment specfile\n")
-    }
-	
-    fmt.Printf("==== SPECFILE ============================\n")
-    PrintObject(t, x, z) // Use generic print function
-    fmt.Printf("==== AZURE ===============================\n")
-    if t == "d" {
-        y := GetAzRoleDefinition(x, z)
-        if y == nil {
-            fmt.Printf("Above definition does NOT exist in current Azure tenant\n")
-        } else {
+		utl.Die("File is not in JSON nor YAML format\n")
+	}
+	if t != "d" && t != "a" {
+		utl.Die("This " + formatType + " file is not a role definition nor an assignment specfile\n")
+	}
+
+	fmt.Printf("==== SPECFILE ============================\n")
+	PrintObject(t, x, z) // Use generic print function
+	fmt.Printf("==== AZURE ===============================\n")
+	if t == "d" {
+		y := GetAzRoleDefinition(x, z)
+		if y == nil {
+			fmt.Printf("Above definition does NOT exist in current Azure tenant\n")
+		} else {
 			PrintRoleDefinition(y, z) // Use specific role def print function
-        }
-    } else {
-        y := GetAzRoleAssignment(x, z)
-        if y == nil {
-            fmt.Printf("Above assignment does NOT exist in current Azure tenant\n")
-        } else {
+		}
+	} else {
+		y := GetAzRoleAssignment(x, z)
+		if y == nil {
+			fmt.Printf("Above assignment does NOT exist in current Azure tenant\n")
+		} else {
 			PrintRoleAssignment(y, z) // Use specific role assgmnt print function
-        }
-    }
-    os.Exit(0)	
+		}
+	}
+	os.Exit(0)
 }
