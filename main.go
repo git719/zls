@@ -12,11 +12,11 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.9.1"
+	prgver  = "1.9.2"
 )
 
 func PrintUsage() {
-	fmt.Printf(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
+	fmt.Printf(prgname + " Azure Resource RBAC and MS Graph listing utility v" + prgver + "\n" +
 		"    -vs Specfile                   Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +
 		"    -X[j]                          List all X objects tersely, with JSON output option\n" +
 		"    -X[j] UUID|\"string\"            Show/list X object(s) matching on UUID or \"string\" attribute, JSON option\n" +
