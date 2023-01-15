@@ -18,7 +18,7 @@ const (
 
 func PrintUsage() {
 	fmt.Printf(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
-		"    -vs SPECFILE         Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +
+		"    -vs Specfile         Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +
 		"    -X[j]                List all X objects tersely, with JSON output option\n" +
 		"    -X[j] UUID|\"string\"  Show/list X object(s) matching on UUID or \"string\" attribute, JSON option\n" +
 		"    -Xx                  Delete X object local file cache\n" +
@@ -36,8 +36,8 @@ func PrintUsage() {
 		"\n" +
 		"    -z                                Dump variables in running program\n" +
 		"    -cr                               Dump values in credentials file\n" +
-		"    -cr  TENANT_ID CLIENT_ID SECRET   Set up MSAL automated client_id + secret login\n" +
-		"    -cri TENANT_ID USERNAME           Set up MSAL interactive browser popup login\n" +
+		"    -cr  TenantId ClientId Secret     Set up MSAL automated ClientId + Secret login\n" +
+		"    -cri TenantId Username            Set up MSAL interactive browser popup login\n" +
 		"    -tx                               Delete MSAL accessTokens cache file\n" +
 		"    -v                                Print this usage page\n")
 	os.Exit(0)

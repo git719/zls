@@ -179,14 +179,16 @@ func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
 			assignmentIds = append(assignmentIds, StrVal(x["name"])) // Note, name is the object UUID
 		}
 		if verbose { // Using global var rUp to overwrite last line. Defer newline until done
-			fmt.Printf("%s(API calls = %d) %d assignment in this set", rUp, k, len(tenantLevelAssignments))
+			fmt.Printf("%s(API calls = %d) %d role assignments under root scope", rUp, k, len(tenantLevelAssignments))
 		}
 		k++
 	}
 	// 2nd, we look under subscription-level role assignments 
 	subscriptionScopes := GetAzSubscriptionsIds(z)
+	subNameMap := GetIdMapSubs(z) // Get all subscription id:name pairs
 	delete(params, "$filter") // Removing, so we can pull all assignments under each subscription
 	for _, scope := range subscriptionScopes {
+		subName :=  subNameMap[utl.LastElem(scope, "/")] // Get subscription name
 		url = aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleAssignments"
 		r = ApiGet(url, z.AzHeaders, params)
 		ApiErrorCheck(r, utl.Trace())
@@ -204,7 +206,7 @@ func GetAzRoleAssignments(verbose bool, z aza.AzaBundle) (list []interface{}) {
 				u++
 			}
 			if verbose {
-				fmt.Printf("%s(API calls = %d) %d assignment in this set", rUp, k, u)
+				fmt.Printf("%s(API calls = %d) %d role assignments under subscription %s", rUp, k, u, subName)
 			}
 			k++
 		}
@@ -323,7 +325,6 @@ func GetAzRoleAssignmentById(id string, z aza.AzaBundle) (map[string]interface{}
 			}
 		}
 	}
-
 	// 2nd, we look under subscription-level role assignments 
 	subscriptionScopes := GetAzSubscriptionsIds(z)
 	delete(params, "$filter") // Removing, so we can pull all assignments under each subscription

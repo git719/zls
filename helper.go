@@ -39,7 +39,7 @@ func GetObjectById(t, id string, z aza.AzaBundle) (x map[string]interface{}) {
 }
 
 func GetAzRbacScopes(z aza.AzaBundle) (scopes []string) {
-	// DO USED: LOOKING TO DELETE THIS
+	// NOT USED: LOOKING TO DELETE THIS
 	// Get all scopes from the Azure RBAC hierarchy
 	scopes = nil
 	managementGroups := GetAzMgGroups(z) // Let's start with all managementGroups scopes
@@ -118,7 +118,7 @@ func GetAzObjects(url string, headers aza.MapString, verbose bool) (deltaSet []i
 	// Generic Azure object deltaSet retriever function. Returns the set of changed or new items,
 	// and a deltaLink for running the next future Azure query. Implements the pattern described at
 	// https://docs.microsoft.com/en-us/graph/delta-query-overview
-	calls := 1 // Track number of API calls
+	k := 1 // Track number of API calls
 	r := ApiGet(url, headers, nil)
 	ApiErrorCheck(r, utl.Trace())
 	for {
@@ -132,16 +132,18 @@ func GetAzObjects(url string, headers aza.MapString, verbose bool) (deltaSet []i
 		}
 		if verbose {
 			// Progress count indicator. Using global var rUp to overwrite last line. Defer newline until done
-			fmt.Printf("%s(API calls = %d) %d objects in set %d", rUp, calls, len(thisBatch), calls)
+			fmt.Printf("%s(API calls = %d) %d objects in set %d", rUp, k, len(thisBatch), k)
 		}
 		if r["@odata.deltaLink"] != nil {
-			// BREAK infinite for-loop when deltaLink appears, meaning there are no more entries to retrieve
 			deltaLinkMap := map[string]string{"@odata.deltaLink": StrVal(r["@odata.deltaLink"])}
-			return deltaSet, deltaLinkMap
+			if verbose {
+				fmt.Printf("\n")
+			}
+			return deltaSet, deltaLinkMap // Return immediately after deltaLink appears
 		}
-		r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil)  // Get next batch
+		r = ApiGet(StrVal(r["@odata.nextLink"]), headers, nil) // Get next batch
 		ApiErrorCheck(r, utl.Trace())
-		calls++
+		k++
 	}
 	if verbose {
 		fmt.Printf("\n")

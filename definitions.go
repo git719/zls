@@ -181,13 +181,15 @@ func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list []interface{}) {
 			definitionIds = append(definitionIds, StrVal(x["name"])) // Note, name is the object UUID
 		}
 		if verbose { // Using global var rUp to overwrite last line. Defer newline until done
-			fmt.Printf("%s(API calls = %d) %d unique definitions in this set", rUp, k, len(tenantLevelDefinitions))
+			fmt.Printf("%s(API calls = %d) %d unique role definitions under root scope", rUp, k, len(tenantLevelDefinitions))
 		}
 		k++
 	}
 	// 2nd, we look under subscription-level role definitions 
 	subscriptionScopes := GetAzSubscriptionsIds(z)
+	subNameMap := GetIdMapSubs(z) // Get all subscription id:name pairs
 	for _, scope := range subscriptionScopes {
+		subName :=  subNameMap[utl.LastElem(scope, "/")] // Get subscription name
 		url = aza.ConstAzUrl + scope + "/providers/Microsoft.Authorization/roleDefinitions"
 		r = ApiGet(url, z.AzHeaders, params)
 		ApiErrorCheck(r, utl.Trace())
@@ -205,7 +207,7 @@ func GetAzRoleDefinitions(verbose bool, z aza.AzaBundle) (list []interface{}) {
 				u++
 			}
 			if verbose {
-				fmt.Printf("%s(API calls = %d) %d unique definitions in this set", rUp, k, u)
+				fmt.Printf("%s(API calls = %d) %d unique role definitions under subscription %s", rUp, k, u, subName)
 			}
 			k++
 		}
