@@ -13,7 +13,6 @@ import (
 const (
 	prgname = "zls"
 	prgver  = "1.9.0"
-	rUp     = "\x1B[2K\r" // See https://stackoverflow.com/questions/1508490/erase-the-current-printed-console-line
 )
 
 func PrintUsage() {
@@ -93,28 +92,28 @@ func main() {
 		z = maz.SetupApiTokens(&z) // The remaining 1-arg requests DO required API tokens to be set up
 		switch arg1 {
 		case "-xx":
-			RemoveCacheFile("all", z)
+			maz.RemoveCacheFile("all", z)
 		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-adx":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
-			RemoveCacheFile(t, z)
+			maz.RemoveCacheFile(t, z)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1]
-			all := GetObjects(t, "", false, z) // false means do not force Azure call, ok to use cache
-			utl.PrintJson(all)                 // Print entire set in JSON
+			all := maz.GetObjects(t, "", false, z) // false means do not force Azure call, ok to use cache
+			utl.PrintJson(all)                     // Print entire set in JSON
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
 			t := arg1[1:]
-			all := GetObjects(t, "", false, z)
+			all := maz.GetObjects(t, "", false, z)
 			for _, i := range all { // Print entire set tersely
-				PrintTersely(t, i)
+				maz.PrintTersely(t, i)
 			}
 		case "-ar":
-			PrintRoleAssignmentReport(z)
+			maz.PrintRoleAssignmentReport(z)
 		case "-mt":
-			PrintMgTree(z)
+			maz.PrintMgTree(z)
 		case "-pags":
-			PrintPags(z)
+			maz.PrintPags(z)
 		case "-st":
-			PrintCountStatus(z)
+			maz.PrintCountStatus(z)
 		case "-z":
 			maz.DumpVariables(z)
 		default:
@@ -126,14 +125,14 @@ func main() {
 		z = maz.SetupApiTokens(&z)
 		switch arg1 {
 		case "-vs":
-			CompareSpecfileToAzure(arg2, z)
+			maz.CompareSpecfileToAzure(arg2, z)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
 			if utl.ValidUuid(arg2) {   // Search/print single object, if it's valid UUID
-				x := GetObjectById(t, arg2, z)
+				x := maz.GetObjectById(t, arg2, z)
 				utl.PrintJson(x)
 			} else {
-				matchingObjects := GetObjects(t, arg2, false, z)
+				matchingObjects := maz.GetObjects(t, arg2, false, z)
 				if len(matchingObjects) == 1 {
 					utl.PrintJson(matchingObjects[0]) // Print single matching object in JSON
 				} else if len(matchingObjects) > 1 {
@@ -143,17 +142,17 @@ func main() {
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
 			t := arg1[1:]            // Single out the object type
 			if utl.ValidUuid(arg2) { // Search/print single object, if it's valid UUID
-				x := GetObjectById(t, arg2, z)
-				PrintObject(t, x, z)
+				x := maz.GetObjectById(t, arg2, z)
+				maz.PrintObject(t, x, z)
 			} else {
-				matchingObjects := GetObjects(t, arg2, false, z)
+				matchingObjects := maz.GetObjects(t, arg2, false, z)
 				if len(matchingObjects) == 1 {
 					x := matchingObjects[0].(map[string]interface{})
-					PrintObject(t, x, z)
+					maz.PrintObject(t, x, z)
 				} else if len(matchingObjects) > 1 {
 					for _, i := range matchingObjects { // Print all matching object teresely
 						x := i.(map[string]interface{})
-						PrintTersely(t, x)
+						maz.PrintTersely(t, x)
 					}
 				}
 			}
