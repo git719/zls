@@ -1,28 +1,16 @@
 #!/bin/bash
-# Make
-set -euo pipefail  # Deliberately fail if any errors, as with other languages
+# build
+# Make the binary and place in the PATH
+set -euo pipefail  # Fail on any error
 PRG=zls
 case "$OSTYPE" in
-    "linux-gnu"* )
-        echo "Linux build ..."
-        go build -ldflags "-s -w" -o $GOPATH/bin/$PRG
-        ls -l $GOPATH/bin/$PRG
-        ;;
-    "darwin"* )
-        echo "macOS build ..."
-        go build -ldflags "-s -w" -o $GOPATH/bin/$PRG
-        ls -l $GOPATH/bin/$PRG
-        ;;
-    "msys"* )
-        echo "Windows build ..."
-        go build -ldflags "-s -w" -o $GOPATH/bin/${PRG}.exe
-        ls -l $GOPATH/bin/$PRG
-        ;;
-    * )
-        echo "OSTYPE=$OSTYPE, which is an unknown OS!"
-        echo ""
-        echo "Options are: darwin*, linux-gnu*, and msys* (GitBash on Win)" 
-        echo ""
-        exit 1 ;;
+    "linux-gnu"* ) echo "=> OS = Linux" && BIN=$GOPATH/bin/${PRG} ;;
+    "darwin"* )    echo "=> OS = macOS" && BIN=$GOPATH/bin/${PRG} ;;
+    "msys"* )      echo "=> OS = Windows with GitBASH" && BIN=$GOPATH/bin/${PRG}.exe ;;
+    * )            printf "=> OS = \"$OSTYPE\", unknown! (Options are Linux, macOS, or Windows with GitBASH)\n" && exit 1 ;;
 esac
+go mod tidy
+go test ./...
+go build -ldflags "-s -w" -o $BIN
+ls -l $GOPATH/bin/$PRG
 exit 0

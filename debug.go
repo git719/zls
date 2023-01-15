@@ -2,39 +2,54 @@
 
 package main
 
+import (
+	"fmt"
+	"os"
+	//"runtime"
+	//"path/filepath"
+	// "github.com/git719/maz"
+	// "github.com/git719/utl"
+)
+
+var (
+	// Some basic colors
+	Red = "\033[1;31m"
+	Gre = "\033[0;32m"
+	Blu = "\033[1;34m"
+	Yel = "\033[0;33m"
+	Pur = "\033[1;35m"
+	Cya = "\033[0;36m"
+	Rst = "\033[0m"
+)
+
+// func init() {
+// 	if runtime.GOOS == "windows" {
+// 		Red = "" ; Gre = "" ; Blu = "" ; Yel = "" ; Pur = "" ; Cya = "" ; Rst = ""
+// 	}
+// }
+
 func TestFunction() {
-	// url := "/providers/Microsoft.Management/getEntities"
-	// url := "/providers/Microsoft.Management/managementGroups"
-	// url := "/providers/Microsoft.Management/managementGroups/" + tenant_id + "/descendants"
-	url := az_url + "/providers/Microsoft.Management/managementGroups/" + tenant_id
-	params := map[string]string{
-		"api-version": "2022-04-01",
-		"$expand":     "children",
-		"$recurse":    "true",
-	}
-	r := ApiGet(url, az_headers, params)
-	ApiErrorCheck(r, trace())
-	PrintJson(r)
+	fmt.Println(Red + "Hellow world!" + Rst)
+	fmt.Println(Gre + "Hellow world!" + Rst)
+	fmt.Println(Blu + "Hellow world!" + Rst)
+	fmt.Println(Yel + "Hellow world!" + Rst)
+	fmt.Println(Pur + "Hellow world!" + Rst)
+	fmt.Println(Cya + "Hellow world!" + Rst)
 
-	// Test MergeObjects function
-	// filePath := filepath.Join("/Users/user1/obj.json")
-	// objRaw := LoadFileJson(filePath)
-	// if objRaw == nil {
-	// 	die("Error loading file\n")
-	// }
-	// obj := objRaw.(map[string]interface{})
+	// var z maz.Bundle
 
-	// filePath2 = filepath.Join("/Users/user1/obj2.json")
-	// objRaw2 = LoadFileJson(filePath2)
-	// if objRaw2 == nil {
-	// 	die("Error loading file\n")
-	// }
-	// obj2 := ojbRaw2.(map[string]interface{})
+	// 	// Set up the bundle of variables
+	// 	z = SetupVariables(&z)
+	// 	fmt.Println(z.ConfDir)
+	// 	fmt.Println(z.CredsFile)
+	// 	fmt.Println(z.TokenFile)
 
-	// PrintJson(obj)
-	// PrintJson(obj2)
-	// x := MergeObjects(obj, obj2)
-	// PrintJson(x)
+	// 	// Setup the API tokens
+	// 	z = maz.SetupApiTokens(&z)
 
-	exit(0)
+	// 	// Get subscription with a specific filter
+	// 	subs := GetSubscriptions("as01", z)
+	// 	fmt.Println(len(subs))
+	// 	utl.PrintJson(subs)
+	os.Exit(0)
 }
