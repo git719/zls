@@ -59,12 +59,12 @@ func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle) {
 	} else {
 		permsSet := xProp["permissions"].([]interface{})
 		if len(permsSet) == 1 {
-			perms := permsSet[0].(map[string]interface{})    // Select the 1 expected single permission set
+			perms := permsSet[0].(map[string]interface{}) // Select the 1 expected single permission set
 
-			fmt.Printf("    - actions:\n")      // Note that this one is different, as it starts the YAML array with the dash '-'
+			fmt.Printf("    - actions:\n") // Note that this one is different, as it starts the YAML array with the dash '-'
 			if perms["actions"] != nil {
 				permsA := perms["actions"].([]interface{})
-				if utl.VarType(permsA)[0] != '[' {           // Open bracket character means it's an array list
+				if utl.GetType(permsA)[0] != '[' { // Open bracket character means it's an array list
 					fmt.Printf("        <Not an array??>\n")
 				} else {
 					for _, i := range permsA {
@@ -76,7 +76,7 @@ func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle) {
 			fmt.Printf("      notActions:\n")
 			if perms["notActions"] != nil {
 				permsNA := perms["notActions"].([]interface{})
-				if utl.VarType(permsNA)[0] != '[' {
+				if utl.GetType(permsNA)[0] != '[' {
 					fmt.Printf("        <Not an array??>\n")
 				} else {
 					for _, i := range permsNA {
@@ -88,7 +88,7 @@ func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle) {
 			fmt.Printf("      dataActions:\n")
 			if perms["dataActions"] != nil {
 				permsDA := perms["dataActions"].([]interface{})
-				if utl.VarType(permsDA)[0] != '[' {
+				if utl.GetType(permsDA)[0] != '[' {
 					fmt.Printf("        <Not an array??>\n")
 				} else {
 					for _, i := range permsDA {
@@ -100,7 +100,7 @@ func PrintRoleDefinition(x map[string]interface{}, z aza.AzaBundle) {
 			fmt.Printf("      notDataActions:\n")
 			if perms["notDataActions"] != nil {
 				permsNDA := perms["notDataActions"].([]interface{})
-				if utl.VarType(permsNDA)[0] != '[' {
+				if utl.GetType(permsNDA)[0] != '[' {
 					fmt.Printf("        <Not an array??>\n")
 				} else {
 					for _, i := range permsNDA {
@@ -294,7 +294,7 @@ func GetAzRoleDefinition(x map[string]interface{}, z aza.AzaBundle) (y map[strin
 	}
 		
 	xScopes := xProp["assignableScopes"].([]interface{})
-	if utl.VarType(xScopes)[0] != '[' || len(xScopes) < 1 {
+	if utl.GetType(xScopes)[0] != '[' || len(xScopes) < 1 {
 		return nil // Return nil if assignableScopes not an array, or it's empty
 	}
 	xRoleName := StrVal(xProp["roleName"])

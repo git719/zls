@@ -1,10 +1,10 @@
 module zls
 
-go 1.17
+go 1.19
 
 require (
-	github.com/git719/aza v0.5.0
-	github.com/git719/utl v0.1.1
+	github.com/git719/aza v0.6.2
+	github.com/git719/utl v1.0.0
 )
 
 require (
