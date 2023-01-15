@@ -18,28 +18,28 @@ const (
 
 func PrintUsage() {
 	fmt.Printf(prgname + " Azure RBAC and MS Graph listing utility v" + prgver + "\n" +
-		"    -vs Specfile         Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +
-		"    -X[j]                List all X objects tersely, with JSON output option\n" +
-		"    -X[j] UUID|\"string\"  Show/list X object(s) matching on UUID or \"string\" attribute, JSON option\n" +
-		"    -Xx                  Delete X object local file cache\n" +
+		"    -vs Specfile                   Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +
+		"    -X[j]                          List all X objects tersely, with JSON output option\n" +
+		"    -X[j] UUID|\"string\"            Show/list X object(s) matching on UUID or \"string\" attribute, JSON option\n" +
+		"    -Xx                            Delete X object local file cache\n" +
 		"\n" +
 		"    Where 'X' can be any of these object types:\n" +
 		"      d  = RBAC Role Definitions   a  = RBAC Role Assignments   s  = Azure Subscriptions  \n" +
 		"      m  = Management Groups       u  = Azure AD Users          g  = Azure AD Groups      \n" +
 		"      sp = Service Principals      ap = Applications            ad = Azure AD Roles\n" +
 		"\n" +
-		"    -xx                               Delete ALL cache local files\n" +
-		"    -ar                               List all RBAC role assignments with resolved names\n" +
-		"    -mt                               List Management Group and subscriptions tree\n" +
-		"    -pags                             List all Azure AD Privileged Access Groups\n" +
-		"    -st                               List local cache count and Azure count of all objects\n" +
+		"    -xx                            Delete ALL cache local files\n" +
+		"    -ar                            List all RBAC role assignments with resolved names\n" +
+		"    -mt                            List Management Group and subscriptions tree\n" +
+		"    -pags                          List all Azure AD Privileged Access Groups\n" +
+		"    -st                            List local cache count and Azure count of all objects\n" +
 		"\n" +
-		"    -z                                Dump variables in running program\n" +
-		"    -cr                               Dump values in credentials file\n" +
-		"    -cr  TenantId ClientId Secret     Set up MSAL automated ClientId + Secret login\n" +
-		"    -cri TenantId Username            Set up MSAL interactive browser popup login\n" +
-		"    -tx                               Delete MSAL accessTokens cache file\n" +
-		"    -v                                Print this usage page\n")
+		"    -z                             Dump variables in running program\n" +
+		"    -cr                            Dump values in credentials file\n" +
+		"    -cr  TenantId ClientId Secret  Set up MSAL automated ClientId + Secret login\n" +
+		"    -cri TenantId Username         Set up MSAL interactive browser popup login\n" +
+		"    -tx                            Delete MSAL accessTokens cache file\n" +
+		"    -v                             Print this usage page\n")
 	os.Exit(0)
 }
 
