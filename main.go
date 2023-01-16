@@ -12,33 +12,34 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.9.2"
+	prgver  = "1.9.4"
 )
 
 func PrintUsage() {
-	fmt.Printf(prgname + " Azure Resource RBAC and MS Graph listing utility v" + prgver + "\n" +
-		"    -vs Specfile                   Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +
-		"    -X[j]                          List all X objects tersely, with JSON output option\n" +
-		"    -X[j] UUID|\"string\"            Show/list X object(s) matching on UUID or \"string\" attribute, JSON option\n" +
-		"    -Xx                            Delete X object local file cache\n" +
-		"\n" +
-		"    Where 'X' can be any of these object types:\n" +
+	X := utl.ColRed("X")
+	fmt.Printf(prgname + " Azure Resource RBAC and MS Graph READER v" + prgver + "\n" +
+		"    READER FUNCTIONS\n" +
+		"    UUID                              Show object for given UUID\n" +
+		"    -vs Specfile                      Compare YAML or JSON specfile to what's in Azure (only for d and a objects)\n" +
+		"    -"+X+"[j] [Specifier]                 List all "+X+" objects tersely, with option for JSON output and/or match on Specifier\n" +
+		"    -"+X+"x                               Delete "+X+" object local file cache\n\n" +
+		"      Where '"+X+"' can be any of these object types:\n" +
 		"      d  = RBAC Role Definitions   a  = RBAC Role Assignments   s  = Azure Subscriptions  \n" +
 		"      m  = Management Groups       u  = Azure AD Users          g  = Azure AD Groups      \n" +
 		"      sp = Service Principals      ap = Applications            ad = Azure AD Roles\n" +
 		"\n" +
-		"    -xx                            Delete ALL cache local files\n" +
-		"    -ar                            List all RBAC role assignments with resolved names\n" +
-		"    -mt                            List Management Group and subscriptions tree\n" +
-		"    -pags                          List all Azure AD Privileged Access Groups\n" +
-		"    -st                            List local cache count and Azure count of all objects\n" +
+		"    -xx                               Delete ALL cache local files\n" +
+		"    -ar                               List all RBAC role assignments with resolved names\n" +
+		"    -mt                               List Management Group and subscriptions tree\n" +
+		"    -pags                             List all Azure AD Privileged Access Groups\n" +
+		"    -st                               List local cache count and Azure count of all objects\n" +
 		"\n" +
-		"    -z                             Dump variables in running program\n" +
-		"    -cr                            Dump values in credentials file\n" +
-		"    -cr  TenantId ClientId Secret  Set up MSAL automated ClientId + Secret login\n" +
-		"    -cri TenantId Username         Set up MSAL interactive browser popup login\n" +
-		"    -tx                            Delete MSAL accessTokens cache file\n" +
-		"    -v                             Print this usage page\n")
+		"    -z                                Dump important program variables\n" +
+		"    -cr                               Dump values in credentials file\n" +
+		"    -cr  TenantId ClientId Secret     Set up MSAL automated ClientId + Secret login\n" +
+		"    -cri TenantId Username            Set up MSAL interactive browser popup login\n" +
+		"    -tx                               Delete MSAL accessTokens cache file\n" +
+		"    -v                                Print this usage page\n")
 	os.Exit(0)
 }
 
@@ -60,7 +61,8 @@ func SetupVariables(z *maz.Bundle) maz.Bundle {
 		AzHeaders:    map[string]string{},
 	}
 	// Set up configuration directory
-	z.ConfDir = filepath.Join(os.Getenv("HOME"), "."+prgname)
+	z.ConfDir = filepath.Join(os.Getenv("HOME"), ".maz") // IMPORTANT: Setting config dir = "~/.maz"
+
 	if utl.FileNotExist(z.ConfDir) {
 		if err := os.Mkdir(z.ConfDir, 0700); err != nil {
 			panic(err.Error())
@@ -117,7 +119,12 @@ func main() {
 		case "-z":
 			maz.DumpVariables(z)
 		default:
-			PrintUsage()
+			if utl.ValidUuid(arg1) { // // If valid UUID, search/print single object
+				fmt.Println("TODO: Write maz.PrintObjectById(arg1)")
+				//fmt.PrintObjectById(arg1)
+			} else {
+				PrintUsage()
+			}
 		}
 	case 2: // Process 2-argument requests
 		arg1 := os.Args[1]
