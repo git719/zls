@@ -12,7 +12,7 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.9.4"
+	prgver  = "1.9.5"
 )
 
 func PrintUsage() {
@@ -119,9 +119,8 @@ func main() {
 		case "-z":
 			maz.DumpVariables(z)
 		default:
-			if utl.ValidUuid(arg1) { // // If valid UUID, search/print single object
-				fmt.Println("TODO: Write maz.PrintObjectById(arg1)")
-				//fmt.PrintObjectById(arg1)
+			if utl.ValidUuid(arg1) { // If valid UUID, search/print matching object(s?)
+				maz.PrintObjectById(arg1, z)
 			} else {
 				PrintUsage()
 			}

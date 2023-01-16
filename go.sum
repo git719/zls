@@ -1,7 +1,7 @@
 github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 h1:VgSJlZH5u0k2qxSpqyghcFQKmvYckj46uymKK5XzkBM=
 github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0/go.mod h1:BDJ5qMFKx9DugEg3+uQSDCdbYPr5s9vBTrL9P8TpqOU=
-github.com/git719/maz v0.8.3 h1:GT18m4VUXDWs2DNmcvSJaZ2kH/ED57pj3KSX2456ojc=
-github.com/git719/maz v0.8.3/go.mod h1:Mj4o2ij8Fhfte2vrYQ28cmMSFDRrGczdTTQtvn4z0VU=
+github.com/git719/maz v0.8.6 h1:PBSlKUZovYdvqUGijFneF5FNRSpE8gDdtlsdPKCNbbw=
+github.com/git719/maz v0.8.6/go.mod h1:Mj4o2ij8Fhfte2vrYQ28cmMSFDRrGczdTTQtvn4z0VU=
 github.com/git719/utl v1.0.5 h1:c10rjQDTU3VI4wasOzdKAOQvEk1/1xWwQ5fMZbEjsw8=
 github.com/git719/utl v1.0.5/go.mod h1:LkbsLxdFtGKWHSy/tVw0Xwio7ED38EOymJ+ZqsGQWqI=
 github.com/golang-jwt/jwt/v4 v4.4.3 h1:Hxl6lhQFj4AnOX6MLrsCb/+7tCj7DxP7VA+2rDIq5AU=
