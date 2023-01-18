@@ -3,21 +3,13 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"os"
 	//"path/filepath"
 	// "github.com/git719/maz"
-	"github.com/git719/utl"
 )
 
 func TestFunction() {
-	fmt.Println(utl.Red + "Hellow world!" + utl.Rst)
-	fmt.Println(utl.Gre + "Hellow world!" + utl.Rst)
-	fmt.Println(utl.Blu + "Hellow world!" + utl.Rst)
-	fmt.Println(utl.Yel + "Hellow world!" + utl.Rst)
-	fmt.Println(utl.Pur + "Hellow world!" + utl.Rst)
-	fmt.Println(utl.Cya + "Hellow world!" + utl.Rst)
-
 	// var z maz.Bundle
 
 	// 	// Set up the bundle of variables

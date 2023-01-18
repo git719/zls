@@ -12,11 +12,11 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.9.7"
+	prgver  = "1.9.8"
 )
 
 func PrintUsage() {
-	X := utl.ColRed("X")
+	X := utl.Red("X")
 	fmt.Printf(prgname + " Azure Resource RBAC and MS Graph READER v" + prgver + "\n" +
 		"    READER FUNCTIONS\n" +
 		"    UUID                              Show object for given UUID\n" +
