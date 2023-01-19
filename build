@@ -20,11 +20,11 @@ grep "prgver.*=" main.go
 printf "\n==> HEAD of go.mod:\n"
 head go.mod
 
-printf "\n==> Last 3 tag versions = "
-git tag | tail -3 | tr '\n' ' '
+printf "\n==> Last 10 tag versions:\n"
+git tag | tail
 CurrentTag=`git tag | tail -1`
 Prg=`head -1 go.mod | awk -F'/' '{print $NF}' | awk '{print $NF}'`
-printf "\n\n==> To publish, do below one-liner, updating tag version and comments accordingly:\n\n"
+printf "\n==> To publish, do below one-liner, advancing tag version and updating comments accordingly:\n\n"
 printf "Tag=$CurrentTag && Prg=$Prg && git add . && git commit -m \"\$Tag: updates\" && git tag \$Tag && git push origin \$Tag && git push\n\n"
 
 exit 0
