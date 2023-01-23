@@ -12,7 +12,7 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.10.6"
+	prgver  = "1.10.7"
 )
 
 func PrintUsage() {
@@ -138,35 +138,10 @@ func main() {
 			maz.CompareSpecfileToAzure(arg2, z)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
-			if utl.ValidUuid(arg2) {   // Search/print single object, if it's valid UUID
-				x := maz.GetAzObjectByUuid(t, arg2, z)
-				utl.PrintJson(x)
-			} else {
-				matchingObjects := maz.GetObjects(t, arg2, false, z)
-				if len(matchingObjects) == 1 {
-					x := matchingObjects[0].(map[string]interface{})
-					utl.PrintJson(x) // Print single matching object in JSON
-				} else if len(matchingObjects) > 1 {
-					utl.PrintJson(matchingObjects) // Print all matching objects in JSON
-				}
-			}
+			maz.PrintMatching("json", t, arg2, z)
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
-			t := arg1[1:]            // Single out the object type
-			if utl.ValidUuid(arg2) { // Search/print single object, if it's valid UUID
-				x := maz.GetAzObjectByUuid(t, arg2, z)
-				maz.PrintObject(t, x, z)
-			} else {
-				matchingObjects := maz.GetObjects(t, arg2, false, z)
-				if len(matchingObjects) == 1 {
-					x := matchingObjects[0].(map[string]interface{})
-					maz.PrintObject(t, x, z)
-				} else if len(matchingObjects) > 1 {
-					for _, i := range matchingObjects { // Print all matching object teresely
-						x := i.(map[string]interface{})
-						maz.PrintTersely(t, x)
-					}
-				}
-			}
+			t := arg1[1:] // Single out the object type
+			maz.PrintMatching("reg", t, arg2, z)
 		default:
 			PrintUsage()
 		}
