@@ -12,7 +12,7 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.10.5"
+	prgver  = "1.10.6"
 )
 
 func PrintUsage() {
@@ -144,7 +144,8 @@ func main() {
 			} else {
 				matchingObjects := maz.GetObjects(t, arg2, false, z)
 				if len(matchingObjects) == 1 {
-					utl.PrintJson(matchingObjects[0]) // Print single matching object in JSON
+					x := matchingObjects[0].(map[string]interface{})
+					utl.PrintJson(x) // Print single matching object in JSON
 				} else if len(matchingObjects) > 1 {
 					utl.PrintJson(matchingObjects) // Print all matching objects in JSON
 				}
