@@ -3,8 +3,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0/go.mod h1:BDJ5
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/git719/maz v0.9.16 h1:177pwT/gQsFt1dgVYV5NcUffWHqVau0eaIWWguBWacs=
-github.com/git719/maz v0.9.16/go.mod h1:8SStOO53gQfI0TVMen+3wIsnpaEHDFySKMpgcUR6EpQ=
+github.com/git719/maz v0.9.17 h1:FPDP6x9zyMh+saOypiHqczNoh1LeIshPkCp0smjTvys=
+github.com/git719/maz v0.9.17/go.mod h1:8SStOO53gQfI0TVMen+3wIsnpaEHDFySKMpgcUR6EpQ=
 github.com/git719/utl v1.1.3 h1:YZTuRp8ym6kCc6PqG3q7c546yE4rf6Yd/vB8xluL4DQ=
 github.com/git719/utl v1.1.3/go.mod h1:C0sMQMi/QJFEdh/HA/WNPtHVQLqp1lXXcSA2iXq09/Y=
 github.com/golang-jwt/jwt/v4 v4.4.3 h1:Hxl6lhQFj4AnOX6MLrsCb/+7tCj7DxP7VA+2rDIq5AU=
