@@ -12,7 +12,7 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.11.2"
+	prgver  = "1.11.3"
 )
 
 func PrintUsage() {
