@@ -1,11 +1,9 @@
 # zls
-Azure RBAC and MS Graph listing utility.
+Azure resource RBAC and MS Graph reader utility.
 
-This utility is more of a _proof-of-concept_ in how to use [MSAL library for Go](https://github.com/AzureAD/microsoft-authentication-library-for-go) than anything else. However, some may find it useful to casually query certain Azure ARM and MS Graph API objects.
+This utility is predominantly a _proof-of-concept_ on how to use the [MSAL library for Go](https://github.com/AzureAD/microsoft-authentication-library-for-go). However, it can be used to casually query certain Azure ARM and MS Graph API objects.
 
 This is the GoLang version. The Python version is called `azls` and sits within the <https://github.com/git719/az> repo. This version is more much quicker, and having a single binary executable is easier to use without having to setup any Python environments.
-
-Why `zls`? Because three-letter names are easier to type.
 
 ## Reader Access Requirements
 1. You can register a dedicated Azure application in your tenant and grant it the required Read permissions for each API object type the utility reports on. Please find other sources for how to do the app reg. The utility sets up and uses a configuration directory at `$HOME/.<utility_name>` to retrieve and store the required credential parameters (`credentials.yaml`, but also to store other local cache files. To use this automated logon option, update the credentials file with the `-cr TENANT_ID CLIENT_ID SECRET` arguments once you have registered your special app for this.
@@ -52,17 +50,17 @@ Please note that the **primary goal** of this utility is to serve as a study aid
 
 ## Usage
 ```
-zls Azure RBAC and MS Graph listing utility v184
-    -vs SPECFILE         Compare YAML or JSON specfile to what's in Azure (only for d and a objects)
-    -X[j]                List all X objects tersely, with JSON output option
-    -X[j] UUID|"string"  Show/list X object(s) matching on UUID or "string" attribute, JSON option
-    -Xx                  Delete X object local file cache
+zls Azure Resource RBAC and MS Graph READER v1.11.4
+    READER FUNCTIONS
+    UUID                              Show object for given UUID
+    -vs Specfile                      Compare YAML or JSON specfile to what's in Azure (only for d and a objects)
+    -X[j] [Specifier]                 List all X objects tersely, with option for JSON output and/or match on Specifier
+    -Xx                               Delete X object local file cache
 
-    Where 'X' can be any of these object types:
+      Where 'X' can be any of these object types:
       d  = RBAC Role Definitions   a  = RBAC Role Assignments   s  = Azure Subscriptions
       m  = Management Groups       u  = Azure AD Users          g  = Azure AD Groups
-      sp = Service Principals      ap = Applications            ra = Azure AD Roles Active
-      rd = Azure AD Roles Defs
+      sp = Service Principals      ap = Applications            ad = Azure AD Roles
 
     -xx                               Delete ALL cache local files
     -ar                               List all RBAC role assignments with resolved names
@@ -70,10 +68,11 @@ zls Azure RBAC and MS Graph listing utility v184
     -pags                             List all Azure AD Privileged Access Groups
     -st                               List local cache count and Azure count of all objects
 
-    -z                                Dump variables in running program
+    -z                                Dump important program variables
     -cr                               Dump values in credentials file
-    -cr  TENANT_ID CLIENT_ID SECRET   Set up MSAL automated client_id + secret login
-    -cri TENANT_ID USERNAME           Set up MSAL interactive browser popup login
+    -cr  TenantId ClientId Secret     Set up MSAL automated ClientId + Secret login
+    -cri TenantId Username            Set up MSAL interactive browser popup login
     -tx                               Delete MSAL accessTokens cache file
+    -tc "TokenString"                 Dump token claims
     -v                                Print this usage page
 ```
