@@ -12,7 +12,7 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.11.10"
+	prgver  = "1.11.11"
 )
 
 func PrintUsage() {
@@ -102,7 +102,7 @@ func main() {
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
 			t := arg1[1 : len(arg1)-1]
 			all := maz.GetObjects(t, "", false, z) // false means do not force Azure call, ok to use cache
-			utl.PrintJson(all)                     // Print entire set in JSON
+			utl.PrintJsonColor(all)                // Print entire set in JSON
 		case "-d", "-a", "-s", "-m", "-u", "-g", "-sp", "-ap", "-ad":
 			t := arg1[1:]
 			all := maz.GetObjects(t, "", false, z)
