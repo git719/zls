@@ -2,6 +2,7 @@
 # build
 # Make the binary and place in the PATH
 set -euo pipefail  # Fail on any error
+export Gre='\e[1;32m' Red='\e[1;31m' Rst='\e[0m'
 Prg=`head -1 go.mod | awk -F'/' '{print $NF}' | awk '{print $NF}'`
 case "$OSTYPE" in
     "linux-gnu"* ) printf "==> OS = Linux\n" && BIN=$GOPATH/bin/${Prg} ;;
@@ -15,11 +16,8 @@ go test ./...
 go build -ldflags "-s -w" -o $BIN
 ls -l $GOPATH/bin/$Prg
 
-printf "\n==> Version in main.go:\n"
-grep "prgver.*=" main.go
-printf "\n==> HEAD of go.mod:\n"
-head go.mod
-
+printf "\n==> go.mod warnings:\n$Red$(grep replace go.mod)$Rst"
+printf "\n==> Version in main.go:\n$Gre$(grep 'prgver.*=' main.go)$Rst"
 printf "\n==> Last 3 tag versions, sorted semantically:\n"
 git tag | sort -t "." -k1,1n -k2,2n -k3,3n | tail -3
 CurrentTag=`git tag | sort -t "." -k1,1n -k2,2n -k3,3n | tail -1`
