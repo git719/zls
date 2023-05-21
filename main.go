@@ -12,10 +12,10 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "1.12.4"
+	prgver  = "1.13.0"
 )
 
-func PrintUsage() {
+func printUsage() {
 	X := utl.Red("X")
 	fmt.Printf(prgname + " Azure Resource RBAC and MS Graph READER v" + prgver + "\n" +
 		"    READER FUNCTIONS\n" +
@@ -34,8 +34,8 @@ func PrintUsage() {
 		"    -pags                             List all Azure AD Privileged Access Groups\n" +
 		"    -st                               List local cache count and Azure count of all objects\n" +
 		"\n" +
-		"    -z                                Dump important program variables\n" +
-		"    -cr                               Dump values in credentials file\n" +
+		"    -z                                Dump configured login values\n" +
+		"    -zr                               Dump runtime variables\n" +
 		"    -cr  TenantId ClientId Secret     Set up MSAL automated ClientId + Secret login\n" +
 		"    -cri TenantId Username            Set up MSAL interactive browser popup login\n" +
 		"    -tx                               Delete MSAL accessTokens cache file\n" +
@@ -46,7 +46,7 @@ func PrintUsage() {
 	os.Exit(0)
 }
 
-func SetupVariables(z *maz.Bundle) maz.Bundle {
+func setupVariables(z *maz.Bundle) maz.Bundle {
 	// Set up variable object struct
 	*z = maz.Bundle{
 		ConfDir:      "",
@@ -78,11 +78,11 @@ func main() {
 	//TestFunction()
 	numberOfArguments := len(os.Args[1:]) // Not including the program itself
 	if numberOfArguments < 1 || numberOfArguments > 4 {
-		PrintUsage() // Don't accept less than 1 or more than 4 arguments
+		printUsage() // Don't accept less than 1 or more than 4 arguments
 	}
 
 	var z maz.Bundle
-	z = SetupVariables(&z)
+	z = setupVariables(&z)
 
 	switch numberOfArguments {
 	case 1: // Process 1-argument requests
@@ -90,15 +90,19 @@ func main() {
 		// This first set of 1-arg requests do not require API tokens to be set up
 		switch arg1 {
 		case "-v":
-			PrintUsage()
-		case "-cr":
-			maz.DumpCredentials(z)
+			printUsage()
+		case "-z":
+			maz.DumpLoginValues(z)
+		case "-tx":
+			maz.RemoveCacheFile("t", z)
 		}
 		z = maz.SetupApiTokens(&z) // The remaining 1-arg requests DO required API tokens to be set up
 		switch arg1 {
+		case "-zr":
+			maz.DumpRuntimeValues(z)
 		case "-xx":
 			maz.RemoveCacheFile("all", z)
-		case "-tx", "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-adx":
+		case "-dx", "-ax", "-sx", "-mx", "-ux", "-gx", "-spx", "-apx", "-adx":
 			t := arg1[1 : len(arg1)-1] // Single out the object type
 			maz.RemoveCacheFile(t, z)
 		case "-dj", "-aj", "-sj", "-mj", "-uj", "-gj", "-spj", "-apj", "-adj":
@@ -119,8 +123,6 @@ func main() {
 			maz.PrintPags(z)
 		case "-st":
 			maz.PrintCountStatus(z)
-		case "-z":
-			maz.DumpVariables(z)
 		case "-tmg":
 			fmt.Println(z.MgToken)
 		case "-taz":
@@ -130,7 +132,7 @@ func main() {
 			if utl.IsHexDigit(c) && utl.ValidUuid(arg1) { // If valid UUID, search/print matching object(s?)
 				maz.PrintObjectByUuid(arg1, z)
 			} else {
-				PrintUsage()
+				printUsage()
 			}
 		}
 	case 2: // Process 2-argument requests
@@ -149,7 +151,7 @@ func main() {
 			t := arg1[1:] // Single out the object type
 			maz.PrintMatching("reg", t, arg2, z)
 		default:
-			PrintUsage()
+			printUsage()
 		}
 	case 3: // Process 3-argument requests
 		arg1 := os.Args[1]
@@ -161,7 +163,7 @@ func main() {
 			z.Username = arg3
 			maz.SetupInterativeLogin(z)
 		default:
-			PrintUsage()
+			printUsage()
 		}
 	case 4: // Process 4-argument requests
 		arg1 := os.Args[1]
@@ -175,7 +177,7 @@ func main() {
 			z.ClientSecret = arg4
 			maz.SetupAutomatedLogin(z)
 		default:
-			PrintUsage()
+			printUsage()
 		}
 	}
 	os.Exit(0)

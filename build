@@ -10,18 +10,20 @@ case "$OSTYPE" in
     "msys"* )      printf "==> OS = Windows with GitBASH\n" && BIN=$GOPATH/bin/${Prg}.exe ;;
     * )            printf "==> OS = \"$OSTYPE\", unknown! (Options are Linux, macOS, or Windows with GitBASH)\n" && exit 1 ;;
 esac
+
 go fmt
 go mod tidy
 go test ./...
 go build -ldflags "-s -w" -o $BIN
-ls -l $GOPATH/bin/$Prg
+printf "\n"
+ls -l $GOPATH/bin/$Prg | grep $Prg
 
-printf "\n==> go.mod warnings:\n$Red$(grep replace go.mod)$Rst"
-printf "\n==> Version in main.go:\n$Gre$(grep 'prgver.*=' main.go)$Rst"
-printf "\n==> Last 3 tag versions, sorted semantically:\n"
+printf "\n==> grep replace go.mod:\n$Red$(grep replace go.mod)$Rst"
+printf "\n==> grep prgver main.go:\n$Gre$(grep 'prgver.*=' main.go)$Rst"
+printf "\n==> Last 3 tag versions:\n"
 git tag | sort -t "." -k1,1n -k2,2n -k3,3n | tail -3
 CurrentTag=`git tag | sort -t "." -k1,1n -k2,2n -k3,3n | tail -1`
-printf "\n==> To publish, do below one-liner, advancing tag version and updating comments accordingly:\n\n"
-printf "Tag=$CurrentTag && Prg=$Prg && git add . && git commit -m \"\$Tag: updates\" && git tag \$Tag && git push origin \$Tag && git push\n\n"
+printf "\n==> To publish, do below one-liner, advancing tag version:\n\n"
+printf "  Tag=$CurrentTag && git add . && git commit -m \"x updates\" && git tag \$Tag && git push origin \$Tag && git push\n\n"
 
 exit 0
