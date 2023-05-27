@@ -1,14 +1,14 @@
 #!/bin/bash
 # build
-# Make the binary and place in the PATH
+
 set -euo pipefail  # Fail on any error
 export Gre='\e[1;32m' Red='\e[1;31m' Rst='\e[0m'
 Prg=`head -1 go.mod | awk -F'/' '{print $NF}' | awk '{print $NF}'`
 case "$OSTYPE" in
-    "linux-gnu"* ) printf "==> OS = Linux\n" && BIN=$GOPATH/bin/${Prg} ;;
-    "darwin"* )    printf "==> OS = macOS\n" && BIN=$GOPATH/bin/${Prg} ;;
-    "msys"* )      printf "==> OS = Windows with GitBASH\n" && BIN=$GOPATH/bin/${Prg}.exe ;;
-    * )            printf "==> OS = \"$OSTYPE\", unknown! (Options are Linux, macOS, or Windows with GitBASH)\n" && exit 1 ;;
+    "linux-gnu"* ) printf "==> Linux\n" && BIN=$GOPATH/bin/${Prg} ;;
+    "darwin"* )    printf "==> macOS\n" && BIN=$GOPATH/bin/${Prg} ;;
+    "msys"* )      printf "==> Windows with GitBASH\n" && BIN=$GOPATH/bin/${Prg}.exe ;;
+    * )            printf "==> Unknown \"$OSTYPE\" (Options are Linux, macOS, or Windows with GitBASH)\n" && exit 1 ;;
 esac
 
 go fmt
@@ -23,7 +23,7 @@ printf "\n==> grep prgver main.go:\n$Gre$(grep 'prgver.*=' main.go)$Rst"
 printf "\n==> Last 3 tag versions:\n"
 git tag | sort -t "." -k1,1n -k2,2n -k3,3n | tail -3
 CurrentTag=`git tag | sort -t "." -k1,1n -k2,2n -k3,3n | tail -1`
-printf "\n==> To publish, do below one-liner, advancing tag version:\n\n"
-printf "  Tag=$CurrentTag && git add . && git commit -m \"x updates\" && git tag \$Tag && git push origin \$Tag && git push\n\n"
+printf "\n==> To publish, do below one-liner, advancing tag version:\n"
+printf "\n==> Tag=$CurrentTag && git add . && git commit -m \"x updates\" && git tag \$Tag && git push origin \$Tag && git push\n\n"
 
 exit 0
