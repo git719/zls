@@ -2,21 +2,27 @@
 # pman
 # Azure REST API caller
 
-PRGVER="1.0.0"
+PRGNAME="pman"
+PRGVER="1.0.1"
 set -euo pipefail
 
-[[ -z "$(which zls)" ]] && printf "Missing 'zls' binary\n" && exit 1
-[[ -z "$(which curl)" ]] && printf "Missing 'curl' binary\n" && exit 1
+check_binary() {
+    if [[ -z "$(which $1 2>/dev/null)" ]]; then
+        printf "Missing '$1' binary!\n" && exit 1 
+    fi
+}
+for B in zls curl ; do check_binary $B ; done
 
-function print_usage {
-    printf "$(basename $0) Azure REST API Caller v$PRGVER\n"
+print_usage() {
+    printf "$PRGNAME Azure REST API Caller v$PRGVER\n"
     printf "  Usage Examples:\n"
-    printf "    $(basename $0) GET \"https://graph.microsoft.com/v1.0/applications/3eec32f4-6ca1-4d1d-9335-19518aa196c4\" [other curl options]\n"
-    printf "    $(basename $0) GET \"https://management.azure.com/providers/Microsoft.Authorization/roleDefinitions?api-version=2022-04-01\" [other curl options]\n"
+    printf "    $PRGNAME GET \"https://graph.microsoft.com/v1.0/me\"\n"
+    printf "    $PRGNAME GET \"https://management.azure.com/subscriptions?api-version=2022-12-01\" [other curl options]\n"
+    printf "    $PRGNAME GET \"https://graph.microsoft.com/v1.0/applications/3eec32f4-6ca1-4d1d-9335-19518aa196c4\" [other curl options]\n"
     exit 1
 }
 
-[[ $# -eq 0 ]] && print_usage && exit 1
+[[ $# -eq 0 || $# -lt 2 ]] && print_usage && exit 1
 
 METHOD="$1"
 URL="$2"

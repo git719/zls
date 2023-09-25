@@ -1,6 +1,11 @@
 # pman
 Simple Azure REST API caller. It uses the token the `zls` utility is able to acquire with arguments `-tmg` and `-taz`.
 
+## Get Started
+Copy the `pman` BASH script to somewhere in your path, maybe `/usr/local/bin/`
+
+The script should work in any BASH environment that is able to run `curl` and the `zls` utility.
+
 ## Usage
 ```
 $ pman
