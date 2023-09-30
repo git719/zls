@@ -1,0 +1,20 @@
+# docker-compose.yaml
+version: '3'
+services:
+  node_app:
+    image: node:20.8.0
+    command: bash -c '
+      [[ ! -d "/usr/local/lib/node_modules/@azure/msal-node" ]] && npm install -g date-fns @azure/msal-node --verbose 2>&1 ;
+      node aztoken.js'
+    volumes:
+      - ./:/app
+    environment:
+      - NODE_PATH=/usr/local/lib/node_modules
+      - MAZ_CLIENT_ID=${MAZ_CLIENT_ID}
+      - MAZ_CLIENT_SECRET=${MAZ_CLIENT_SECRET}
+      - MAZ_TENANT_ID=${MAZ_TENANT_ID}
+    working_dir: /app
+
+# BUILD & RUN: docker compose up --build
+# JUST RUN   : docker compose up
+# INSPECT    : docker compose run --build node_app bash
