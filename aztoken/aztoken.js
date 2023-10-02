@@ -5,7 +5,7 @@ const msal = require('@azure/msal-node');
 const { format } = require('date-fns');
 const BLUE = '\x1b[1;34m'; // Blue color
 const GREEN = '\x1b[32m';
-const RED = '\x1b[1;31m';
+const RED = '\x1b[31m';  // Removed 1;
 const RESET = '\x1b[0m'; // Reset to default color
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
@@ -51,34 +51,42 @@ async function main() {
     const clientId = process.env.MAZ_CLIENT_ID;
     const clientSecret = process.env.MAZ_CLIENT_SECRET;
     const authorityUrl = `https://login.microsoftonline.com/${process.env.MAZ_TENANT_ID}`;
+    console.log(`\n${BLUE}clientId${RESET}: ${GREEN}${clientId}${RESET}`);
+    console.log(`${BLUE}clientSecret${RESET}: ${GREEN}secret${RESET}`);
+    console.log(`${BLUE}authorityUrl${RESET}: ${GREEN}${authorityUrl}${RESET}`);
 
     while (true) {
         try {
             const token = await getTokenByCredentials(tokenScopes, clientId, clientSecret, authorityUrl);
 
-            // // Optional: Print entire token
-            // console.log(`\n${token}\n`);
+            // console.log(`\n${token}\n`);  // OPTION: Print entire token structure
             
             const { authority, scopes, accessToken, fromCache, expiresOn, extExpiresOn } = token;
             const formattedExpiresOn = dateFormatter.format(new Date(expiresOn));
             const formattedExtExpiresOn = dateFormatter.format(new Date(extExpiresOn));
 
-            console.log(`\n${BLUE}TOKEN DETAILS:${RESET}`);
-            console.log(`${BLUE}  Authority:${RESET} ${GREEN}${authority}${RESET}`);
-            console.log(`${BLUE}  Scopes:${RESET} ${GREEN}${scopes}${RESET}`);
-            console.log(`${BLUE}  Access Token:${RESET} ${GREEN}${accessToken}${RESET}`);
-            console.log(`${BLUE}  From Cache:${RESET} ${GREEN}${fromCache}${RESET}`);
-            console.log(`${BLUE}  Expires On:${RESET} ${GREEN}${formattedExpiresOn}${RESET}`);
-            console.log(`${BLUE}  Extended Expires On:${RESET} ${GREEN}${formattedExtExpiresOn}${RESET}`);              
+            console.log(`\n${BLUE}TOKEN DETAILS${RESET}`);
+            console.log(`${BLUE}  Authority${RESET}: ${GREEN}${authority}${RESET}`);
+            console.log(`${BLUE}  Scopes${RESET}: ${GREEN}${scopes}${RESET}`);
+            console.log(`${BLUE}  Access Token${RESET}: ${GREEN}${accessToken}${RESET}`);
+
+            if (fromCache === 'false') {
+                console.log(`${BLUE}  From Cache${RESET}: ${RED}${fromCache}${RESET}`);
+            } else {
+                console.log(`${BLUE}  From Cache${RESET}: ${GREEN}${fromCache}${RESET}`);
+            }
+
+            console.log(`${BLUE}  Expires On${RESET}: ${GREEN}${formattedExpiresOn}${RESET}`);
+            console.log(`${BLUE}  Extended Expires On${RESET}: ${GREEN}${formattedExtExpiresOn}${RESET}`);              
         } catch (error) {
             console.error(`${RED}Failed to obtain token: ${error}${RESET}`);
         }
 
-        // Wait for 1 minute (60,000 milliseconds) before making the next call
-        await new Promise(resolve => setTimeout(resolve, 60000));
+        // Wait for 5 seconds (5,000 milliseconds) before making the next call
+        await new Promise(resolve => setTimeout(resolve, 5000));
     }
 }
 
 main().catch(error => {
-    console.error('An error occurred in the main function:', error);
+    console.error(`${RED}Error in the main function: ${error}${RESET}`);
 });
