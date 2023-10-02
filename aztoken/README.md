@@ -9,6 +9,21 @@ References:
   - Installing Docker: <https://docs.docker.com/engine/install/rhel/>
   - Docker Compose: <https://docs.docker.com/compose/compose-file/compose-file-v3/>
 
+Docker Socket Issues:
+If experience `permissions denied` issues with the docker daemon, try these commands: 
+
+```
+sudo usermod -aG docker your_username     # Ubuntu
+sudo usermod -aG podman your_username     # RHEL
+sudo systemctl restart docker
+docker run hello-world                    # To confirm it is fixed
+```
+
+Alternatively, try:
+```
+sudo chown your_username:docker /var/run/docker.sock
+sudo chmod 660 /var/run/docker.sock
+``
 
 ## aztoken.js
 Node JS example.
