@@ -23,7 +23,7 @@ Alternatively, try:
 ```
 sudo chown your_username:docker /var/run/docker.sock
 sudo chmod 660 /var/run/docker.sock
-``
+```
 
 ## aztoken.js
 Node JS example.
