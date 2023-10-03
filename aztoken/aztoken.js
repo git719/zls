@@ -1,8 +1,12 @@
 // aztoken.js
 // Node JS version
 
+// Quick exit on CTLR-C
+process.once('SIGTERM', () => process.exit(0)).once('SIGINT', () => process.exit(0));
+
 const msal = require('@azure/msal-node');
 const { format } = require('date-fns');
+
 const BLUE = '\x1b[1;34m'; // Blue color
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';  // Removed 1;
@@ -16,6 +20,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     minute: '2-digit',
     second: '2-digit'
 });
+
 let cca;  // Declaring here to leverage MSAL's default in-memory cache
 
 
