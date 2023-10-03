@@ -1,5 +1,4 @@
 // aztoken.js
-// Node JS version
 
 // Quick exit on CTLR-C
 process.once('SIGTERM', () => process.exit(0)).once('SIGINT', () => process.exit(0));
