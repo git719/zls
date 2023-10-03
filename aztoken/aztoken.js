@@ -90,6 +90,4 @@ async function main() {
     }
 }
 
-main().catch(error => {
-    console.error(`${RED}Error in the main function: ${error}${RESET}`);
-});
+main();
