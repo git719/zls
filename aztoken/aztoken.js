@@ -42,7 +42,7 @@ async function getTokenByCredentials(scopes, clientId, clientSecret, authorityUr
         const response = await cca.acquireTokenByClientCredential(tokenRequest);
         return response;
     } catch (error) {
-        console.error('Error acquiring token:', error.message);
+        console.error(`${RED}Error acquiring token: ${error}${RESET}`);
         throw error;
     }
 }
@@ -60,31 +60,30 @@ async function main() {
     console.log(`${BLUE}authorityUrl${RESET}: ${GREEN}${authorityUrl}${RESET}`);
 
     while (true) {
-        try {
-            const token = await getTokenByCredentials(tokenScopes, clientId, clientSecret, authorityUrl);
-
-            // console.log(`\n${token}\n`);  // OPTION: Print entire token structure
-            
-            const { authority, scopes, accessToken, fromCache, expiresOn, extExpiresOn } = token;
-            const formattedExpiresOn = dateFormatter.format(new Date(expiresOn));
-            const formattedExtExpiresOn = dateFormatter.format(new Date(extExpiresOn));
-
-            console.log(`\n${BLUE}TOKEN DETAILS${RESET}`);
-            console.log(`${BLUE}  Authority${RESET}: ${GREEN}${authority}${RESET}`);
-            console.log(`${BLUE}  Scopes${RESET}: ${GREEN}${scopes}${RESET}`);
-            console.log(`${BLUE}  Access Token${RESET}: ${GREEN}${accessToken}${RESET}`);
-
-            if (fromCache === 'false') {
-                console.log(`${BLUE}  From Cache${RESET}: ${RED}${fromCache}${RESET}`);
-            } else {
-                console.log(`${BLUE}  From Cache${RESET}: ${GREEN}${fromCache}${RESET}`);
-            }
-
-            console.log(`${BLUE}  Expires On${RESET}: ${GREEN}${formattedExpiresOn}${RESET}`);
-            console.log(`${BLUE}  Extended Expires On${RESET}: ${GREEN}${formattedExtExpiresOn}${RESET}`);              
-        } catch (error) {
-            console.error(`${RED}Failed to obtain token: ${error}${RESET}`);
+        const token = await getTokenByCredentials(tokenScopes, clientId, clientSecret, authorityUrl);
+        if (!token || token === '') {
+            console.error(`${RED}Token is empty or null.${error}${RESET}`);
         }
+
+        // console.log(`\n${token}\n`);  // OPTION: Print entire token structure
+        
+        const { authority, scopes, accessToken, fromCache, expiresOn, extExpiresOn } = token;
+        const formattedExpiresOn = dateFormatter.format(new Date(expiresOn));
+        const formattedExtExpiresOn = dateFormatter.format(new Date(extExpiresOn));
+
+        console.log(`\n${BLUE}TOKEN DETAILS${RESET}`);
+        console.log(`${BLUE}  Authority${RESET}: ${GREEN}${authority}${RESET}`);
+        console.log(`${BLUE}  Scopes${RESET}: ${GREEN}${scopes}${RESET}`);
+        console.log(`${BLUE}  Access Token${RESET}: ${GREEN}${accessToken}${RESET}`);
+
+        if (fromCache === 'false') {
+            console.log(`${BLUE}  From Cache${RESET}: ${RED}${fromCache}${RESET}`);
+        } else {
+            console.log(`${BLUE}  From Cache${RESET}: ${GREEN}${fromCache}${RESET}`);
+        }
+
+        console.log(`${BLUE}  Expires On${RESET}: ${GREEN}${formattedExpiresOn}${RESET}`);
+        console.log(`${BLUE}  Extended Expires On${RESET}: ${GREEN}${formattedExtExpiresOn}${RESET}`);              
 
         // Wait for 5 seconds (5,000 milliseconds) before making the next call
         await new Promise(resolve => setTimeout(resolve, 5000));
