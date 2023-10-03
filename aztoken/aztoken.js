@@ -8,8 +8,8 @@ const { format } = require('date-fns');
 
 const BLUE = '\x1b[1;34m'; // Blue color
 const GREEN = '\x1b[32m';
-const RED = '\x1b[31m';  // Removed 1;
-const RESET = '\x1b[0m'; // Reset to default color
+const RED = '\x1b[31m';
+const RESET = '\x1b[0m';   // Reset to default color
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -21,7 +21,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 let cca;  // Declaring here to leverage MSAL's default in-memory cache
-
 
 async function getTokenByCredentials(scopes, clientId, clientSecret, authorityUrl) {
     if (!cca) {
@@ -46,7 +45,6 @@ async function getTokenByCredentials(scopes, clientId, clientSecret, authorityUr
         throw error;
     }
 }
-
 
 async function main() {
     //const scopes = ['https://graph.microsoft.com/.default'];
