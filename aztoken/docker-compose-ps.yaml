@@ -1,0 +1,24 @@
+# docker-compose-ps.yaml
+
+# NOTE: This PowerShell version isn't building correctly right now.
+
+version: '3'
+services:
+  ps_app:
+    image: mcr.microsoft.com/powershell:latest  # On Ubuntu 22.04.3 LTS
+    command: pwsh -c "
+      [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 ;
+      Install-PackageProvider -Name NuGet -Force ;
+      Install-Module -Name Microsoft.Identity.Client -Force -Verbose -SkipPublisherCheck ;
+      . /app/aztoken.ps1"
+    volumes:
+      - ./:/app 
+    environment:
+      - MAZ_CLIENT_ID=${MAZ_CLIENT_ID}
+      - MAZ_CLIENT_SECRET=${MAZ_CLIENT_SECRET}
+      - MAZ_TENANT_ID=${MAZ_TENANT_ID}
+    working_dir: /app 
+
+# BUILD & RUN: docker compose -f docker-compose-ps.yaml up --build
+# JUST RUN   : docker compose -f docker-compose-ps.yaml up
+# INSPECT    : docker compose -f docker-compose-ps.yaml run --build ps_app sh

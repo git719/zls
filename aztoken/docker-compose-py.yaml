@@ -18,4 +18,4 @@ services:
 
 # BUILD & RUN: docker compose -f docker-compose-py.yaml up --build
 # JUST RUN   : docker compose -f docker-compose-py.yaml up
-# INSPECT    : docker compose -f docker-compose-py.yaml run --build node_app bash
+# INSPECT    : docker compose -f docker-compose-py.yaml run --build python_app bash
