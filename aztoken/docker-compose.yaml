@@ -2,11 +2,12 @@
 version: '3'
 services:
   node_app:
-    image: node:14-alpine
-    command: sh -c '
-      if [ ! -d "/usr/local/lib/node_modules/@azure/msal-node" ]; then
-        npm install -g date-fns @azure/msal-node --verbose 2>&1 ;
-      fi ;
+    image: node:lts-bookworm-slim  # NodeJS v18 on Debian GNU/Linux 12 (bookworm)
+    command: bash -c '
+      cat /etc/os-release &&
+      node -v &&
+      npm -v &&
+      npm install -g date-fns @azure/msal-node --verbose 2>&1 &&
       node aztoken.js'
     volumes:
       - ./:/app
