@@ -1,4 +1,4 @@
-# docker-compose-py.yaml
+# docker-compose.yaml
 
 version: '3'
 services:
@@ -16,6 +16,6 @@ services:
       - MAZ_TENANT_ID=${MAZ_TENANT_ID}
     working_dir: /app
 
-# BUILD & RUN: docker compose -f docker-compose-py.yaml up --build
-# JUST RUN   : docker compose -f docker-compose-py.yaml up
-# INSPECT    : docker compose -f docker-compose-py.yaml run --build python_app bash
+# BUILD & RUN: docker compose up --build
+# JUST RUN   : docker compose up
+# INSPECT    : docker compose run --build python_app bash

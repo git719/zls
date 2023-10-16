@@ -1,0 +1,27 @@
+# docker-compose.yaml
+version: '3'
+services:
+  zls:
+    build:
+      context: .   # Path to your GoLang application code
+      dockerfile: Dockerfile
+    image: zls
+    command: sh -c '
+      echo "===========" &&
+      cat /etc/os-release &&
+      echo "===========" &&
+      zls -zr &&
+      echo "===========" &&
+      zls -s'
+    container_name: zls
+    volumes:
+      - ./:/app
+    environment:
+      - MAZ_CLIENT_ID=${MAZ_CLIENT_ID}
+      - MAZ_CLIENT_SECRET=${MAZ_CLIENT_SECRET}
+      - MAZ_TENANT_ID=${MAZ_TENANT_ID}
+    working_dir: /app
+
+# BUILD & RUN: docker compose up --build
+# JUST RUN   : docker compose up
+# INSPECT    : docker compose run --build zls bash

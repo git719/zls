@@ -1,6 +1,6 @@
-# docker-compose-ps.yaml
+# docker-compose.yaml
 
-# NOTE: This PowerShell version isn't building correctly right now.
+# NOTE: This is not building correctly at the moment. Needs fixing.
 
 version: '3'
 services:
@@ -19,6 +19,6 @@ services:
       - MAZ_TENANT_ID=${MAZ_TENANT_ID}
     working_dir: /app 
 
-# BUILD & RUN: docker compose -f docker-compose-ps.yaml up --build
-# JUST RUN   : docker compose -f docker-compose-ps.yaml up
-# INSPECT    : docker compose -f docker-compose-ps.yaml run --build ps_app sh
+# BUILD & RUN: docker compose up --build
+# JUST RUN   : docker compose up
+# INSPECT    : docker compose run --build ps_app sh

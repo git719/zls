@@ -1,5 +1,5 @@
-# Azure Token
-Sample code for acquiring an Azure token.
+# Azure Token Python
+Sample code for acquiring an Azure token in Python.
 
 
 ## Getting Started
@@ -25,9 +25,8 @@ sudo chown your_username:docker /var/run/docker.sock
 sudo chmod 660 /var/run/docker.sock
 ```
 
-## aztoken.js
-Node JS example.
 
+## aztoken.py
 First, make sure you define/export the 3 required environment variables: 
 
 ```
@@ -41,9 +40,5 @@ Then you can build and run for the first time, or run subsequent times.
 - `docker compose up --build`: To build and run for the first time.
 - `docker compose up`: To run subsequent times.
 
-You can edit `aztoken.js` file to play with different behavior, like using a different scope and so on.
-
-
-## Other Languages
-TODO
+You can edit `aztoken.py` file to play with different behavior, like using a different scope and so on.
 
