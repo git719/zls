@@ -12,7 +12,7 @@ import (
 
 const (
 	prgname = "zls"
-	prgver  = "0.14.1"
+	prgver  = "2.0.0"
 )
 
 func printUsage() {
@@ -75,7 +75,6 @@ func setupVariables(z *maz.Bundle) maz.Bundle {
 }
 
 func main() {
-	//TestFunction()
 	numberOfArguments := len(os.Args[1:]) // Not including the program itself
 	if numberOfArguments < 1 || numberOfArguments > 4 {
 		printUsage() // Don't accept less than 1 or more than 4 arguments
