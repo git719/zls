@@ -3,7 +3,7 @@
 # Azure REST API caller
 
 PRGNAME="pman"
-PRGVER="1.0.1"
+PRGVER="1.1.0"
 set -euo pipefail
 
 check_binary() {
@@ -24,7 +24,7 @@ print_usage() {
 
 [[ $# -eq 0 || $# -lt 2 ]] && print_usage && exit 1
 
-METHOD="$1"
+METHOD=$(echo "$1" | tr '[:lower:]' '[:upper:]')
 URL="$2"
 OPTIONAL_ARGS="${@:3}"
 
@@ -36,9 +36,8 @@ else
     print_usage && exit 1
 fi
 
-#set -x
-curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $TK" -X $METHOD "$URL" $OPTIONAL_ARGS
-#set +x
+[[ "${TK:0:3}" != "eyJ" ]] && printf "\nWARNING: Token string is invalid!\n\n"
 
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $TK" -X $METHOD "$URL" $OPTIONAL_ARGS
 exit 0
 
