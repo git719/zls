@@ -5,8 +5,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fatih/color v1.10.0 h1:s36xzo75JdqLaaWoiEHk767eHiwo0598uUxyfiPkDsg=
 github.com/fatih/color v1.10.0/go.mod h1:ELkj/draVOlAH/xkhN6mQ50Qd0MPOk5AAr3maGEBuJM=
-github.com/git719/maz v1.4.0 h1:Uw/VUnbVPeGXk+8rd2YN+f/K4N4leIpkZw+K0H2tA40=
-github.com/git719/maz v1.4.0/go.mod h1:aDGaNFmoasZkchC+o7slESO68tL8ilHf86TWBrRcch8=
+github.com/git719/maz v1.4.1 h1:feVsWkwz+Q7AxKoJKHSgGW0/41GgXSBfA+xeXCd1xSo=
+github.com/git719/maz v1.4.1/go.mod h1:aDGaNFmoasZkchC+o7slESO68tL8ilHf86TWBrRcch8=
 github.com/git719/utl v1.2.0 h1:pg2ja3/n6CIABP8wrqyVbHwzqv8R2PX4onQ39t0ghNM=
 github.com/git719/utl v1.2.0/go.mod h1:2HVtZlMEmdxzFNdgWibHmMmVeaoWPcoIAIAukh+TRoc=
 github.com/go-playground/locales v0.13.0 h1:HyWk6mgj5qFqCT5fjGBuRArbVDfE4hi8+e8ceBS/t7Q=
