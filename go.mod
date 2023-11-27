@@ -3,7 +3,7 @@ module zls
 go 1.21.3
 
 require (
-	github.com/git719/maz v1.4.1
+	github.com/git719/maz v1.4.2
 	github.com/git719/utl v1.2.0
 )
 
