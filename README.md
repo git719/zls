@@ -14,6 +14,7 @@
   - Azure AD Roles that have been **activated**
   - Azure AD Roles standard definitions
 - Compare RBAC role definitions and assignments that are defined in a JSON or YAML __specification file__ to what that object currently looks like in the Azure tenant.
+- Dump the current Resources or Security JWT token being used (which can be used as a [simple Azure REST API caller](https://github.com/git719/zls/tree/main/pman) for testing purposes) 
 - Perform other related listing functions.
 
 ## Quick Example
