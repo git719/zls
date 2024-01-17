@@ -78,13 +78,13 @@ First and foremost you need to know the special **Tenant ID** for your tenant. T
 
 Then, you need a User ID or a Service Principal with the appropriate access rights. Either one will need the necessary _Reader_ role access to read resource objects, and _Global Reader_ role access to read security objects. The higher the scope of these access assignments, the more you will be able to see with the utility. 
 
-When you run `zls` without any arguments you will see the **usage** screen listed at the bottom of this README. As you can probably surmise, the `-cri` and `-cr` arguments will allow you to set up these 2 optional ways to connect to your tenant. The `-cri` argument mean set up 'credential interactive' for a User ID, also knows as a [User Principal Name (UPN)](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/plan-connect-userprincipalname), and the `-cr` argument means set up 'credential' for a Service Principal or SP.
+When you run `zls` without any arguments you will see the **usage** screen listed at the bottom of this README. As you can quickly surmise, the `-id` argument will allow you to set up these 2 optional ways to connect to your tenant; either interactively with a User ID, also known as a [User Principal Name (UPN)](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/plan-connect-userprincipalname), or a Service Principal or SP with a secret.
 
 ## User ID Logon
-For example, if your Tenant ID was **c44154ad-6b37-4972-8067-0ef1068079b2**, and your User ID was __bob@contoso.com__, you would type:
+For example, if your Tenant ID was **c44154ad-6b37-4972-8067-0ef1068079b2**, and your User ID UPN was __bob@contoso.com__, you would type:
 
 ```
-$ zls -cri c44154ad-6b37-4972-8067-0ef1068079b2 bob@contoso.com
+$ zls -id c44154ad-6b37-4972-8067-0ef1068079b2 bob@contoso.com
 Updated /Users/myuser/.maz/credentials.yaml file
 ```
 `zls` responds that the special `credentials.yaml` file has been updated accordingly.
@@ -92,18 +92,17 @@ Updated /Users/myuser/.maz/credentials.yaml file
 To view, dump all configured logon values type the following:
 
 ```
-$ zls -z
+$ zls -id
 config_dir: /Users/myuser/.maz  # Config and cache directory
-os_environment_variables:
-  # 1. Environment Variable login values override values in credentials_config_file
+config_env_variables:
+  # 1. Credentials supplied via environment variables override values provided via credentials file
   # 2. MAZ_USERNAME+MAZ_INTERACTIVE login have priority over MAZ_CLIENT_ID+MAZ_CLIENT_SECRET login
-  # 3. To use MAZ_CLIENT_ID+MAZ_CLIENT_SECRET login ensure MAZ_USERNAME & MAZ_INTERACTIVE are unset
   MAZ_TENANT_ID:
   MAZ_USERNAME:
   MAZ_INTERACTIVE:
   MAZ_CLIENT_ID:
   MAZ_CLIENT_SECRET:
-credentials_config_file:
+config_creds_file:
   file_path: /Users/myuser/.maz/credentials.yaml
   tenant_id: c44154ad-6b37-4972-8067-0ef1068079b2
   username: bob@contoso.com
@@ -112,21 +111,20 @@ credentials_config_file:
 
 Above tells you that the utility has been configured to use Bob's UPN for access via the special credentials file. Note that above is only a configuration setup, it actually hasn't logged Bob onto the tenant yet. To logon as Bob you have have to run any command, and the logon will happen automatically, in this case it will be an interactively browser popup logon.
 
-Note also, that instead of setting up Bob's login via the `-cri` argument, you could have setup the special 3 operating system environment variables to achieve the same. Had you done that, running `zls -z` would have displayed below instead:
+Note also, that instead of setting up Bob's login with the `-id` argument, you could have setup the special 3 operating system environment variables to achieve the same. Had you done that, running `zls -id` would have displayed below instead:
 
 ```
-$ zls -z
+$ zls -id
 config_dir: /Users/myuser/.maz  # Config and cache directory
-os_environment_variables:
-  # 1. Environment Variable login values override values in credentials_config_file
+config_env_variables:
+  # 1. Credentials supplied via environment variables override values provided via credentials file
   # 2. MAZ_USERNAME+MAZ_INTERACTIVE login have priority over MAZ_CLIENT_ID+MAZ_CLIENT_SECRET login
-  # 3. To use MAZ_CLIENT_ID+MAZ_CLIENT_SECRET login ensure MAZ_USERNAME & MAZ_INTERACTIVE are unset
   MAZ_TENANT_ID: c44154ad-6b37-4972-8067-0ef1068079b2
   MAZ_USERNAME: bob@contoso.com
   MAZ_INTERACTIVE: true
   MAZ_CLIENT_ID:
   MAZ_CLIENT_SECRET:
-credentials_config_file:
+config_creds_file:
   file_path: /Users/myuser/.maz/credentials.yaml
   tenant_id: 
   username: 
@@ -134,9 +132,9 @@ credentials_config_file:
 ```
 
 ## SP Logon
-To use an SP logon it means you first have to set up a dedicated App Registrations, grant it the same Reader resource and Global Reader security access roles mentioned above. Please reference other sources on the Web for how to do an Azure App Registration.
+To use an SP logon it means you first have to set up a dedicated App Registrations, grant it the same Reader resource and Global Reader security access roles mentioned above. For how to do an Azure App Registration please reference some other sources on the Web.
 
-Once above is setup, you then follow the same logic as for User ID logon above, but using `-cr` instead; or use the other environment variables (MAZ_CLIENT_ID andMAZ_CLIENT_SECRET ). 
+Once above is setup, you then follow the same logic as for User ID logon above, but specifying 3 instead of 2 values; or use the other environment variables (MAZ_CLIENT_ID and MAZ_CLIENT_SECRET). 
 
 The utility ensures that the permissions for configuration directory where the `credentials.yaml` file is only accessible by the owning user. However, storing a secrets in a clear-text file is a very poor security practice and should __never__ be use other than for quick tests, etc. The environment variable options was developed pricisely for this SP logon pattern, where the `zls` utility could be setup to run from say a [Docker container](https://en.wikipedia.org/wiki/Docker_(software)) and the secret injected as an environment variable, and that would be a much more secure way to run the utility.
 
@@ -157,7 +155,7 @@ Note that the bulk of the code is actually in the [maz](https://github.com/git71
 
 ## Usage
 ```
-zls Azure Resource RBAC and MS Graph READER v2.3.4
+zls Azure Resource RBAC and MS Graph READER v2.4.0
     READER FUNCTIONS
     UUID                              Show object for given UUID
     -vs Specfile                      Compare YAML or JSON specfile to what's in Azure (only for d and a objects)
@@ -174,15 +172,14 @@ zls Azure Resource RBAC and MS Graph READER v2.3.4
     -mt                               List Management Group and subscriptions tree
     -pags                             List all Azure AD Privileged Access Groups
     -st                               List local cache count and Azure count of all objects
-
-    -z                                Dump configured login values
-    -zr                               Dump runtime variables
-    -cr  TenantId ClientId Secret     Set up MSAL automated ClientId + Secret login
-    -cri TenantId Username            Set up MSAL interactive browser popup login
-    -tx                               Delete MSAL accessTokens cache file
     -tmg                              Dump current token string for MS Graph API
     -taz                              Dump current token string for Azure Resource API
     -tc "TokenString"                 Dump token claims
+
+    -id                               Display configured login values
+    -id TenantId Username             Set up user for interactive login
+    -id TenantId ClientId Secret      Set up ID for automated login
+    -tx                               Delete current configured login values and token
     -v                                Print this usage page
 ```
 
