@@ -4,15 +4,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/git719/maz"
-	"github.com/git719/utl"
 	"os"
 	"path/filepath"
+
+	"github.com/git719/maz"
+	"github.com/git719/utl"
 )
 
 const (
 	prgname = "zls"
-	prgver  = "2.4.2"
+	prgver  = "2.4.3"
 )
 
 func printUsage() {

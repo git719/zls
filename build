@@ -11,8 +11,8 @@ case "$OSTYPE" in
     * )            printf "==> Unknown \"$OSTYPE\" (Options are Linux, macOS, or Windows with GitBASH)\n" && exit 1 ;;
 esac
 
-go fmt
 go mod tidy
+go fmt
 go test ./...
 go build -ldflags "-s -w" -o $BIN
 printf "\n"
