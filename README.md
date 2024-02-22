@@ -1,3 +1,5 @@
+This repo is being **archived**. The funtionalities of this utility are also enbedded in the [azm](https://github.com/git719/azm) utility - please use it instead.
+
 # zls
 `zls` is a [CLI](https://en.wikipedia.org/wiki/Command-line_interface) utility for **listing** Azure objects. It is similar to `az`, the official [Azure CLI tool](https://learn.microsoft.com/en-us/cli/azure/), but it is much **faster** because it is written in [Go](https://go.dev/) and compiled into a binary executable, and it also only focuses on a smaller set of Azure object types. It is a little _Swiss Army knife_ that can very **quickly** do the following:
 
@@ -140,18 +142,16 @@ The utility ensures that the permissions for configuration directory where the `
 
 These login methods and the environment variables are described in more length in the [maz](https://github.com/git719/maz) package README.
 
-## To-Do and Known Issues
-The program is stable enough to be relied on as a reading/listing utility, but there are a number of little niggly things that could be improved. Will put a list together at some point.
+### To-Do and Known Issues
+The program is stable enough to be relied on as a small utility, but there are a number of little niggly things that could be improved. Will put a list together at some point.
 
 At any rate, no matter how stable any code is, it is always worth remembering computer scientist [Tony Hoare](https://en.wikipedia.org/wiki/Tony_Hoare)'s famous quote:
 > "Inside every large program is a small program struggling to get out."
 
-## Coding Philosophy
-As mention in the *Introduction* above, the primary goal of this utility is to serve as a study aid for coding Azure utilities in Go, as well as to serve as a quick, _Swiss Army knife* utility to list tenant objects.
+### Coding Philosophy
+The primary goal of this utility is to serve as a study aid for coding Azure utilities in Go, as well as to serve as a quick _Swiss Army knife* utility for managin tenant IAM objects. If you look through the code I think you will find that is relatively straightforward. There is a deliberate effor to keep the code as clear as possible, and simple to understand and maintain.
 
-If you look through the code you will note that it is very straightforward. Keeping the code clear, and simple to understand and maintain is another coding goal.
-
-Note that the bulk of the code is actually in the [maz](https://github.com/git719/maz) library, and other packages.
+Note that the bulk of the code is actually in the [maz](https://github.com/git719/maz) library, and other packages. Please visit that repo for more info.
 
 ## Usage
 ```
